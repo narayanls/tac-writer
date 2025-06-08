@@ -49,8 +49,10 @@ Argumentação com citação: Suporte à argumentação com referências externa
 
 Conclusão: Fechamento da ideia apresentada
 
-Instalação
-Pré-requisitos
+#Instalação
+
+#Pré-requisitos
+
 Python 3.11+
 
 GTK 3
@@ -60,7 +62,8 @@ GtkSourceView 3
 Pacotes Python: PyGObject, odfpy
 
 
-Como Usar
+#Como Usar
+
 Clique em "COMEÇAR A ESCREVER"
 
 Selecione o tipo de parágrafo que deseja criar:
@@ -81,9 +84,10 @@ Salve seu projeto para continuar depois
 
 Exporte para ODT quando finalizado
 
-Contribuição
+#Contribuição
+
 Contribuições são bem-vindas! Por favor, abra uma issue para discutir mudanças significativas antes de enviar um pull request.
 
-Licença
+
 Este projeto está licenciado sob a Licença GPL 3.0 - veja o arquivo LICENSE para detalhes.
 
