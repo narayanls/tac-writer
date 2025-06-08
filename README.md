@@ -1,93 +1,261 @@
-Tac Writer
-Tac Writer é um aplicativo para Linux desenvolvido em Python e GTK 3 que facilita a escrita de textos acadêmicos utilizando a Técnica da Argumentação Continuada (TAC), criada por Narayan Silva. O aplicativo oferece uma interface intuitiva para organizar parágrafos acadêmicos de acordo com a metodologia TAC, com recursos de formatação e exportação.
+# TAC - Text Analysis and Creation
 
-![image](https://github.com/user-attachments/assets/66e2598c-6a3c-4526-93de-fa397868375a)
+![TAC Logo](https://via.placeholder.com/128x128/4a90e2/ffffff?text=TAC)
 
+**TAC** is a modern academic writing assistant built with GTK4 and libadwaita, designed specifically for creating structured academic texts with guided paragraph types.
 
+## ✨ Features
 
-Recursos Principais
-🧩 Estrutura baseada na Técnica TAC:
+- **🎯 Structured Writing**: Guided paragraph types (Introduction, Topic Sentence, Argument, Quote, Conclusion)
+- **📝 Modern Interface**: Clean, responsive design using GTK4 + libadwaita
+- **📊 Real-time Statistics**: Word count, character count, reading time estimation
+- **💾 Project Management**: Save, load, and organize multiple writing projects
+- **📤 Multiple Export Formats**: TXT, HTML, ODT (LibreOffice), RTF
+- **🎨 Customizable Formatting**: Font selection, sizing, and paragraph styling
+- **🌙 Dark Mode Support**: Automatic theme switching with system preferences
+- **⚡ Auto-save**: Never lose your work with automatic project saving
 
-Tópico Frasal/Título do parágrafo
+## 🖥️ System Requirements
 
-Argumentação
+- **Operating System**: Arch Linux, Manjaro, BigCommunity, or other Arch-based distributions
+- **Desktop Environment**: Any modern DE with GTK4 support (GNOME, KDE, Cinnamon, etc.)
+- **Python**: 3.9 or higher
+- **GTK**: 4.0 or higher
+- **libadwaita**: 1.0 or higher
 
-Argumentação com citação
+## 📦 Installation
 
-Conclusão
+### Prerequisites (Arch/Manjaro/BigCommunity)
 
-📝 Editor avançado:
+First, install the required system packages:
 
-Formatação personalizada (fonte, tamanho, espaçamento, recuos)
+```bash
+# Update system
+sudo pacman -Syu
 
-Visualização em tempo real
+# Install core dependencies
+sudo pacman -S python gtk4 libadwaita python-gobject python-cairo
 
-💾 Gerenciamento de projetos:
+# Optional: Install development tools
+sudo pacman -S python-pip git base-devel
+```
 
-Crie e salve múltiplos projetos
+### Install TAC
 
-Acesso rápido aos trabalhos anteriores
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/user/tac.git
+   cd tac
+   ```
 
-📤 Exportação flexível:
+2. **Install Python dependencies**:
+   ```bash
+   pip install --user -r requirements.txt
+   ```
 
-Formato ODT (LibreOffice e outras suítes office)
+3. **Make executable**:
+   ```bash
+   chmod +x tac.py
+   ```
 
-🌍 Suporte a internacionalização:
+### Optional: System Installation
 
-Traduções via gettext
+To install TAC system-wide:
 
-Atualmente disponível em Português do Brasil
+```bash
+# Copy to system applications
+sudo cp -r tac/ /opt/tac/
 
-Técnica TAC (Argumentação Continuada)
-A Técnica da Argumentação Continuada é uma metodologia desenvolvida por Narayan Silva para organização de textos acadêmicos complexos. Ela estrutura o texto em parágrafos que dialogam entre si:
+# Create desktop entry
+sudo tee /usr/share/applications/tac.desktop << EOF
+[Desktop Entry]
+Name=TAC
+Comment=Text Analysis and Creation
+Exec=/opt/tac/tac.py
+Icon=document-edit-symbolic
+Type=Application
+Categories=Office;WordProcessor;Education;
+Keywords=writing;academic;text;analysis;creation;
+StartupNotify=true
+EOF
 
-Tópico frasal: Frase inicial que sintetiza o tema do parágrafo
+# Create system launcher
+sudo tee /usr/local/bin/tac << 'EOF'
+#!/bin/bash
+cd /opt/tac
+python3 tac.py "$@"
+EOF
+sudo chmod +x /usr/local/bin/tac
+```
 
-Argumentação: Desenvolvimento do tema
+## 🚀 Usage
 
-Argumentação com citação: Suporte à argumentação com referências externas
+### Running TAC
 
-Conclusão: Fechamento da ideia apresentada
+From the project directory:
+```bash
+python3 tac.py
+```
 
-#Instalação
+Or if installed system-wide:
+```bash
+tac
+```
 
-#Pré-requisitos
+### Basic Workflow
 
-Python 3.11+
+1. **Create a New Project**:
+   - Click "Start" on a template or use Ctrl+N
+   - Enter project name and details
+   - Choose from academic templates
 
-GTK 3
+2. **Write Your Content**:
+   - Add different paragraph types using the toolbar
+   - Use the guided structure for academic writing
+   - Format text with the built-in tools
 
-GtkSourceView 3
+3. **Save and Export**:
+   - Projects auto-save as you work
+   - Export to various formats (TXT, HTML, ODT, RTF)
+   - Share or submit your completed work
 
-Pacotes Python: PyGObject, odfpy
+### Keyboard Shortcuts
 
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl+N` | New Project |
+| `Ctrl+O` | Open Project |
+| `Ctrl+S` | Save Project |
+| `Ctrl+E` | Export Project |
+| `Ctrl+,` | Preferences |
+| `Ctrl+Q` | Quit Application |
 
-#Como Usar
+## 🏗️ Project Structure
 
-Clique em "COMEÇAR A ESCREVER"
+```
+tac/
+├── tac.py              # Main entry point
+├── application.py      # Application class
+├── requirements.txt    # Python dependencies
+├── README.md          # This file
+├── core/              # Core functionality
+│   ├── __init__.py
+│   ├── config.py      # Configuration management
+│   ├── models.py      # Data models
+│   └── services.py    # Business logic
+├── ui/                # User interface
+│   ├── __init__.py
+│   ├── main_window.py # Main window
+│   ├── components.py  # UI components
+│   └── dialogs.py     # Dialog windows
+└── utils/             # Utilities
+    ├── __init__.py
+    └── helpers.py     # Helper functions
+```
 
-Selecione o tipo de parágrafo que deseja criar:
+## 🎨 Themes and Customization
 
-Tópico Frasal
+TAC follows your system theme automatically and supports:
 
-Argumentação
+- **Light/Dark Mode**: Switches with system preference
+- **Accent Colors**: Uses system accent colors
+- **Font Customization**: Choose from system fonts
+- **Custom Templates**: Create your own document templates
 
-Argumentação com citação
+## 🔧 Configuration
 
-Conclusão
+TAC stores configuration in XDG-compliant directories:
 
-Escreva seu conteúdo
+- **Config**: `~/.config/tac/`
+- **Data**: `~/.local/share/tac/`
+- **Cache**: `~/.cache/tac/`
 
-Formate o texto conforme necessário
+## 🤝 Contributing
 
-Salve seu projeto para continuar depois
+We welcome contributions! Here's how to get started:
 
-Exporte para ODT quando finalizado
+### Development Setup
 
-#Contribuição
+```bash
+# Clone repository
+git clone https://github.com/user/tac.git
+cd tac
 
-Contribuições são bem-vindas! Por favor, abra uma issue para discutir mudanças significativas antes de enviar um pull request.
+# Install development dependencies
+sudo pacman -S python-pytest python-black python-flake8 python-mypy
 
+# Install pre-commit hooks (optional)
+pip install --user pre-commit
+pre-commit install
+```
 
-Este projeto está licenciado sob a Licença GPL 3.0 - veja o arquivo LICENSE para detalhes.
+### Code Style
 
+- **Python**: Follow PEP 8, use `black` for formatting
+- **Comments**: English only, clear and concise
+- **UI Strings**: Translatable (future i18n support)
+- **Git Commits**: Conventional commits format
+
+### Testing
+
+```bash
+# Run tests
+python -m pytest
+
+# Type checking
+mypy tac/
+
+# Code formatting
+black tac/
+
+# Linting
+flake8 tac/
+```
+
+## 🐛 Bug Reports
+
+Found a bug? Please report it on our [GitHub Issues](https://github.com/user/tac/issues) with:
+
+- **System info**: OS, DE, GTK version
+- **Steps to reproduce**: Clear, numbered steps
+- **Expected vs actual behavior**
+- **Screenshots** (if applicable)
+
+## 📋 Roadmap
+
+- [ ] **Internationalization** (i18n) support
+- [ ] **Plugin system** for custom paragraph types
+- [ ] **Collaborative editing** features
+- [ ] **Advanced formatting** (tables, images, citations)
+- [ ] **Integration** with reference managers
+- [ ] **Export to LaTeX** and academic formats
+- [ ] **Grammar and style checking**
+
+## 📄 License
+
+This project is licensed under the **GNU General Public License v3.0**.
+
+See the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- **GNOME Team** for GTK4 and libadwaita
+- **Python GObject** community
+- **Arch Linux** and **Manjaro** communities
+- **BigCommunity** for inspiration and support
+
+## 📞 Support
+
+- **Documentation**: [GitHub Wiki](https://github.com/user/tac/wiki)
+- **Community**: [Discussions](https://github.com/user/tac/discussions)
+- **Issues**: [Bug Tracker](https://github.com/user/tac/issues)
+
+---
+
+<div align="center">
+
+**Made with ❤️ for the academic writing community**
+
+[Website](https://github.com/user/tac) • [Issues](https://github.com/user/tac/issues) • [Discussions](https://github.com/user/tac/discussions)
+
+</div>
