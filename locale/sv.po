@@ -1,0 +1,2757 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the tac-writer package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+# 
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: tac-writer\n"
+"Report-Msgid-Bugs-To: \n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: attranslate\n"
+# 
+# File: usr/share/tac-writer/utils/helpers.py, line: 57
+#: NEEDS WORK
+msgid "Unknown"
+msgstr "Okänd"
+# 
+# File: usr/share/tac-writer/utils/helpers.py, line: 172
+#: NEEDS WORK
+msgid "0 minutes"
+msgstr "0 minuter"
+# 
+# File: usr/share/tac-writer/utils/helpers.py, line: 177
+#: NEEDS WORK
+msgid "< 1 minute"
+msgstr "< 1 minut"
+# 
+# File: usr/share/tac-writer/utils/helpers.py, line: 181
+#: NEEDS WORK
+msgid "1 minute"
+msgstr "1 minut"
+# 
+# File: usr/share/tac-writer/utils/helpers.py, line: 183
+#: NEEDS WORK
+#, python-brace-format
+msgid "{} minutes"
+msgstr "{} minuter"
+# 
+# File: usr/share/tac-writer/utils/helpers.py, line: 187
+#: NEEDS WORK
+#, python-brace-format
+msgid "{}h {}m"
+msgstr "{}h {}m"
+# 
+# File: usr/share/tac-writer/utils/helpers.py, line: 221
+#: NEEDS WORK
+msgid "Project name cannot be empty"
+msgstr "Projektnamn kan inte vara tomt"
+# 
+# File: usr/share/tac-writer/utils/helpers.py, line: 226
+#: NEEDS WORK
+msgid "Project name must be at least 2 characters long"
+msgstr "Projektnamnet måste vara minst 2 tecken långt"
+# 
+# File: usr/share/tac-writer/utils/helpers.py, line: 229
+#: NEEDS WORK
+msgid "Project name cannot exceed 100 characters"
+msgstr "Projektnamn får inte överstiga 100 tecken"
+# 
+# File: usr/share/tac-writer/utils/helpers.py, line: 232
+#: NEEDS WORK
+msgid "Project name contains invalid characters"
+msgstr "Projektnamnet innehåller ogiltiga tecken"
+# 
+# File: usr/share/tac-writer/utils/helpers.py, line: 249
+#: NEEDS WORK
+msgid "Path cannot be empty"
+msgstr "Sökväg kan inte vara tom"
+# 
+# File: usr/share/tac-writer/utils/helpers.py, line: 256
+#: NEEDS WORK
+msgid "Parent directory does not exist"
+msgstr "Föräldramapp finns inte"
+# 
+# File: usr/share/tac-writer/utils/helpers.py, line: 260
+#: NEEDS WORK
+msgid "Path is too long"
+msgstr "Sökvägen är för lång"
+# 
+# File: usr/share/tac-writer/utils/helpers.py, line: 265
+#: NEEDS WORK
+#, python-brace-format
+msgid "Invalid path: {}"
+msgstr "Ogiltig sökväg: {}"
+# 
+# File: usr/share/tac-writer/utils/helpers.py, line: 275
+#: NEEDS WORK
+msgid "1 paragraph"
+msgstr "1 stycke"
+# 
+# File: usr/share/tac-writer/utils/helpers.py, line: 277
+#: NEEDS WORK
+#, python-brace-format
+msgid "{count} paragraphs"
+msgstr "{count} stycken"
+# 
+# File: usr/share/tac-writer/utils/helpers.py, line: 283
+#: NEEDS WORK
+msgid "1 word"
+msgstr "nyckel"
+# 
+# #-#-#-#-#  tac-writer.pot (tac-writer)  #-#-#-#-#
+# 
+# File: usr/share/tac-writer/utils/helpers.py, line: 285
+# File: usr/share/tac-writer/ui/components.py, line: 1244
+#: NEEDS WORK
+#, python-brace-format
+msgid "{count} words"
+msgstr "{count} ord"
+# 
+# File: usr/share/tac-writer/utils/helpers.py, line: 330
+#: NEEDS WORK
+msgid "{:,} words"
+msgstr "{:,} ord"
+# 
+# File: usr/share/tac-writer/utils/helpers.py, line: 332
+#: NEEDS WORK
+msgid "{:,} characters"
+msgstr "{:,} tecken"
+# 
+# File: usr/share/tac-writer/utils/helpers.py, line: 348
+# File: usr/share/tac-writer/utils/helpers.py, line: 365
+#: NEEDS WORK
+msgid "Info"
+msgstr "Info"
+# 
+# File: usr/share/tac-writer/utils/helpers.py, line: 349
+#: NEEDS WORK
+#, python-brace-format
+msgid "Type: {}"
+msgstr "Typ: {}"
+# 
+# File: usr/share/tac-writer/utils/helpers.py, line: 350
+#: NEEDS WORK
+#, python-brace-format
+msgid "Module: {}"
+msgstr "Modul: {}"
+# 
+# File: usr/share/tac-writer/utils/helpers.py, line: 353
+#: NEEDS WORK
+msgid "Attributes:"
+msgstr "Attributer:"
+# 
+# File: usr/share/tac-writer/utils/helpers.py, line: 357
+#: NEEDS WORK
+msgid "Methods:"
+msgstr "Metoder:"
+# 
+# File: usr/share/tac-writer/utils/helpers.py, line: 363
+#: NEEDS WORK
+#, python-brace-format
+msgid "  ... and {} more methods"
+msgstr "... och {} fler metoder"
+# 
+# File: usr/share/tac-writer/utils/helpers.py, line: 371
+#: NEEDS WORK
+#, python-brace-format
+msgid "Performance: {} took {:.3f} seconds"
+msgstr "Prestanda: {} tog {:.3f} sekunder"
+# 
+# File: usr/share/tac-writer/main.py, line: 41
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error: Required dependencies not found: {}"
+msgstr "Fel: Nödvändiga beroenden hittades inte: {}"
+# 
+# File: usr/share/tac-writer/main.py, line: 42
+#: NEEDS WORK
+msgid "Please install: python3-gi python3-gi-cairo gir1.2-gtk-4.0 gir1.2-adwaita-1"
+msgstr "Vänligen installera: python3-gi python3-gi-cairo gir1.2-gtk-4.0 gir1.2-adwaita-1"
+# 
+# File: usr/share/tac-writer/main.py, line: 50
+#: NEEDS WORK
+msgid "Error: GTK 4.0 or higher is required"
+msgstr "Fel: GTK 4.0 eller högre krävs"
+# 
+# File: usr/share/tac-writer/main.py, line: 55
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error checking dependencies: {}"
+msgstr "Fel vid kontroll av beroenden: {}"
+# 
+# File: usr/share/tac-writer/main.py, line: 73
+#: NEEDS WORK
+msgid "Application interrupted by user."
+msgstr "Applikationen avbröts av användaren."
+# 
+# File: usr/share/tac-writer/main.py, line: 76
+#: NEEDS WORK
+#, python-brace-format
+msgid "Critical error during startup: {}"
+msgstr "Kritiskt fel vid uppstart: {}"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 77
+#: NEEDS WORK
+msgid "New Project"
+msgstr "Nytt projekt"
+# 
+# #-#-#-#-#  tac-writer.pot (tac-writer)  #-#-#-#-#
+# 
+# #-#-#-#-#  tac-writer.pot (tac-writer)  #-#-#-#-#
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 101
+# File: usr/share/tac-writer/ui/dialogs.py, line: 334
+# File: usr/share/tac-writer/ui/dialogs.py, line: 481
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1194
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1255
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1327
+# File: usr/share/tac-writer/ui/components.py, line: 880
+# File: usr/share/tac-writer/ui/components.py, line: 917
+# File: usr/share/tac-writer/ui/components.py, line: 1264
+# File: usr/share/tac-writer/ui/components.py, line: 1386
+# File: usr/share/tac-writer/ui/main_window.py, line: 618
+#: NEEDS WORK
+msgid "Cancel"
+msgstr "Avbryt"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 107
+#: NEEDS WORK
+msgid "Create"
+msgstr "Skapa"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 139
+#: NEEDS WORK
+msgid "Project Details"
+msgstr "Projektinformation"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 143
+# File: usr/share/tac-writer/ui/dialogs.py, line: 356
+#: NEEDS WORK
+msgid "Project Name"
+msgstr "Projektets namn"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 145
+#: NEEDS WORK
+msgid "Enter project name..."
+msgstr "Ange projektnamn..."
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 146
+#: NEEDS WORK
+msgid "My New Project"
+msgstr "Mitt nya projekt"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 163
+#: NEEDS WORK
+msgid "Author"
+msgstr "Författare"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 165
+#: NEEDS WORK
+msgid "Your name..."
+msgstr "Ditt namn..."
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 174
+#: NEEDS WORK
+msgid "Description"
+msgstr "Beskrivning"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 206
+#: NEEDS WORK
+msgid "Template"
+msgstr "Mall"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 207
+#: NEEDS WORK
+msgid "Choose a template to start with"
+msgstr "Välj en mall att börja med"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 216
+#: NEEDS WORK
+msgid "Document Template"
+msgstr "Dokumentmall"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 286
+#: NEEDS WORK
+msgid "Project name is too long (max 100 characters)"
+msgstr "Projektnamnet är för långt (max 100 tecken)"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 299
+#: NEEDS WORK
+msgid "Failed to save project to database"
+msgstr "Misslyckades med att spara projektet till databasen"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 309
+#: NEEDS WORK
+msgid "Invalid Input"
+msgstr "Ogiltig inmatning"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 303
+# File: usr/share/tac-writer/ui/dialogs.py, line: 553
+# File: usr/share/tac-writer/ui/dialogs.py, line: 569
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1182
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1233
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1298
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1314
+#: NEEDS WORK
+msgid "OK"
+msgstr "OK"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 300
+#: NEEDS WORK
+msgid "Error Creating Project"
+msgstr "Fel vid skapande av projekt"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 331
+#: NEEDS WORK
+msgid "Unexpected Error"
+msgstr "Oväntat fel"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 333
+#: NEEDS WORK
+msgid "An unexpected error occurred. Please report this issue:"
+msgstr "Ett oväntat fel inträffade. Vänligen rapportera detta problem:"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 314
+#: NEEDS WORK
+msgid "Export Project"
+msgstr "Exportera projekt"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 339
+# File: usr/share/tac-writer/ui/dialogs.py, line: 543
+#: NEEDS WORK
+msgid "Export"
+msgstr "Exportera"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 352
+#: NEEDS WORK
+msgid "Project Information"
+msgstr "Projektinformation"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 362
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1041
+#: NEEDS WORK
+msgid "Statistics"
+msgstr "Statistik"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 363
+#: NEEDS WORK
+#, python-brace-format
+msgid "{} words, {} paragraphs"
+msgstr "{} ord, {} stycken"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 368
+#: NEEDS WORK
+msgid "Export Options"
+msgstr "Exportalternativet"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 373
+#: NEEDS WORK
+msgid "Format"
+msgstr "Format"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 393
+#: NEEDS WORK
+msgid "Include Metadata"
+msgstr "Inkludera metadata"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 394
+#: NEEDS WORK
+msgid "Include author, creation date, and other project information"
+msgstr "Inkludera författare, skapelsedatum och annan projektinformation"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 400
+#: NEEDS WORK
+msgid "Output Location"
+msgstr "Utmatningsplats"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 404
+#: NEEDS WORK
+msgid "Save Location"
+msgstr "Spara plats"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 405
+#: NEEDS WORK
+msgid "Click to choose location"
+msgstr "Klicka för att välja plats"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 408
+#: NEEDS WORK
+msgid "Choose..."
+msgstr "Välj..."
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 452
+#: NEEDS WORK
+#, python-brace-format
+msgid "Warning: Could not create default export directory: {}"
+msgstr "Varning: Kunde inte skapa standardexportkatalog: {}"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 477
+#: NEEDS WORK
+msgid "Choose Export Location"
+msgstr "Välj exportplats"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 480
+#: NEEDS WORK
+msgid "Select"
+msgstr "Välj"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 499
+#: NEEDS WORK
+msgid "Exporting..."
+msgstr "Exporterar..."
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 550
+#: NEEDS WORK
+msgid "Export Successful"
+msgstr "Exporten lyckades"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 551
+#: NEEDS WORK
+#, python-brace-format
+msgid ""
+"Project exported to:\n"
+"{}"
+msgstr ""
+"Projektet exporterades till:\n"
+"{}"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 563
+#: NEEDS WORK
+msgid "An error occurred while exporting the project."
+msgstr "Ett fel uppstod vid export av projektet."
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 566
+#: NEEDS WORK
+msgid "Export Failed"
+msgstr "Exporten misslyckades"
+# 
+# #-#-#-#-#  tac-writer.pot (tac-writer)  #-#-#-#-#
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 582
+# File: usr/share/tac-writer/ui/main_window.py, line: 154
+#: NEEDS WORK
+msgid "Preferences"
+msgstr "Inställningar"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 597
+#: NEEDS WORK
+msgid "General"
+msgstr "Allmänt"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 603
+#: NEEDS WORK
+msgid "Appearance"
+msgstr "Utseende"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 608
+#: NEEDS WORK
+msgid "Dark Theme"
+msgstr "Mörkt tema"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 609
+#: NEEDS WORK
+msgid "Use dark theme for the application"
+msgstr "Använd mörkt tema för applikationen"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 615
+#: NEEDS WORK
+msgid "Editor"
+msgstr "Redigerare"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 648
+#: NEEDS WORK
+msgid "Behavior"
+msgstr "Beteende"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 653
+#: NEEDS WORK
+msgid "Auto Save"
+msgstr "Automatisk sparande"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 654
+#: NEEDS WORK
+msgid "Automatically save projects while editing"
+msgstr "Spara automatiskt projekt medan du redigerar"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 660
+#: NEEDS WORK
+msgid "Word Wrap"
+msgstr "Radbrytning"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 661
+#: NEEDS WORK
+msgid "Wrap text to fit the editor width"
+msgstr "Bryt text för att passa redigerarens bredd"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 667
+#: NEEDS WORK
+msgid "Show Line Numbers"
+msgstr "Visa radnummer"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 668
+#: NEEDS WORK
+msgid "Display line numbers in the editor"
+msgstr "Visa radnummer i redigeraren"
+# 
+# #-#-#-#-#  tac-writer.pot (tac-writer)  #-#-#-#-#
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 717
+# File: usr/share/tac-writer/ui/main_window.py, line: 1380
+#: NEEDS WORK
+msgid "AI Assistant"
+msgstr "AI-assistent"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 722
+#: NEEDS WORK
+msgid "Assistant Settings"
+msgstr "Assistentinställningar"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 724
+#: NEEDS WORK
+msgid "Configure the provider and credentials used to generate suggestions."
+msgstr "Konfigurera leverantören och autentiseringsuppgifterna som används för att generera förslag."
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 729
+#: NEEDS WORK
+msgid "Enable AI Assistant"
+msgstr "Aktivera AI-assistent"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 730
+#: NEEDS WORK
+msgid "Allow prompts to use an external provider (Ctrl+Shift+I)."
+msgstr "Tillåt uppmaningar att använda en extern leverantör (Ctrl+Shift+I)."
+# 
+# #-#-#-#-#  tac-writer.pot (tac-writer)  #-#-#-#-#
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 736
+# File: usr/share/tac-writer/ui/main_window.py, line: 1133
+#: NEEDS WORK
+msgid "Provider"
+msgstr "Leverantör"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 748
+#: NEEDS WORK
+msgid "Model Identifier"
+msgstr "Modellidentifierare"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 749
+#: NEEDS WORK
+msgid "Examples:gemini-2.5-flash."
+msgstr "exempel:gemini-2.5-blink."
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 752
+#: NEEDS WORK
+msgid "gemini-2.5-flash"
+msgstr "gemini-2.5-blink"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 759
+#: NEEDS WORK
+msgid "API Key"
+msgstr "API-nyckel"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 760
+#: NEEDS WORK
+msgid "Stored locally and used to authenticate requests."
+msgstr "Lagrad lokalt och används för att autentisera förfrågningar."
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 763
+#: NEEDS WORK
+msgid "Paste your API key"
+msgstr "Klistra in din API-nyckel"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 773
+#: NEEDS WORK
+msgid "Site URL (optional)"
+msgstr "Webbplats-URL (valfritt)"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 774
+#: NEEDS WORK
+msgid "Used as HTTP Referer header for OpenRouter rankings."
+msgstr "Används som HTTP Referer-header för OpenRouter-rankningar."
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 777
+#: NEEDS WORK
+msgid "https://example.com"
+msgstr "https://example.com"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 789
+#: NEEDS WORK
+msgid "Site title (optional)"
+msgstr "Sajtens titel (valfritt)"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 790
+#: NEEDS WORK
+msgid "Sent via X-Title header for OpenRouter rankings."
+msgstr "Skickat via X-Title-header för OpenRouter-rankningar."
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 793
+#: NEEDS WORK
+msgid "My Project"
+msgstr "Mitt projekt"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 737
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error loading preferences: {}"
+msgstr "Fel vid inläsning av inställningar: {}"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 751
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error changing theme: {}"
+msgstr "Fel vid ändring av tema: {}"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 760
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error changing font family: {}"
+msgstr "Fel vid ändring av teckensnittsfamilj: {}"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 767
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error changing font size: {}"
+msgstr "Fel vid ändring av teckenstorlek: {}"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 774
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error changing auto save: {}"
+msgstr "Fel vid ändring av automatisk sparning: {}"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 781
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error changing word wrap: {}"
+msgstr "Fel vid ändring av radbrytning: {}"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 788
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error changing line numbers: {}"
+msgstr "Fel vid ändring av radnummer: {}"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 946
+#: NEEDS WORK
+msgid "Gemini model identifier (for example: gemini-2.5-flash)."
+msgstr "Gemini-modellidentifierare (till exempel: gemini-2.5-flash)."
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 948
+#: NEEDS WORK
+msgid "Google AI Studio API key."
+msgstr "Google AI Studio API-nyckel."
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 950
+#: NEEDS WORK
+msgid "OpenRouter model identifier (for example: x-ai/grok-4.1-fast:free)."
+msgstr "OpenRouter modellidentifierare (till exempel: x-ai/grok-4.1-fast:free)."
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 956
+#: NEEDS WORK
+msgid "OpenRouter API key."
+msgstr "OpenRouter API-nyckel."
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 960
+#: NEEDS WORK
+msgid "model-name"
+msgstr "modellnamn"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 962
+#: NEEDS WORK
+msgid "Model identifier required by the selected provider."
+msgstr "Modellidentifierare krävs av den valda leverantören."
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 964
+#: NEEDS WORK
+msgid "API key used to authenticate requests."
+msgstr "API-nyckel som används för att autentisera förfrågningar."
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 833
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error applying welcome dialog CSS: {}"
+msgstr "Fel vid tillämpning av välkomstdialogens CSS: {}"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 793
+#: NEEDS WORK
+msgid "What is TAC Writer?"
+msgstr "Vad är TAC Writer?"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 804
+#: NEEDS WORK
+msgid "Continuous Argumentation Technique (TAC in Portuguese):"
+msgstr "Kontinuerlig Argumentationsteknik (TAC på portugisiska):"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1057
+#: NEEDS WORK
+msgid ""
+"Tac Writer is a tool based on the TAC technique (Continued Argumentation Technique) and the "
+"Pomodoro method. TAC technique helps writers develop an idea in an organized manner, separating the "
+"paragraph into different stages. Read wiki to take advantage of all the resources. To open wiki "
+"click on '?' icon"
+msgstr ""
+"Tac Writer är ett verktyg baserat på TAC-tekniken (Continued Argumentation Technique) och "
+"Pomodoro-metoden. TAC-tekniken hjälper skribenter att utveckla en idé på ett organiserat sätt, "
+"genom att separera stycket i olika faser. Läs wiki för att dra nytta av alla resurser. För att "
+"öppna wiki klicka på '?' ikonen."
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 822
+#: NEEDS WORK
+msgid "Learn More - Online Documentation"
+msgstr "Läs mer - Online-dokumentation"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 826
+#: NEEDS WORK
+msgid "Access the complete guide and tutorials"
+msgstr "Åtkomst till den kompletta guiden och handledningarna"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 843
+#: NEEDS WORK
+msgid "Show this dialog on startup"
+msgstr "Visa denna dialog vid start"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 861
+#: NEEDS WORK
+msgid "Let's Start"
+msgstr "Låt oss börja"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 949
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error saving welcome dialog preference: {}"
+msgstr "Fel vid sparande av inställning för välkomstdialog: {}"
+# 
+# #-#-#-#-#  tac-writer.pot (tac-writer)  #-#-#-#-#
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 969
+# File: usr/share/tac-writer/ui/components.py, line: 662
+#: NEEDS WORK
+#, python-brace-format
+msgid "Could not open wiki URL: {}"
+msgstr "Kunde inte öppna wiki-URL: {}"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 978
+#: NEEDS WORK
+msgid "Backup Manager"
+msgstr "Säkerhetskopieringshanterare"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1000
+#: NEEDS WORK
+msgid "Close"
+msgstr "Stäng"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1006
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1167
+#: NEEDS WORK
+msgid "Create Backup"
+msgstr "Skapa säkerhetskopia"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1013
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1190
+#: NEEDS WORK
+msgid "Import Database"
+msgstr "Importera databas"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1029
+#: NEEDS WORK
+msgid "Current Database"
+msgstr "Aktuell databas"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1072
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error getting database info: {}"
+msgstr "Fel vid hämtning av databasinformation: {}"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1035
+#: NEEDS WORK
+msgid "Database Location"
+msgstr "Databasens plats"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1042
+#: NEEDS WORK
+#, python-brace-format
+msgid "{} projects, {} MB"
+msgstr "{} projekt, {} MB"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1053
+#: NEEDS WORK
+msgid "Available Backups"
+msgstr "Tillgängliga säkerhetskopior"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1054
+#: NEEDS WORK
+msgid "Backups are stored in Documents/TAC Projects/database_backups"
+msgstr "Säkerhetskopior lagras i Dokument/TAC Projekt/databas_säkerhetskopior"
+# 
+# #-#-#-#-#  tac-writer.pot (tac-writer)  #-#-#-#-#
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1137
+# File: usr/share/tac-writer/core/services.py, line: 722
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error listing backups: {}"
+msgstr "Fel vid uppräkning av säkerhetskopior: {}"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1093
+#: NEEDS WORK
+msgid "No backups found"
+msgstr "Inga säkerhetskopior hittades"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1094
+#: NEEDS WORK
+msgid "Create a backup or import an existing database file"
+msgstr "Skapa en säkerhetskopia eller importera en befintlig databasfil"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1112
+#: NEEDS WORK
+#, python-brace-format
+msgid "{:.1f} MB • {} projects • {}"
+msgstr "{:.1f} MB • {} projekt • {}"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1120
+#: NEEDS WORK
+msgid "Valid backup"
+msgstr "Giltig säkerhetskopia"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1123
+#: NEEDS WORK
+msgid "Invalid or corrupted backup"
+msgstr "Ogiltig eller skadad säkerhetskopia"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1135
+#: NEEDS WORK
+msgid "Import this backup"
+msgstr "Importera denna säkerhetskopia"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1143
+#: NEEDS WORK
+msgid "Delete backup"
+msgstr "Ta bort säkerhetskopia"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1155
+#: NEEDS WORK
+msgid "Creating..."
+msgstr "Skapar..."
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1212
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error in backup thread: {}"
+msgstr "Fel i säkerhetskopieringstråden: {}"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1173
+#: NEEDS WORK
+msgid "Backup created successfully"
+msgstr "Säkerhetskopiering skapad framgångsrikt"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1179
+#: NEEDS WORK
+msgid "Backup Failed"
+msgstr "Säkerhetskopiering misslyckades"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1180
+#: NEEDS WORK
+msgid "Could not create backup. Check the console for details."
+msgstr "Kunde inte skapa säkerhetskopian. Kontrollera konsolen för detaljer."
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1193
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1256
+#: NEEDS WORK
+msgid "Import"
+msgstr "Importera"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1199
+#: NEEDS WORK
+msgid "Database files (*.db)"
+msgstr "Databasfiler (*.db)"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1204
+#: NEEDS WORK
+msgid "All files"
+msgstr "Alla filer"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1230
+#: NEEDS WORK
+msgid "Invalid Backup"
+msgstr "Ogiltig säkerhetskopia"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1231
+#: NEEDS WORK
+msgid "The selected file is not a valid TAC database backup."
+msgstr "Den valda filen är inte en giltig TAC-databasbackup."
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1292
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error validating backup: {}"
+msgstr "Fel vid validering av säkerhetskopia: {}"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1302
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error reading backup info: {}"
+msgstr "Fel vid läsning av backupinformation: {}"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1249
+#: NEEDS WORK
+msgid "Import Database?"
+msgstr "Importera databas?"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1250
+#: NEEDS WORK
+#, python-brace-format
+msgid ""
+"This will replace your current database with the selected backup.\n"
+"\n"
+"The backup contains {} projects.\n"
+"\n"
+"Your current database will be backed up before importing."
+msgstr ""
+"Detta kommer att ersätta din nuvarande databas med den valda säkerhetskopian.\n"
+"\n"
+"Säkerhetskopian innehåller {} projekt.\n"
+"\n"
+"Din nuvarande databas kommer att säkerhetskopieras innan import."
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1275
+#: NEEDS WORK
+msgid "Importing Database"
+msgstr "Importerar databas"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1276
+#: NEEDS WORK
+msgid "Please wait while the database is being imported..."
+msgstr "Vänligen vänta medan databasen importeras..."
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1344
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error in import thread: {}"
+msgstr "Fel vid importtråd: {}"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1295
+#: NEEDS WORK
+msgid "Import Successful"
+msgstr "Importen lyckades"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1296
+#: NEEDS WORK
+msgid "Database imported successfully. The application will refresh to show the imported projects."
+msgstr ""
+"Databasen har importerats framgångsrikt. Applikationen kommer att uppdateras för att visa de "
+"importerade projekten."
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1311
+#: NEEDS WORK
+msgid "Import Failed"
+msgstr "Importen misslyckades"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1312
+#: NEEDS WORK
+msgid "Could not import the database. Your current database remains unchanged."
+msgstr "Kunde inte importera databasen. Din nuvarande databas förblir oförändrad."
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1323
+#: NEEDS WORK
+msgid "Delete Backup?"
+msgstr "Ta bort säkerhetskopia?"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1324
+#: NEEDS WORK
+#, python-brace-format
+msgid ""
+"Are you sure you want to delete '{}'?\n"
+"\n"
+"This action cannot be undone."
+msgstr ""
+"Är du säker på att du vill ta bort '{}'?\n"
+"\n"
+"Denna åtgärd kan inte ångras."
+# 
+# #-#-#-#-#  tac-writer.pot (tac-writer)  #-#-#-#-#
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1328
+# File: usr/share/tac-writer/ui/components.py, line: 918
+#: NEEDS WORK
+msgid "Delete"
+msgstr "Ta bort"
+# 
+# #-#-#-#-#  tac-writer.pot (tac-writer)  #-#-#-#-#
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1406
+# File: usr/share/tac-writer/core/services.py, line: 808
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error deleting backup: {}"
+msgstr "Fel vid radering av säkerhetskopia: {}"
+# 
+# #-#-#-#-#  tac-writer.pot (tac-writer)  #-#-#-#-#
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1609
+# File: usr/share/tac-writer/ui/main_window.py, line: 627
+#: NEEDS WORK
+msgid "Edit Image"
+msgstr "Redigera bild"
+# 
+# #-#-#-#-#  tac-writer.pot (tac-writer)  #-#-#-#-#
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1421
+# File: usr/share/tac-writer/ui/main_window.py, line: 357
+#: NEEDS WORK
+msgid "Insert Image"
+msgstr "Infoga bild"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1649
+#: NEEDS WORK
+msgid "Update"
+msgstr "Uppdatera"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1454
+#: NEEDS WORK
+msgid "Insert"
+msgstr "Infoga"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1478
+#: NEEDS WORK
+msgid "Image File"
+msgstr "Bildfil"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1479
+#: NEEDS WORK
+msgid "Select an image file to insert into your document"
+msgstr "Välj en bildfil att infoga i ditt dokument"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1484
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1658
+#: NEEDS WORK
+msgid "Select Image"
+msgstr "Välj bild"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1485
+#: NEEDS WORK
+msgid "No file selected"
+msgstr "Ingen fil vald"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1489
+#: NEEDS WORK
+msgid "Browse..."
+msgstr "Bläddra..."
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1501
+#: NEEDS WORK
+msgid "Preview"
+msgstr "Förhandsgranskning"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1523
+#: NEEDS WORK
+msgid "Image Formatting"
+msgstr "Bildformattering"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1529
+#: NEEDS WORK
+msgid "Display Width (%)"
+msgstr "Visningsbredd (%)"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1530
+#: NEEDS WORK
+msgid "Percentage of page width"
+msgstr "Procentandel av sidbredd"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1548
+#: NEEDS WORK
+msgid "Alignment"
+msgstr "Justering"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1549
+#: NEEDS WORK
+msgid "Image position on the page"
+msgstr "Bildens position på sidan"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1556
+#: NEEDS WORK
+msgid "Left"
+msgstr "Vänster"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1557
+#: NEEDS WORK
+msgid "Center"
+msgstr "Center"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1558
+#: NEEDS WORK
+msgid "Right"
+msgstr "Höger"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1579
+#: NEEDS WORK
+msgid "Caption (optional)"
+msgstr "Rubrik (valfritt)"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1585
+#: NEEDS WORK
+msgid "Alternative Text (optional)"
+msgstr "Alternativ text (valfritt)"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1592
+#: NEEDS WORK
+msgid "Position in Document"
+msgstr "Position i dokumentet"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1598
+#: NEEDS WORK
+msgid "Insert After"
+msgstr "Infoga efter"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1599
+#: NEEDS WORK
+msgid "Choose where to place the image"
+msgstr "Välj var du vill placera bilden"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1610
+#: NEEDS WORK
+msgid "Beginning of document"
+msgstr "Dokumentets början"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1620
+#: NEEDS WORK
+msgid "Image"
+msgstr "Bild"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1622
+#: NEEDS WORK
+msgid "(empty)"
+msgstr "(ingen)"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1645
+#: NEEDS WORK
+msgid "Image Files"
+msgstr "Bildfiler"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1672
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error selecting file: {}"
+msgstr "Fel vid val av fil: {}"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1695
+#: NEEDS WORK
+#, python-brace-format
+msgid "Size: {} x {} pixels  •  {:.1f} KB"
+msgstr "Storlek: {} x {} pixlar  •  {:.1f} KB"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1714
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error loading image: {}"
+msgstr "Fel vid inläsning av bild: {}"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1718
+#: NEEDS WORK
+msgid "Error Loading Image"
+msgstr "Fel vid inläsning av bild"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1901
+#: NEEDS WORK
+msgid "Could not load the selected image file."
+msgstr "Kunde inte ladda den valda bildfilen."
+# 
+# #-#-#-#-#  tac-writer.pot (tac-writer)  #-#-#-#-#
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 2013
+# File: usr/share/tac-writer/ui/main_window.py, line: 733
+#: NEEDS WORK
+msgid "Error updating image"
+msgstr "Fel vid uppdatering av bild"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 1056
+#: NEEDS WORK
+msgid "Error inserting image"
+msgstr "Fel vid insättning av bild"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 2021
+#: NEEDS WORK
+#, python-brace-format
+msgid "Could not {} the image."
+msgstr "Kunde inte {} bilden."
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 2021
+#: NEEDS WORK
+msgid "update"
+msgstr "uppdatera"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 2021
+#: NEEDS WORK
+msgid "insert"
+msgstr "infoga"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 2069
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error loading existing image: {}"
+msgstr "Fel vid inläsning av befintlig bild: {}"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1992
+#: NEEDS WORK
+msgid "PDF Review by AI"
+msgstr "PDF-granskning av AI"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 2027
+#: NEEDS WORK
+msgid ""
+"Select a PDF file of your text for review.\n"
+"The AI ​​will perform a spelling, grammar, and semantic analysis.\n"
+"IMPORTANT: Consider the 10,000 character limit for free APIs. Splitting your text into multiple "
+"files may be an alternative to paid API."
+msgstr ""
+"Välj en PDF-fil av din text för granskning.  \n"
+"AI:n kommer att utföra en stavnings-, grammatik- och semantisk analys.  \n"
+"VIKTIGT: Tänk på gränsen på 10 000 tecken för gratis-API:er. Att dela upp din text i flera filer "
+"kan vara ett alternativ till betalda API:er."
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 2041
+#: NEEDS WORK
+msgid "Choose PDF..."
+msgstr "Välj PDF..."
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 2049
+#: NEEDS WORK
+msgid "Run Analysis"
+msgstr "Kör analys"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 2065
+#: NEEDS WORK
+msgid "Select PDF"
+msgstr "Välj PDF"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 2092
+#: NEEDS WORK
+msgid "Analyzing (may take a few minutes)"
+msgstr "Analyserar (kan ta några minuter)"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 2105
+#: NEEDS WORK
+msgid "Analysis Results"
+msgstr "Analysresultat"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 163
+#: NEEDS WORK
+#, python-brace-format
+msgid "Session {}"
+msgstr "Session {}"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 170
+#: NEEDS WORK
+msgid "Long Break"
+msgstr "Lång paus"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 176
+#: NEEDS WORK
+msgid "Rest Time"
+msgstr "Vilotid"
+# 
+# #-#-#-#-#  tac-writer.pot (tac-writer)  #-#-#-#-#
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 189
+# File: usr/share/tac-writer/ui/main_window.py, line: 115
+#: NEEDS WORK
+msgid "Pomodoro Timer"
+msgstr "Pomodoro-timer"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 228
+#: NEEDS WORK
+msgid "Minimize"
+msgstr "Minimera"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 281
+#: NEEDS WORK
+msgid "Reset"
+msgstr "Återställ"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 360
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error setting up Pomodoro dialog styles: {}"
+msgstr "Fel vid inställning av Pomodoro-dialogstilar: {}"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 386
+#: NEEDS WORK
+msgid "⏸ Pause"
+msgstr "⏸ Pausa"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 390
+#: NEEDS WORK
+msgid "▶ Start"
+msgstr "▶ Start"
+# 
+# #-#-#-#-#  tac-writer.pot (tac-writer)  #-#-#-#-#
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 494
+# File: usr/share/tac-writer/application.py, line: 229
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error checking dictionary {}: {}"
+msgstr "Felkontroll av ordbok {}: {}"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 497
+#: NEEDS WORK
+#, python-brace-format
+msgid "Enchant not available for spell checking: {}"
+msgstr "Förbannelse inte tillgänglig för stavningskontroll: {}"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 521
+# File: usr/share/tac-writer/ui/components.py, line: 1020
+#: NEEDS WORK
+#, python-brace-format
+msgid "Spell check setup failed: {}"
+msgstr "Stavningskontrollens installation misslyckades: {}"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 539
+# File: usr/share/tac-writer/ui/components.py, line: 1092
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error toggling spell check: {}"
+msgstr "Fel vid växling av stavningskontroll: {}"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 575
+#: NEEDS WORK
+msgid "Welcome to TAC"
+msgstr "Välkommen till TAC"
+# 
+# #-#-#-#-#  tac-writer.pot (tac-writer)  #-#-#-#-#
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 581
+# File: usr/share/tac-writer/ui/main_window.py, line: 777
+#: NEEDS WORK
+msgid "Continuous Argumentation Technique"
+msgstr "Kontinuerlig Argumentationsteknik"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 588
+#: NEEDS WORK
+msgid "Create structured academic texts with guided paragraph types"
+msgstr "Skapa strukturerade akademiska texter med vägledda stycketyper"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 600
+#: NEEDS WORK
+msgid "How To Wiki"
+msgstr "Hur Man Wiki"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 604
+#: NEEDS WORK
+msgid "Access the online documentation and tutorials"
+msgstr "Åtkomst till den online dokumentationen och handledningarna"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 614
+#: NEEDS WORK
+msgid "Note:"
+msgstr "Obs:"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 614
+#: NEEDS WORK
+msgid "exporting to ODT might require some adjustment in your Office Suite."
+msgstr "Exportering till ODT kan kräva vissa justeringar i din kontorssvit."
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 627
+#: NEEDS WORK
+msgid "Start Writing"
+msgstr "Börja skriva"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 628
+#: NEEDS WORK
+msgid "Choose a template to get started"
+msgstr "Välj en mall för att komma igång"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 638
+#: NEEDS WORK
+msgid "Start"
+msgstr "Starta"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 687
+#: NEEDS WORK
+msgid "Search projects..."
+msgstr "Sök projekt..."
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 781
+#: NEEDS WORK
+msgid "Rename project"
+msgstr "Döp om projekt"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 790
+#: NEEDS WORK
+msgid "Delete project"
+msgstr "Ta bort projekt"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 863
+#: NEEDS WORK
+msgid "Rename Project"
+msgstr "Döp om projekt"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 864
+#: NEEDS WORK
+#, python-brace-format
+msgid "Enter new name for '{}'"
+msgstr "Ange nytt namn för '{}'"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 881
+#: NEEDS WORK
+msgid "Rename"
+msgstr "Byt namn"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 913
+#: NEEDS WORK
+#, python-brace-format
+msgid "Delete '{}'?"
+msgstr "Ta bort '{}' ?"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 914
+#: NEEDS WORK
+msgid "This project will be moved to trash and can be recovered."
+msgstr "Detta projekt kommer att flyttas till papperskorgen och kan återställas."
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1000
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error during paragraph editor initialization: {}"
+msgstr "Fel vid initiering av styckeeditorn: {}"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1044
+#: NEEDS WORK
+msgid "Manage footnotes"
+msgstr "Hantera fotnoter"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1053
+#: NEEDS WORK
+msgid "Toggle spell checking"
+msgstr "Växla stavningskontroll"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1069
+#: NEEDS WORK
+msgid "Remove paragraph"
+msgstr "Ta bort stycke"
+# 
+# #-#-#-#-#  tac-writer.pot (tac-writer)  #-#-#-#-#
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1195
+# File: usr/share/tac-writer/ui/main_window.py, line: 329
+#: NEEDS WORK
+msgid "Title 1"
+msgstr "Titel 1"
+# 
+# #-#-#-#-#  tac-writer.pot (tac-writer)  #-#-#-#-#
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1196
+# File: usr/share/tac-writer/ui/main_window.py, line: 330
+#: NEEDS WORK
+msgid "Title 2"
+msgstr "Titel 2"
+# 
+# #-#-#-#-#  tac-writer.pot (tac-writer)  #-#-#-#-#
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1197
+# File: usr/share/tac-writer/ui/main_window.py, line: 331
+#: NEEDS WORK
+msgid "Introduction"
+msgstr "Introduktion"
+# 
+# #-#-#-#-#  tac-writer.pot (tac-writer)  #-#-#-#-#
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1198
+# File: usr/share/tac-writer/ui/main_window.py, line: 332
+#: NEEDS WORK
+msgid "Argument"
+msgstr "Argument"
+# 
+# #-#-#-#-#  tac-writer.pot (tac-writer)  #-#-#-#-#
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1202
+# File: usr/share/tac-writer/ui/main_window.py, line: 332
+#: NEEDS WORK
+msgid "Argument Resumption"
+msgstr "Argumentåterupptagning"
+# 
+# #-#-#-#-#  tac-writer.pot (tac-writer)  #-#-#-#-#
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1199
+# File: usr/share/tac-writer/ui/main_window.py, line: 333
+#: NEEDS WORK
+msgid "Quote"
+msgstr "Citat"
+# 
+# #-#-#-#-#  tac-writer.pot (tac-writer)  #-#-#-#-#
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1204
+# File: usr/share/tac-writer/ui/main_window.py, line: 334
+#: NEEDS WORK
+msgid "Epigraph"
+msgstr "Epigraf"
+# 
+# #-#-#-#-#  tac-writer.pot (tac-writer)  #-#-#-#-#
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1200
+# File: usr/share/tac-writer/ui/main_window.py, line: 334
+#: NEEDS WORK
+msgid "Conclusion"
+msgstr "Slutsats"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1202
+#: NEEDS WORK
+msgid "Paragraph"
+msgstr "Stycke"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1260
+#: NEEDS WORK
+msgid "Remove Paragraph?"
+msgstr "Ta bort stycke?"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1261
+#: NEEDS WORK
+msgid "This action cannot be undone."
+msgstr "Denna åtgärd kan inte ångras."
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1265
+#: NEEDS WORK
+msgid "Remove"
+msgstr "Ta bort"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1335
+#: NEEDS WORK
+msgid "1 footnote"
+msgstr "1 fotnot"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1337
+#: NEEDS WORK
+#, python-brace-format
+msgid "{} footnotes"
+msgstr "{} fotnoter"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1338
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error setting up spell check: {}"
+msgstr "Fel vid inställning av stavningskontroll: {}"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1364
+#: NEEDS WORK
+msgid "Manage Footnotes"
+msgstr "Hantera fotnoter"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1391
+#: NEEDS WORK
+msgid "Save"
+msgstr "Spara"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1408
+#: NEEDS WORK
+msgid "Add footnotes that will appear as numbered references in your paragraph:"
+msgstr "Lägg till fotnoter som kommer att visas som numrerade referenser i din paragraf:"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1424
+#: NEEDS WORK
+msgid "Add Footnote"
+msgstr "Lägg till fotnot"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1498
+#: NEEDS WORK
+msgid "Enter footnote text..."
+msgstr "Ange fotnotstext..."
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1620
+#: NEEDS WORK
+msgid "Welcome to TAC Writer!"
+msgstr "Välkommen till TAC Writer!"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1621
+#: NEEDS WORK
+msgid "Let's take a quick tour. Click here to create your first project and start writing."
+msgstr "Låt oss ta en snabb rundtur. Klicka här för att skapa ditt första projekt och börja skriva."
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1626
+#: NEEDS WORK
+msgid "Project Library"
+msgstr "Projektbibliotek"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1627
+#: NEEDS WORK
+msgid "All your projects are listed here. You can search, rename, or delete them at any time."
+msgstr "Alla dina projekt listas här. Du kan söka, döpa om eller ta bort dem när som helst."
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1633
+#: NEEDS WORK
+msgid "Stay focused with the built-in Pomodoro timer. Perfect for writing sessions!"
+msgstr "Håll fokus med den inbyggda Pomodoro-timern. Perfekt för skrivsessioner!"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1639
+#: NEEDS WORK
+msgid "Use AI to revise your exported text. Configure in Preferences. Read wiki for guided configuration."
+msgstr ""
+"Använd AI för att revidera din exporterade text. Konfigurera i Inställningar. Läs wiki för vägledd "
+"konfiguration."
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1644
+#: NEEDS WORK
+msgid "Save Your Work"
+msgstr "Spara ditt arbete"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1645
+#: NEEDS WORK
+msgid "Don't worry! Auto-save is enabled by default, but you can also save manually here."
+msgstr "Oroa dig inte! Automatisk sparande är aktiverat som standard, men du kan också spara manuellt här."
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1751
+#: NEEDS WORK
+msgid "Skip Tour"
+msgstr "Hoppa över rundtur"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1757
+#: NEEDS WORK
+msgid "Previous"
+msgstr "Föregående"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1763
+#: NEEDS WORK
+msgid "Next"
+msgstr "Nästa"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1767
+#: NEEDS WORK
+msgid "Finish"
+msgstr "Avsluta"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 64
+#: NEEDS WORK
+msgid "TAC - Continuous Argumentation Technique"
+msgstr "TAC - Kontinuerlig Argumentationsteknik"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 108
+#: NEEDS WORK
+msgid "New Project (Ctrl+N)"
+msgstr "Nytt projekt (Ctrl+N)"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 132
+#: NEEDS WORK
+msgid "Main Menu"
+msgstr "Huvudmeny"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 123
+#: NEEDS WORK
+msgid "Save Project (Ctrl+S)"
+msgstr "Spara projekt (Ctrl+S)"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 149
+#: NEEDS WORK
+msgid "Ask AI Assistant (Ctrl+Shift+I)"
+msgstr "Fråga AI-assistent (Ctrl+Shift+I)"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 165
+#: NEEDS WORK
+msgid "Search..."
+msgstr "Sök..."
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 172
+#: NEEDS WORK
+msgid "Find next occurrence"
+msgstr "Hitta nästa förekomst"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 142
+#: NEEDS WORK
+msgid "Export Project..."
+msgstr "Exportera projekt..."
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 143
+#: NEEDS WORK
+msgid "Backup Manager..."
+msgstr "Säkerhetskopieringshanterare..."
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 148
+# File: usr/share/tac-writer/ui/main_window.py, line: 477
+#: NEEDS WORK
+msgid "Undo"
+msgstr "Ångra"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 149
+# File: usr/share/tac-writer/ui/main_window.py, line: 497
+#: NEEDS WORK
+msgid "Redo"
+msgstr "Gör om"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 159
+#: NEEDS WORK
+msgid "Welcome Guide"
+msgstr "Välkomstguide"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 210
+#: NEEDS WORK
+msgid "Ask AI Assistant"
+msgstr "Fråga AI-assistenten"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 160
+#: NEEDS WORK
+msgid "About TAC"
+msgstr "Om TAC"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 192
+#: NEEDS WORK
+msgid "Projects"
+msgstr "Projekt"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 322
+#: NEEDS WORK
+msgid "Add Paragraph"
+msgstr "Lägg till stycke"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 409
+#: NEEDS WORK
+msgid "Insert Image (Ctrl+Alt+I)"
+msgstr "Infoga bild (Ctrl+Alt+I)"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 357
+#: NEEDS WORK
+msgid "Go to beginning"
+msgstr "Gå till början"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 367
+#: NEEDS WORK
+msgid "Go to end"
+msgstr "Gå till slutet"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 476
+#: NEEDS WORK
+msgid "⚠️ Error: Invalid image data"
+msgstr "⚠️ Fel: Ogiltig bilddata"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 541
+#: NEEDS WORK
+#, python-brace-format
+msgid "⚠️ Image not found: {}"
+msgstr "⚠️ Bild hittades inte: {}"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 549
+#: NEEDS WORK
+#, python-brace-format
+msgid "⚠️ Error loading image: {}"
+msgstr "⚠️ Fel vid inläsning av bild: {}"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 565
+#: NEEDS WORK
+msgid "Remove Image"
+msgstr "Ta bort bild"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 580
+#: NEEDS WORK
+msgid "Remove Image?"
+msgstr "Ta bort bild?"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 581
+#: NEEDS WORK
+msgid "Are you sure you want to remove this image from the document?"
+msgstr "Är du säker på att du vill ta bort den här bilden från dokumentet?"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 603
+#: NEEDS WORK
+msgid "Image removed"
+msgstr "Bild borttagen"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 606
+#: NEEDS WORK
+msgid "Error removing image"
+msgstr "Fel vid borttagning av bild"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 728
+#: NEEDS WORK
+msgid "Image updated"
+msgstr "Bild uppdaterad"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 487
+#: NEEDS WORK
+msgid "Nothing to undo"
+msgstr "Ingenting att ångra"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 507
+#: NEEDS WORK
+msgid "Nothing to redo"
+msgstr "Inget att göra om"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 563
+#: NEEDS WORK
+msgid "Paragraph reordered"
+msgstr "Stycke omordnat"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 789
+#: NEEDS WORK
+msgid "No project open"
+msgstr "Inget projekt öppet"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 614
+#: NEEDS WORK
+msgid "Open Project"
+msgstr "Öppna projekt"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 617
+#: NEEDS WORK
+msgid "Open"
+msgstr "Öppna"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 626
+#: NEEDS WORK
+msgid "TAC Projects (*.json)"
+msgstr "TAC-projekt (*.json)"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 631
+#: NEEDS WORK
+msgid "All Files"
+msgstr "Alla filer"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 645
+# File: usr/share/tac-writer/ui/main_window.py, line: 832
+#: NEEDS WORK
+#, python-brace-format
+msgid "Opened project: {}"
+msgstr "Öppnat projekt: {}"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 647
+# File: usr/share/tac-writer/ui/main_window.py, line: 834
+#: NEEDS WORK
+msgid "Failed to open project"
+msgstr "Misslyckades med att öppna projektet"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 660
+#: NEEDS WORK
+msgid "Project saved successfully"
+msgstr "Projektet har sparats framgångsrikt"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 664
+#: NEEDS WORK
+msgid "Failed to save project"
+msgstr "Misslyckades med att spara projekt"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 730
+#: NEEDS WORK
+msgid "Auto-save failed"
+msgstr "Automatisk sparande misslyckades"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 671
+#: NEEDS WORK
+msgid "No project to export"
+msgstr "Inga projekt att exportera"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 710
+#: NEEDS WORK
+msgid "Database imported successfully"
+msgstr "Databasen importerades framgångsrikt"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 746
+#: NEEDS WORK
+#, python-brace-format
+msgid "Created project: {}"
+msgstr "Skapat projekt: {}"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 1111
+#: NEEDS WORK
+msgid ""
+"Click here to start writing!\n"
+"\n"
+"Add paragraphs to build your text."
+msgstr ""
+"Klicka här för att börja skriva!\n"
+"\n"
+"Lägg till stycken för att bygga din text."
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 1118
+#: NEEDS WORK
+msgid "Got it!"
+msgstr "Förstått!"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 1043
+#: NEEDS WORK
+msgid "Image inserted successfully"
+msgstr "Bild infogad framgångsrikt"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 1125
+#: NEEDS WORK
+msgid "Enable the AI assistant in Preferences ▸ AI Assistant."
+msgstr "Aktivera AI-assistenten i Inställningar ▸ AI-assistent."
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 1134
+#: NEEDS WORK
+msgid "API key"
+msgstr "API-nyckel"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 1138
+#: NEEDS WORK
+#, python-brace-format
+msgid "Configure {items} in Preferences ▸ AI Assistant."
+msgstr "Konfigurera {items} i Inställningar ▸ AI-assistent."
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 1145
+#: NEEDS WORK
+msgid "Enable AI in Preferences. API key is required. Read Wiki if there is any doubt."
+msgstr "Aktivera AI i Inställningar. API-nyckel krävs. Läs Wiki om det finns några tvivel."
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 1339
+#: NEEDS WORK
+msgid "Please enter a question for the assistant."
+msgstr "Vänligen ange en fråga till assistenten."
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 1344
+#: NEEDS WORK
+msgid "The AI assistant is processing your request..."
+msgstr "AI-assistenten bearbetar din begäran..."
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 1381
+#: NEEDS WORK
+msgid "Here is the assistant's suggestion."
+msgstr "Här är assistentens förslag."
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 1413
+#: NEEDS WORK
+msgid "Response"
+msgstr "Svar"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 1431
+#: NEEDS WORK
+msgid "Copy to clipboard"
+msgstr "Kopiera till urklipp"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 1450
+#: NEEDS WORK
+msgid "Insert at cursor"
+msgstr "Infoga vid markören"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 1456
+#: NEEDS WORK
+msgid "Apply correction"
+msgstr "Tillämpa korrigering"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 1443
+#: NEEDS WORK
+msgid "Additional suggestions"
+msgstr "Ytterligare förslag"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 1507
+#: NEEDS WORK
+msgid "Copied to clipboard."
+msgstr "Kopierad till urklipp."
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 1513
+#: NEEDS WORK
+msgid "Place the cursor inside a paragraph to insert the text."
+msgstr "Placera markören inne i ett stycke för att infoga texten."
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 1520
+#: NEEDS WORK
+msgid "Nothing to insert."
+msgstr "Inget att infoga."
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 1531
+#: NEEDS WORK
+msgid "Text inserted into the document."
+msgstr "Text som har infogats i dokumentet."
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 1545
+#: NEEDS WORK
+msgid "No paragraph context available. Try inserting at the cursor."
+msgstr "Ingen styckeinformation tillgänglig. Försök att infoga vid markören."
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 1558
+#: NEEDS WORK
+msgid "Could not determine the original paragraph."
+msgstr "Kunde inte fastställa det ursprungliga stycket."
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 1572
+#: NEEDS WORK
+msgid "Paragraph updated with AI suggestion."
+msgstr "Stycke uppdaterat med AI-förslag."
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 1556
+# File: usr/share/tac-writer/ui/main_window.py, line: 1563
+#: NEEDS WORK
+msgid "Enter text to search."
+msgstr "Ange text att söka efter."
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 1559
+#: NEEDS WORK
+msgid "No matches found."
+msgstr "Inga träffar hittades."
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 1574
+#: NEEDS WORK
+msgid "No editable paragraphs available."
+msgstr "Inga redigerbara stycken tillgängliga."
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 1598
+#: NEEDS WORK
+msgid "Reached the end of the document."
+msgstr "Nådd slutet av dokumentet."
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 807
+#: NEEDS WORK
+msgid "Loading project..."
+msgstr "Laddar projekt..."
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 824
+#: NEEDS WORK
+#, python-brace-format
+msgid "Failed to open project: {}"
+msgstr "Misslyckades med att öppna projekt: {}"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 1638
+#: NEEDS WORK
+msgid "Analysis Failure"
+msgstr "Analysfel"
+# 
+# File: usr/share/tac-writer/application.py, line: 127
+#: NEEDS WORK
+#, python-brace-format
+msgid "Warning: Could not set system locale: {}"
+msgstr "Varning: Kunde inte ställa in systemlokal: {}"
+# 
+# File: usr/share/tac-writer/application.py, line: 210
+#: NEEDS WORK
+msgid "PyGTKSpellcheck not installed - disabling spell checking"
+msgstr "PyGTKSpellcheck är inte installerat - inaktiverar stavningskontroll"
+# 
+# File: usr/share/tac-writer/application.py, line: 216
+#: NEEDS WORK
+msgid "Enchant backend not available - disabling spell checking"
+msgstr "Enchant-backend är inte tillgänglig - inaktiverar stavningskontroll"
+# 
+# File: usr/share/tac-writer/application.py, line: 233
+#: NEEDS WORK
+#, python-brace-format
+msgid "Available spell check dictionaries: {}"
+msgstr "Tillgängliga stavningskontrollordlistor: {}"
+# 
+# File: usr/share/tac-writer/application.py, line: 242
+#: NEEDS WORK
+#, python-brace-format
+msgid "Using auto-detected language: {}"
+msgstr "Använder automatisk upptäckt språk: {}"
+# 
+# File: usr/share/tac-writer/application.py, line: 247
+#: NEEDS WORK
+#, python-brace-format
+msgid "Auto-detected language not available, using fallback: {}"
+msgstr "Automatiskt upptäckt språk är inte tillgängligt, använder fallback: {}"
+# 
+# File: usr/share/tac-writer/application.py, line: 253
+#: NEEDS WORK
+msgid "No spell check dictionaries found - disabling spell checking"
+msgstr "Inga stavningskontrollordböcker hittades - inaktiverar stavningskontroll"
+# 
+# File: usr/share/tac-writer/application.py, line: 258
+#: NEEDS WORK
+#, python-brace-format
+msgid "Import error while checking spell dependencies: {}"
+msgstr "Importfel vid kontroll av stavningsberoenden: {}"
+# 
+# File: usr/share/tac-writer/application.py, line: 262
+#: NEEDS WORK
+#, python-brace-format
+msgid "Unexpected error checking spell dependencies: {}"
+msgstr "Oväntat fel vid kontroll av stavningsberoenden: {}"
+# 
+# File: usr/share/tac-writer/application.py, line: 285
+#: NEEDS WORK
+#, python-brace-format
+msgid "Custom icons loaded with priority: {}"
+msgstr "Anpassade ikoner laddade med prioritet: {}"
+# 
+# File: usr/share/tac-writer/application.py, line: 289
+#: NEEDS WORK
+#, python-brace-format
+msgid "Warning: Could not setup icon theme: {}"
+msgstr "Varning: Kunde inte ställa in ikontema: {}"
+# 
+# File: usr/share/tac-writer/application.py, line: 278
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error during application startup: {}: {}"
+msgstr "Fel vid applikationsstart: {}: {}"
+# 
+# File: usr/share/tac-writer/application.py, line: 291
+#: NEEDS WORK
+msgid "Main window created"
+msgstr "Huvudfönster skapat"
+# 
+# File: usr/share/tac-writer/application.py, line: 295
+#: NEEDS WORK
+msgid "Main window presented"
+msgstr "Huvudfönster presenterat"
+# 
+# File: usr/share/tac-writer/application.py, line: 298
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error activating application: {}: {}"
+msgstr "Fel vid aktivering av applikation: {}: {}"
+# 
+# File: usr/share/tac-writer/application.py, line: 320
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error setting up actions: {}: {}"
+msgstr "Fel vid inställning av åtgärder: {}: {}"
+# 
+# File: usr/share/tac-writer/application.py, line: 343
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error setting up menu: {}: {}"
+msgstr "Fel vid inställning av meny: {}: {}"
+# 
+# File: usr/share/tac-writer/application.py, line: 433
+#: NEEDS WORK
+#, python-brace-format
+msgid "Could not apply CSS: {}"
+msgstr "Kunde inte tillämpa CSS: {}"
+# 
+# File: usr/share/tac-writer/application.py, line: 436
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error setting up theme: {}: {}"
+msgstr "Fel vid installation av tema: {}: {}"
+# 
+# File: usr/share/tac-writer/application.py, line: 446
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error showing new project dialog: {}: {}"
+msgstr "Fel vid visning av dialogrutan för nytt projekt: {}: {}"
+# 
+# File: usr/share/tac-writer/application.py, line: 454
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error showing open project dialog: {}: {}"
+msgstr "Fel vid visning av dialogrutan för att öppna projekt: {}: {}"
+# 
+# File: usr/share/tac-writer/application.py, line: 462
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error saving project: {}: {}"
+msgstr "Fel vid sparande av projekt: {}: {}"
+# 
+# File: usr/share/tac-writer/application.py, line: 470
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error showing export dialog: {}: {}"
+msgstr "Fel vid visning av exportdialog: {}: {}"
+# 
+# File: usr/share/tac-writer/application.py, line: 478
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error showing preferences dialog: {}: {}"
+msgstr "Fel vid visning av inställningsdialog: {}: {}"
+# 
+# File: usr/share/tac-writer/application.py, line: 486
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error showing about dialog: {}: {}"
+msgstr "Fel vid visning av informationsdialog: {}: {}"
+# 
+# File: usr/share/tac-writer/application.py, line: 583
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error opening AI assistant: {}: {}"
+msgstr "Fel vid öppning av AI-assistent: {}: {}"
+# 
+# File: usr/share/tac-writer/application.py, line: 493
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error quitting application: {}: {}"
+msgstr "Fel vid avslutning av applikationen: {}: {}"
+# 
+# File: usr/share/tac-writer/application.py, line: 502
+#: NEEDS WORK
+msgid "Configuration saved"
+msgstr "Konfiguration sparad"
+# 
+# File: usr/share/tac-writer/application.py, line: 508
+#: NEEDS WORK
+msgid "Application shutdown complete"
+msgstr "Applikationen har stängts av helt"
+# 
+# File: usr/share/tac-writer/application.py, line: 511
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error during shutdown: {}: {}"
+msgstr "Fel vid avstängning: {}: {}"
+# 
+# File: usr/share/tac-writer/application.py, line: 520
+#: NEEDS WORK
+msgid "No config available for spell check debug"
+msgstr "Ingen konfiguration tillgänglig för stavningskontrollens felsökning"
+# 
+# File: usr/share/tac-writer/core/ai_assistant.py, line: 67
+#: NEEDS WORK
+msgid "The AI assistant is already processing another request."
+msgstr "AI-assistenten bearbetar redan en annan begäran."
+# 
+# File: usr/share/tac-writer/core/ai_assistant.py, line: 95
+#: NEEDS WORK
+#, python-brace-format
+msgid "AI assistant error: {error}"
+msgstr "AI-assistentfel: {error}"
+# 
+# File: usr/share/tac-writer/core/ai_assistant.py, line: 111
+#: NEEDS WORK
+msgid "Select an AI provider in Preferences ▸ AI Assistant."
+msgstr "Välj en AI-leverantör i Inställningar ▸ AI-assistent."
+# 
+# File: usr/share/tac-writer/core/ai_assistant.py, line: 130
+#: NEEDS WORK
+#, python-brace-format
+msgid ""
+"Instrução do usuário:\n"
+"{instruction}\n"
+"\n"
+"Texto para revisão:\n"
+"{context}"
+msgstr ""
+"Användarinstruktion:\n"
+"{instruction}\n"
+"\n"
+"Text för granskning:\n"
+"{context}"
+# 
+# File: usr/share/tac-writer/core/ai_assistant.py, line: 137
+#: NEEDS WORK
+#, python-brace-format
+msgid ""
+"Revise o texto a seguir, corrigindo apenas o necessário e mantendo o tom acadêmico:\n"
+"{context}"
+msgstr ""
+"Granska följande text, korrigera endast det som är nödvändigt och behåll den akademiska tonen:  \n"
+"{context}"
+# 
+# File: usr/share/tac-writer/core/ai_assistant.py, line: 141
+#: NEEDS WORK
+msgid "Revise o texto a seguir e responda apenas com a versão corrigida."
+msgstr "Granska följande text och svara endast med den korrigerade versionen."
+# 
+# File: usr/share/tac-writer/core/ai_assistant.py, line: 150
+#: NEEDS WORK
+#, python-brace-format
+msgid "Provider '{provider}' is not supported."
+msgstr "Leverantör '{provider}' stöds inte."
+# 
+# File: usr/share/tac-writer/core/ai_assistant.py, line: 186
+#: NEEDS WORK
+msgid "Configure the Gemini API key in Preferences."
+msgstr "Konfigurera Gemini API-nyckeln i Inställningar."
+# 
+# File: usr/share/tac-writer/core/ai_assistant.py, line: 204
+#: NEEDS WORK
+#, python-brace-format
+msgid "Failed to contact Gemini: {error}"
+msgstr "Misslyckades med att kontakta Gemini: {error}"
+# 
+# File: usr/share/tac-writer/core/ai_assistant.py, line: 209
+#: NEEDS WORK
+#, python-brace-format
+msgid "Gemini responded with HTTP {status}: {detail}"
+msgstr "Gemini svarade med HTTP {status}: {detail}"
+# 
+# File: usr/share/tac-writer/core/ai_assistant.py, line: 217
+#: NEEDS WORK
+msgid "Gemini returned an invalid JSON response."
+msgstr "Gemini returnerade ett ogiltigt JSON-svar."
+# 
+# File: usr/share/tac-writer/core/ai_assistant.py, line: 233
+#: NEEDS WORK
+msgid "Gemini did not return any usable content."
+msgstr "Gemini returnerade inget användbart innehåll."
+# 
+# File: usr/share/tac-writer/core/ai_assistant.py, line: 240
+#: NEEDS WORK
+msgid "Configure the OpenRouter API key in Preferences."
+msgstr "Konfigurera OpenRouter API-nyckeln i Inställningar."
+# 
+# File: usr/share/tac-writer/core/ai_assistant.py, line: 262
+#: NEEDS WORK
+#, python-brace-format
+msgid "Failed to contact OpenRouter: {error}"
+msgstr "Misslyckades med att kontakta OpenRouter: {error}"
+# 
+# File: usr/share/tac-writer/core/ai_assistant.py, line: 274
+#: NEEDS WORK
+msgid "AI provider returned an invalid JSON response."
+msgstr "AI-leverantören returnerade ett ogiltigt JSON-svar."
+# 
+# File: usr/share/tac-writer/core/ai_assistant.py, line: 278
+#: NEEDS WORK
+msgid "The AI provider returned an empty response."
+msgstr "AI-leverantören returnerade ett tomt svar."
+# 
+# File: usr/share/tac-writer/core/ai_assistant.py, line: 290
+#: NEEDS WORK
+msgid "The AI provider did not return any usable content."
+msgstr "AI-leverantören returnerade ingen användbar innehåll."
+# 
+# File: usr/share/tac-writer/core/ai_assistant.py, line: 422
+#: NEEDS WORK
+msgid "Unknown error."
+msgstr "Okänt fel."
+# 
+# File: usr/share/tac-writer/core/ai_assistant.py, line: 426
+# File: usr/share/tac-writer/core/ai_assistant.py, line: 432
+#: NEEDS WORK
+#, python-brace-format
+msgid "OpenRouter respondeu com HTTP {status}: {message}"
+msgstr "OpenRouter svarade med HTTP {status}: {message}"
+# 
+# File: usr/share/tac-writer/core/ai_assistant.py, line: 446
+#: NEEDS WORK
+#, python-brace-format
+msgid "OpenRouter respondeu com HTTP {status}: {message}{detail}"
+msgstr "OpenRouter svarade med HTTP {status}: {message}{detail}"
+# 
+# File: usr/share/tac-writer/core/ai_assistant.py, line: 472
+#: NEEDS WORK
+msgid "Biblioteca pypdf não instalada."
+msgstr "Biblioteket pypdf är inte installerat."
+# 
+# File: usr/share/tac-writer/core/ai_assistant.py, line: 480
+#: NEEDS WORK
+msgid "O assistente já está processando uma solicitação."
+msgstr "Assistenten bearbetar redan en begäran."
+# 
+# File: usr/share/tac-writer/core/ai_assistant.py, line: 502
+#: NEEDS WORK
+#, python-brace-format
+msgid "Erro ao ler PDF: {}"
+msgstr "Fel vid läsning av PDF: {}"
+# 
+# File: usr/share/tac-writer/core/ai_assistant.py, line: 508
+#: NEEDS WORK
+msgid "Não foi possível extrair texto do PDF (pode ser uma imagem ou vazio)."
+msgstr "Det gick inte att extrahera text från PDF:en (det kan vara en bild eller tomt)."
+# 
+# File: usr/share/tac-writer/core/ai_assistant.py, line: 556
+#: NEEDS WORK
+#, python-brace-format
+msgid "Erro IA: {}"
+msgstr "Fel: IA: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 49
+#: NEEDS WORK
+#, python-brace-format
+msgid "ProjectManager initialized with database: {}"
+msgstr "Projektledare initierad med databas: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 66
+#: NEEDS WORK
+#, python-brace-format
+msgid "Database connection error: {}"
+msgstr "Databasanslutningsfel: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 77
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error checking project existence: {}"
+msgstr "Fel vid kontroll av projektets existens: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 86
+#: NEEDS WORK
+#, python-brace-format
+msgid "Invalid project data: missing field '{}'"
+msgstr "Ogiltig projektdata: saknas fält '{}'"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 95
+#: NEEDS WORK
+#, python-brace-format
+msgid "Invalid paragraph {}: missing field '{}'"
+msgstr "Ogiltigt stycke {}: saknar fält '{}'"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 113
+#: NEEDS WORK
+#, python-brace-format
+msgid "Created migration backup: {}"
+msgstr "Skapad migrationsbackup: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 117
+#: NEEDS WORK
+#, python-brace-format
+msgid "Failed to create migration backup: {}"
+msgstr "Misslyckades med att skapa migrationsbackup: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 131
+#: NEEDS WORK
+#, python-brace-format
+msgid "Found {} old JSON projects. Starting migration..."
+msgstr "Hittade {} gamla JSON-projekt. Startar migrering..."
+# 
+# File: usr/share/tac-writer/core/services.py, line: 136
+#: NEEDS WORK
+msgid "Migration aborted: Could not create backup"
+msgstr "Migration avbruten: Kunde inte skapa säkerhetskopia"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 156
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error loading {}: {}"
+msgstr "Fel vid inläsning av {}: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 160
+#: NEEDS WORK
+#, python-brace-format
+msgid "Warning: {} files have validation errors and will be skipped"
+msgstr "Varning: {} filer har valideringsfel och kommer att hoppas över"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 163
+#: NEEDS WORK
+msgid "No valid projects to migrate"
+msgstr "Inga giltiga projekt att migrera"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 185
+#: NEEDS WORK
+#, python-brace-format
+msgid "Failed to migrate {} projects"
+msgstr "Misslyckades med att migrera {} projekt"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 189
+#: NEEDS WORK
+msgid "Migration transaction committed successfully"
+msgstr "Migreringstransaktion genomförd framgångsrikt"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 197
+#: NEEDS WORK
+#, python-brace-format
+msgid "Warning: Could not rename {}: {}"
+msgstr "Varning: Kunde inte döpa om {}: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 202
+#: NEEDS WORK
+#, python-brace-format
+msgid "Migration failed, transaction rolled back: {}"
+msgstr "Migration misslyckades, transaktionen rullades tillbaka: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 206
+#: NEEDS WORK
+#, python-brace-format
+msgid "Migration failed with database error: {}"
+msgstr "Migration misslyckades med databasfel: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 209
+#: NEEDS WORK
+#, python-brace-format
+msgid "Migration complete. {} projects successfully migrated."
+msgstr "Migrering slutförd. {} projekt har migrerats framgångsrikt."
+# 
+# File: usr/share/tac-writer/core/services.py, line: 222
+#: NEEDS WORK
+#, python-brace-format
+msgid "JSON serialization error for project {}: {}"
+msgstr "JSON serialiseringsfel för projekt {}: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 252
+#: NEEDS WORK
+#, python-brace-format
+msgid "JSON serialization error for paragraph {}: {}"
+msgstr "JSON serialiseringsfel för stycke {}: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 270
+#: NEEDS WORK
+#, python-brace-format
+msgid "Database error saving project {}: {}"
+msgstr "Databasfel vid sparande av projekt {}: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 290
+#: NEEDS WORK
+#, python-brace-format
+msgid "Saved project to database: {}"
+msgstr "Sparat projekt i databasen: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 294
+#: NEEDS WORK
+#, python-brace-format
+msgid "Failed to save project to database: {}"
+msgstr "Misslyckades med att spara projektet till databasen: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 298
+#: NEEDS WORK
+#, python-brace-format
+msgid "Database error saving project '{}': {}"
+msgstr "Databasfel vid sparande av projekt '{}': {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 302
+#: NEEDS WORK
+#, python-brace-format
+msgid "Unexpected error saving project '{}': {}: {}"
+msgstr "Oväntat fel vid sparande av projekt '{}': {}: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 307
+#: NEEDS WORK
+#, python-brace-format
+msgid "Database connection error for project '{}': {}"
+msgstr "Databasanslutningsfel för projekt '{}': {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 310
+#: NEEDS WORK
+#, python-brace-format
+msgid "Unexpected error in save_project for '{}': {}: {}"
+msgstr "Oväntat fel i save_project för '{}': {}: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 342
+#: NEEDS WORK
+#, python-brace-format
+msgid "Database backup created: {}"
+msgstr "Databasbackup skapad: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 346
+#: NEEDS WORK
+#, python-brace-format
+msgid "Warning: Database backup failed: {}"
+msgstr "Varning: Databasbackup misslyckades: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 360
+#: NEEDS WORK
+#, python-brace-format
+msgid "Removed old backup: {}"
+msgstr "Borttagen gammal säkerhetskopia: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 363
+#: NEEDS WORK
+#, python-brace-format
+msgid "Warning: Cleanup of old backups failed: {}"
+msgstr "Varning: Rensning av gamla säkerhetskopior misslyckades: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 467
+#: NEEDS WORK
+#, python-brace-format
+msgid "Database error listing projects: {}"
+msgstr "Databasfel vid uppräkning av projekt: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 469
+#: NEEDS WORK
+#, python-brace-format
+msgid "Unexpected error listing projects: {}: {}"
+msgstr "Oväntat fel vid uppräkning av projekt: {}: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 479
+#: NEEDS WORK
+msgid "Database maintenance completed"
+msgstr "Databasunderhåll slutfört"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 481
+#: NEEDS WORK
+#, python-brace-format
+msgid "Database maintenance failed: {}"
+msgstr "Databasunderhåll misslyckades: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 510
+#: NEEDS WORK
+#, python-brace-format
+msgid "error: {}"
+msgstr "fel: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 517
+#: NEEDS WORK
+#, python-brace-format
+msgid "unexpected error: {}"
+msgstr "oväntat fel: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 561
+#: NEEDS WORK
+#, python-brace-format
+msgid "Database initialization error: {}"
+msgstr "Databasinitialiseringsfel: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 573
+#: NEEDS WORK
+#, python-brace-format
+msgid "Created project: {} ({})"
+msgstr "Skapat projekt: {} ({})"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 576
+#: NEEDS WORK
+msgid "Failed to save new project to database"
+msgstr "Misslyckades med att spara nytt projekt i databasen"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 578
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error creating project: {}: {}"
+msgstr "Fel vid skapande av projekt: {}: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 591
+#: NEEDS WORK
+#, python-brace-format
+msgid "Project with ID {} not found in database."
+msgstr "Projekt med ID {} hittades inte i databasen."
+# 
+# File: usr/share/tac-writer/core/services.py, line: 620
+#: NEEDS WORK
+#, python-brace-format
+msgid "Loaded project from database: {}"
+msgstr "Laddat projekt från databas: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 624
+#: NEEDS WORK
+#, python-brace-format
+msgid "Database error loading project: {}"
+msgstr "Databasfel vid inläsning av projekt: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 627
+#: NEEDS WORK
+#, python-brace-format
+msgid "Data error loading project: {}: {}"
+msgstr "Datafel vid inläsning av projekt: {}: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 630
+#: NEEDS WORK
+#, python-brace-format
+msgid "Unexpected error loading project: {}: {}"
+msgstr "Oväntat fel vid inläsning av projekt: {}: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 643
+#: NEEDS WORK
+#, python-brace-format
+msgid "Deleted project from database: {}"
+msgstr "Raderat projekt från databas: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 646
+#: NEEDS WORK
+#, python-brace-format
+msgid "Database error deleting project: {}"
+msgstr "Databasfel vid radering av projekt: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 671
+#: NEEDS WORK
+#, python-brace-format
+msgid "Manual backup created: {}"
+msgstr "Manuell säkerhetskopia skapad: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 675
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error creating manual backup: {}"
+msgstr "Fel vid skapande av manuell säkerhetskopia: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 715
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error reading backup file {}: {}"
+msgstr "Fel vid läsning av säkerhetskopifil {}: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 754
+#: NEEDS WORK
+#, python-brace-format
+msgid "Backup validation error: {}"
+msgstr "Säkerhetskopieringsvalideringsfel: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 762
+#: NEEDS WORK
+msgid "Invalid backup file"
+msgstr "Ogiltig säkerhetskopia"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 771
+#: NEEDS WORK
+#, python-brace-format
+msgid "Current database backed up to: {}"
+msgstr "Aktuell databas säkerhetskopierad till: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 782
+#: NEEDS WORK
+#, python-brace-format
+msgid "Successfully imported database with {} projects"
+msgstr "Framgångsrikt importerad databas med {} projekt"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 790
+#: NEEDS WORK
+msgid "Import failed, restored previous database"
+msgstr "Importen misslyckades, återställde tidigare databas"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 794
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error importing database: {}: {}"
+msgstr "Fel vid import av databas: {}: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 804
+#: NEEDS WORK
+#, python-brace-format
+msgid "Deleted backup: {}"
+msgstr "Raderad säkerhetskopia: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 825
+#: NEEDS WORK
+msgid "Warning: ODT export not available (missing xml dependencies)"
+msgstr "Varning: ODT-export är inte tillgänglig (saknas xml-beroenden)"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 827
+#: NEEDS WORK
+msgid "Warning: PDF export not available (missing reportlab)"
+msgstr "Varning: PDF-export är inte tillgänglig (saknar reportlab)"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 1014
+#: NEEDS WORK
+#, python-brace-format
+msgid "Export format '{}' not available"
+msgstr "Exportformat '{}' är inte tillgängligt"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 1018
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error exporting project: {}: {}"
+msgstr "Fel vid export av projekt: {}: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 1060
+# File: usr/share/tac-writer/core/services.py, line: 1557
+#: NEEDS WORK
+msgid "Footnotes:"
+msgstr "Fotnoter:"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 1067
+#: NEEDS WORK
+#, python-brace-format
+msgid "File error exporting to TXT: {}"
+msgstr "Filfelaktighet vid export till TXT: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 1070
+#: NEEDS WORK
+#, python-brace-format
+msgid "Unexpected error exporting to TXT: {}: {}"
+msgstr "Oväntat fel vid export av TXT: {}: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 1124
+#: NEEDS WORK
+#, python-brace-format
+msgid "File error exporting to ODT: {}"
+msgstr "Filfelaktighet vid export till ODT: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 1127
+#: NEEDS WORK
+#, python-brace-format
+msgid "Unexpected error exporting to ODT: {}: {}"
+msgstr "Oväntat fel vid export av ODT: {}: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 1827
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error adding image to PDF: {}"
+msgstr "Fel vid tillägg av bild till PDF: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 1567
+#: NEEDS WORK
+#, python-brace-format
+msgid "File error exporting to PDF: {}"
+msgstr "Filfelaktighet vid export till PDF: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 1570
+#: NEEDS WORK
+#, python-brace-format
+msgid "Unexpected error exporting to PDF: {}: {}"
+msgstr "Oväntat fel vid export av PDF: {}: {}"
+# 
+# File: usr/share/tac-writer/core/models.py, line: 440
+#: NEEDS WORK
+msgid "Academic Essay"
+msgstr "Akademisk uppsats"
+# 
+# File: usr/share/tac-writer/core/models.py, line: 441
+#: NEEDS WORK
+msgid "Standard academic essay structure"
+msgstr "Standard akademisk essästruktur"

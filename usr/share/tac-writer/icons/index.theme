@@ -1,0 +1,12 @@
+[Icon Theme]
+Name=TACWriter
+Comment=Custom icon theme for TAC Writer
+Inherits=hicolor
+Directories=scalable
+
+[scalable]
+Context=Actions
+Size=48
+MinSize=1
+MaxSize=512
+Type=Scalable

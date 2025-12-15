@@ -1,0 +1,2759 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the tac-writer package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+# 
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: tac-writer\n"
+"Report-Msgid-Bugs-To: \n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: attranslate\n"
+# 
+# File: usr/share/tac-writer/utils/helpers.py, line: 57
+#: NEEDS WORK
+msgid "Unknown"
+msgstr "Bilinmiyor"
+# 
+# File: usr/share/tac-writer/utils/helpers.py, line: 172
+#: NEEDS WORK
+msgid "0 minutes"
+msgstr "0 dakika"
+# 
+# File: usr/share/tac-writer/utils/helpers.py, line: 177
+#: NEEDS WORK
+msgid "< 1 minute"
+msgstr "< 1 dakika"
+# 
+# File: usr/share/tac-writer/utils/helpers.py, line: 181
+#: NEEDS WORK
+msgid "1 minute"
+msgstr "1 dakika"
+# 
+# File: usr/share/tac-writer/utils/helpers.py, line: 183
+#: NEEDS WORK
+#, python-brace-format
+msgid "{} minutes"
+msgstr "{} dakika"
+# 
+# File: usr/share/tac-writer/utils/helpers.py, line: 187
+#: NEEDS WORK
+#, python-brace-format
+msgid "{}h {}m"
+msgstr "{}s {}d"
+# 
+# File: usr/share/tac-writer/utils/helpers.py, line: 221
+#: NEEDS WORK
+msgid "Project name cannot be empty"
+msgstr "Proje adı boş olamaz"
+# 
+# File: usr/share/tac-writer/utils/helpers.py, line: 226
+#: NEEDS WORK
+msgid "Project name must be at least 2 characters long"
+msgstr "Proje adı en az 2 karakter uzunluğunda olmalıdır."
+# 
+# File: usr/share/tac-writer/utils/helpers.py, line: 229
+#: NEEDS WORK
+msgid "Project name cannot exceed 100 characters"
+msgstr "Proje adı 100 karakteri geçemez."
+# 
+# File: usr/share/tac-writer/utils/helpers.py, line: 232
+#: NEEDS WORK
+msgid "Project name contains invalid characters"
+msgstr "Proje adı geçersiz karakterler içeriyor."
+# 
+# File: usr/share/tac-writer/utils/helpers.py, line: 249
+#: NEEDS WORK
+msgid "Path cannot be empty"
+msgstr "Yol boş olamaz"
+# 
+# File: usr/share/tac-writer/utils/helpers.py, line: 256
+#: NEEDS WORK
+msgid "Parent directory does not exist"
+msgstr "Ana dizin mevcut değil"
+# 
+# File: usr/share/tac-writer/utils/helpers.py, line: 260
+#: NEEDS WORK
+msgid "Path is too long"
+msgstr "Yol çok uzun"
+# 
+# File: usr/share/tac-writer/utils/helpers.py, line: 265
+#: NEEDS WORK
+#, python-brace-format
+msgid "Invalid path: {}"
+msgstr "Geçersiz yol: {}"
+# 
+# File: usr/share/tac-writer/utils/helpers.py, line: 275
+#: NEEDS WORK
+msgid "1 paragraph"
+msgstr "1 paragraf"
+# 
+# File: usr/share/tac-writer/utils/helpers.py, line: 277
+#: NEEDS WORK
+#, python-brace-format
+msgid "{count} paragraphs"
+msgstr "{count} paragraf"
+# 
+# File: usr/share/tac-writer/utils/helpers.py, line: 283
+#: NEEDS WORK
+msgid "1 word"
+msgstr "anahtar"
+# 
+# #-#-#-#-#  tac-writer.pot (tac-writer)  #-#-#-#-#
+# 
+# File: usr/share/tac-writer/utils/helpers.py, line: 285
+# File: usr/share/tac-writer/ui/components.py, line: 1244
+#: NEEDS WORK
+#, python-brace-format
+msgid "{count} words"
+msgstr "{count} kelime"
+# 
+# File: usr/share/tac-writer/utils/helpers.py, line: 330
+#: NEEDS WORK
+msgid "{:,} words"
+msgstr "{: ,} kelime"
+# 
+# File: usr/share/tac-writer/utils/helpers.py, line: 332
+#: NEEDS WORK
+msgid "{:,} characters"
+msgstr "{: ,} karakter"
+# 
+# File: usr/share/tac-writer/utils/helpers.py, line: 348
+# File: usr/share/tac-writer/utils/helpers.py, line: 365
+#: NEEDS WORK
+msgid "Info"
+msgstr "Bilgi"
+# 
+# File: usr/share/tac-writer/utils/helpers.py, line: 349
+#: NEEDS WORK
+#, python-brace-format
+msgid "Type: {}"
+msgstr "Tür: {}"
+# 
+# File: usr/share/tac-writer/utils/helpers.py, line: 350
+#: NEEDS WORK
+#, python-brace-format
+msgid "Module: {}"
+msgstr "Modül: {}"
+# 
+# File: usr/share/tac-writer/utils/helpers.py, line: 353
+#: NEEDS WORK
+msgid "Attributes:"
+msgstr "Öznitelikler:"
+# 
+# File: usr/share/tac-writer/utils/helpers.py, line: 357
+#: NEEDS WORK
+msgid "Methods:"
+msgstr "Yöntemler:"
+# 
+# File: usr/share/tac-writer/utils/helpers.py, line: 363
+#: NEEDS WORK
+#, python-brace-format
+msgid "  ... and {} more methods"
+msgstr "... ve {} daha fazla yöntem"
+# 
+# File: usr/share/tac-writer/utils/helpers.py, line: 371
+#: NEEDS WORK
+#, python-brace-format
+msgid "Performance: {} took {:.3f} seconds"
+msgstr "Performans: {} {:.3f} saniye sürdü"
+# 
+# File: usr/share/tac-writer/main.py, line: 41
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error: Required dependencies not found: {}"
+msgstr "Hata: Gerekli bağımlılıklar bulunamadı: {}"
+# 
+# File: usr/share/tac-writer/main.py, line: 42
+#: NEEDS WORK
+msgid "Please install: python3-gi python3-gi-cairo gir1.2-gtk-4.0 gir1.2-adwaita-1"
+msgstr "Lütfen kurun: python3-gi python3-gi-cairo gir1.2-gtk-4.0 gir1.2-adwaita-1"
+# 
+# File: usr/share/tac-writer/main.py, line: 50
+#: NEEDS WORK
+msgid "Error: GTK 4.0 or higher is required"
+msgstr "Hata: GTK 4.0 veya daha yüksek bir sürüm gereklidir"
+# 
+# File: usr/share/tac-writer/main.py, line: 55
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error checking dependencies: {}"
+msgstr "Hata kontrolü bağımlılıkları: {}"
+# 
+# File: usr/share/tac-writer/main.py, line: 73
+#: NEEDS WORK
+msgid "Application interrupted by user."
+msgstr "Kullanıcı tarafından uygulama kesildi."
+# 
+# File: usr/share/tac-writer/main.py, line: 76
+#: NEEDS WORK
+#, python-brace-format
+msgid "Critical error during startup: {}"
+msgstr "Başlangıçta kritik hata: {}"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 77
+#: NEEDS WORK
+msgid "New Project"
+msgstr "Yeni Proje"
+# 
+# #-#-#-#-#  tac-writer.pot (tac-writer)  #-#-#-#-#
+# 
+# #-#-#-#-#  tac-writer.pot (tac-writer)  #-#-#-#-#
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 101
+# File: usr/share/tac-writer/ui/dialogs.py, line: 334
+# File: usr/share/tac-writer/ui/dialogs.py, line: 481
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1194
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1255
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1327
+# File: usr/share/tac-writer/ui/components.py, line: 880
+# File: usr/share/tac-writer/ui/components.py, line: 917
+# File: usr/share/tac-writer/ui/components.py, line: 1264
+# File: usr/share/tac-writer/ui/components.py, line: 1386
+# File: usr/share/tac-writer/ui/main_window.py, line: 618
+#: NEEDS WORK
+msgid "Cancel"
+msgstr "İptal"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 107
+#: NEEDS WORK
+msgid "Create"
+msgstr "Oluştur"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 139
+#: NEEDS WORK
+msgid "Project Details"
+msgstr "Proje Detayları"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 143
+# File: usr/share/tac-writer/ui/dialogs.py, line: 356
+#: NEEDS WORK
+msgid "Project Name"
+msgstr "Proje Adı"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 145
+#: NEEDS WORK
+msgid "Enter project name..."
+msgstr "Proje adını girin..."
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 146
+#: NEEDS WORK
+msgid "My New Project"
+msgstr "Yeni Projem"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 163
+#: NEEDS WORK
+msgid "Author"
+msgstr "Yazar"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 165
+#: NEEDS WORK
+msgid "Your name..."
+msgstr "Adınız..."
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 174
+#: NEEDS WORK
+msgid "Description"
+msgstr "Açıklama"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 206
+#: NEEDS WORK
+msgid "Template"
+msgstr "Şablon"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 207
+#: NEEDS WORK
+msgid "Choose a template to start with"
+msgstr "Başlamak için bir şablon seçin"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 216
+#: NEEDS WORK
+msgid "Document Template"
+msgstr "Belge Şablonu"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 286
+#: NEEDS WORK
+msgid "Project name is too long (max 100 characters)"
+msgstr "Proje adı çok uzun (maksimum 100 karakter)"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 299
+#: NEEDS WORK
+msgid "Failed to save project to database"
+msgstr "Veritabanına projeyi kaydetme başarısız oldu"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 309
+#: NEEDS WORK
+msgid "Invalid Input"
+msgstr "Geçersiz Girdi"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 303
+# File: usr/share/tac-writer/ui/dialogs.py, line: 553
+# File: usr/share/tac-writer/ui/dialogs.py, line: 569
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1182
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1233
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1298
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1314
+#: NEEDS WORK
+msgid "OK"
+msgstr "Tamam"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 300
+#: NEEDS WORK
+msgid "Error Creating Project"
+msgstr "Proje Oluşturma Hatası"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 331
+#: NEEDS WORK
+msgid "Unexpected Error"
+msgstr "Beklenmedik Hata"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 333
+#: NEEDS WORK
+msgid "An unexpected error occurred. Please report this issue:"
+msgstr "Beklenmedik bir hata oluştu. Lütfen bu sorunu bildirin:"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 314
+#: NEEDS WORK
+msgid "Export Project"
+msgstr "Projeyi Dışa Aktar"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 339
+# File: usr/share/tac-writer/ui/dialogs.py, line: 543
+#: NEEDS WORK
+msgid "Export"
+msgstr "Dışa Aktar"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 352
+#: NEEDS WORK
+msgid "Project Information"
+msgstr "Proje Bilgisi"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 362
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1041
+#: NEEDS WORK
+msgid "Statistics"
+msgstr "İstatistikler"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 363
+#: NEEDS WORK
+#, python-brace-format
+msgid "{} words, {} paragraphs"
+msgstr "{} kelime, {} paragraf"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 368
+#: NEEDS WORK
+msgid "Export Options"
+msgstr "Dışa Aktarma Seçenekleri"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 373
+#: NEEDS WORK
+msgid "Format"
+msgstr "Biçim"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 393
+#: NEEDS WORK
+msgid "Include Metadata"
+msgstr "Meta Verileri Dahil Et"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 394
+#: NEEDS WORK
+msgid "Include author, creation date, and other project information"
+msgstr "Yazar, oluşturulma tarihi ve diğer proje bilgilerini dahil et"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 400
+#: NEEDS WORK
+msgid "Output Location"
+msgstr "Çıktı Konumu"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 404
+#: NEEDS WORK
+msgid "Save Location"
+msgstr "Kaydetme Yeri"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 405
+#: NEEDS WORK
+msgid "Click to choose location"
+msgstr "Konum seçmek için tıklayın"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 408
+#: NEEDS WORK
+msgid "Choose..."
+msgstr "Seçin..."
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 452
+#: NEEDS WORK
+#, python-brace-format
+msgid "Warning: Could not create default export directory: {}"
+msgstr "Uyarı: Varsayılan dışa aktarma dizini oluşturulamadı: {}"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 477
+#: NEEDS WORK
+msgid "Choose Export Location"
+msgstr "Dışa Aktarma Konumunu Seçin"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 480
+#: NEEDS WORK
+msgid "Select"
+msgstr "Seçin"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 499
+#: NEEDS WORK
+msgid "Exporting..."
+msgstr "Dışa aktarma..."
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 550
+#: NEEDS WORK
+msgid "Export Successful"
+msgstr "Başarıyla Dışa Aktarıldı"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 551
+#: NEEDS WORK
+#, python-brace-format
+msgid ""
+"Project exported to:\n"
+"{}"
+msgstr ""
+"Proje dışa aktarıldı:  \n"
+"{}"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 563
+#: NEEDS WORK
+msgid "An error occurred while exporting the project."
+msgstr "Projeyi dışa aktarırken bir hata oluştu."
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 566
+#: NEEDS WORK
+msgid "Export Failed"
+msgstr "Dışa Aktarma Başarısız"
+# 
+# #-#-#-#-#  tac-writer.pot (tac-writer)  #-#-#-#-#
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 582
+# File: usr/share/tac-writer/ui/main_window.py, line: 154
+#: NEEDS WORK
+msgid "Preferences"
+msgstr "Tercihler"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 597
+#: NEEDS WORK
+msgid "General"
+msgstr "Genel"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 603
+#: NEEDS WORK
+msgid "Appearance"
+msgstr "Görünüm"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 608
+#: NEEDS WORK
+msgid "Dark Theme"
+msgstr "Karanlık Tema"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 609
+#: NEEDS WORK
+msgid "Use dark theme for the application"
+msgstr "Uygulama için karanlık temayı kullanın"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 615
+#: NEEDS WORK
+msgid "Editor"
+msgstr "Düzenleyici"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 648
+#: NEEDS WORK
+msgid "Behavior"
+msgstr "Davranış"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 653
+#: NEEDS WORK
+msgid "Auto Save"
+msgstr "Otomatik Kaydet"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 654
+#: NEEDS WORK
+msgid "Automatically save projects while editing"
+msgstr "Düzenleme sırasında projeleri otomatik olarak kaydet"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 660
+#: NEEDS WORK
+msgid "Word Wrap"
+msgstr "Kelime Sarma"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 661
+#: NEEDS WORK
+msgid "Wrap text to fit the editor width"
+msgstr "Metni düzenleyici genişliğine sığacak şekilde sar."
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 667
+#: NEEDS WORK
+msgid "Show Line Numbers"
+msgstr "Satır Numaralarını Göster"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 668
+#: NEEDS WORK
+msgid "Display line numbers in the editor"
+msgstr "Editörde satır numaralarını göster"
+# 
+# #-#-#-#-#  tac-writer.pot (tac-writer)  #-#-#-#-#
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 717
+# File: usr/share/tac-writer/ui/main_window.py, line: 1380
+#: NEEDS WORK
+msgid "AI Assistant"
+msgstr "Yapay Zeka Asistanı"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 722
+#: NEEDS WORK
+msgid "Assistant Settings"
+msgstr "Yardımcı Ayarları"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 724
+#: NEEDS WORK
+msgid "Configure the provider and credentials used to generate suggestions."
+msgstr "Sağlayıcıyı ve öneri oluşturmak için kullanılan kimlik bilgilerini yapılandırın."
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 729
+#: NEEDS WORK
+msgid "Enable AI Assistant"
+msgstr "AI Asistanı Etkinleştir"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 730
+#: NEEDS WORK
+msgid "Allow prompts to use an external provider (Ctrl+Shift+I)."
+msgstr "İstemlerin harici bir sağlayıcıyı kullanmasına izin ver (Ctrl+Shift+I)."
+# 
+# #-#-#-#-#  tac-writer.pot (tac-writer)  #-#-#-#-#
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 736
+# File: usr/share/tac-writer/ui/main_window.py, line: 1133
+#: NEEDS WORK
+msgid "Provider"
+msgstr "Sağlayıcı"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 748
+#: NEEDS WORK
+msgid "Model Identifier"
+msgstr "Model Tanımlayıcı"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 749
+#: NEEDS WORK
+msgid "Examples:gemini-2.5-flash."
+msgstr "örnekler:gemini-2.5-flaş."
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 752
+#: NEEDS WORK
+msgid "gemini-2.5-flash"
+msgstr "gemini-2.5-flash"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 759
+#: NEEDS WORK
+msgid "API Key"
+msgstr "API Anahtarı"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 760
+#: NEEDS WORK
+msgid "Stored locally and used to authenticate requests."
+msgstr "Yerel olarak saklanır ve istekleri kimlik doğrulamak için kullanılır."
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 763
+#: NEEDS WORK
+msgid "Paste your API key"
+msgstr "API anahtarınızı yapıştırın"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 773
+#: NEEDS WORK
+msgid "Site URL (optional)"
+msgstr "Site URL (isteğe bağlı)"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 774
+#: NEEDS WORK
+msgid "Used as HTTP Referer header for OpenRouter rankings."
+msgstr "OpenRouter sıralamaları için HTTP Referer başlığı olarak kullanılır."
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 777
+#: NEEDS WORK
+msgid "https://example.com"
+msgstr "https://example.com"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 789
+#: NEEDS WORK
+msgid "Site title (optional)"
+msgstr "Site başlığı (isteğe bağlı)"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 790
+#: NEEDS WORK
+msgid "Sent via X-Title header for OpenRouter rankings."
+msgstr "OpenRouter sıralamaları için X-Title başlığı aracılığıyla gönderildi."
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 793
+#: NEEDS WORK
+msgid "My Project"
+msgstr "Projem"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 737
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error loading preferences: {}"
+msgstr "Tercihler yüklenirken hata: {}"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 751
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error changing theme: {}"
+msgstr "Tema değiştirilirken hata: {}"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 760
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error changing font family: {}"
+msgstr "Yazı tipi ailesi değiştirilirken hata: {}"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 767
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error changing font size: {}"
+msgstr "Yazı tipi boyutunu değiştirme hatası: {}"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 774
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error changing auto save: {}"
+msgstr "Otomatik kaydı değiştirme hatası: {}"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 781
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error changing word wrap: {}"
+msgstr "Kelimeleri sarma hatası: {}"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 788
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error changing line numbers: {}"
+msgstr "Hata, satır numaralarını değiştirme: {}"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 946
+#: NEEDS WORK
+msgid "Gemini model identifier (for example: gemini-2.5-flash)."
+msgstr "Gemini model tanımlayıcısı (örneğin: gemini-2.5-flash)."
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 948
+#: NEEDS WORK
+msgid "Google AI Studio API key."
+msgstr "Google AI Studio API anahtarı."
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 950
+#: NEEDS WORK
+msgid "OpenRouter model identifier (for example: x-ai/grok-4.1-fast:free)."
+msgstr "OpenRouter model tanımlayıcısı (örneğin: x-ai/grok-4.1-fast:free)."
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 956
+#: NEEDS WORK
+msgid "OpenRouter API key."
+msgstr "OpenRouter API anahtarı."
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 960
+#: NEEDS WORK
+msgid "model-name"
+msgstr "model adı"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 962
+#: NEEDS WORK
+msgid "Model identifier required by the selected provider."
+msgstr "Seçilen sağlayıcı tarafından gereken model tanımlayıcısı."
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 964
+#: NEEDS WORK
+msgid "API key used to authenticate requests."
+msgstr "API anahtarı, istekleri kimlik doğrulamak için kullanılır."
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 833
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error applying welcome dialog CSS: {}"
+msgstr "Hoş geldin diyalog CSS'sini uygularken hata: {}"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 793
+#: NEEDS WORK
+msgid "What is TAC Writer?"
+msgstr "TAC Writer nedir?"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 804
+#: NEEDS WORK
+msgid "Continuous Argumentation Technique (TAC in Portuguese):"
+msgstr "Sürekli Argümantasyon Tekniği (Portekizce'de TAC)"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1057
+#: NEEDS WORK
+msgid ""
+"Tac Writer is a tool based on the TAC technique (Continued Argumentation Technique) and the "
+"Pomodoro method. TAC technique helps writers develop an idea in an organized manner, separating the "
+"paragraph into different stages. Read wiki to take advantage of all the resources. To open wiki "
+"click on '?' icon"
+msgstr ""
+"Tac Writer, TAC tekniğine (Sürekli Argümantasyon Tekniği) ve Pomodoro yöntemine dayanan bir "
+"araçtır. TAC tekniği, yazarların bir fikri düzenli bir şekilde geliştirmelerine yardımcı olur, "
+"paragrafı farklı aşamalara ayırır. Tüm kaynaklardan yararlanmak için wiki'yi okuyun. Wiki'yi açmak "
+"için '?' simgesine tıklayın."
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 822
+#: NEEDS WORK
+msgid "Learn More - Online Documentation"
+msgstr "Daha Fazla Bilgi Edinin - Çevrimiçi Belgeler"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 826
+#: NEEDS WORK
+msgid "Access the complete guide and tutorials"
+msgstr "Tamamlayıcı kılavuzu ve eğitimleri erişin"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 843
+#: NEEDS WORK
+msgid "Show this dialog on startup"
+msgstr "Bu iletişimi başlangıçta göster"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 861
+#: NEEDS WORK
+msgid "Let's Start"
+msgstr "Hadi Başlayalım"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 949
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error saving welcome dialog preference: {}"
+msgstr "Hoş geldin diyalog tercihini kaydederken hata: {}"
+# 
+# #-#-#-#-#  tac-writer.pot (tac-writer)  #-#-#-#-#
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 969
+# File: usr/share/tac-writer/ui/components.py, line: 662
+#: NEEDS WORK
+#, python-brace-format
+msgid "Could not open wiki URL: {}"
+msgstr "Wiki URL'si açılamadı: {}"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 978
+#: NEEDS WORK
+msgid "Backup Manager"
+msgstr "Yedekleme Yöneticisi"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1000
+#: NEEDS WORK
+msgid "Close"
+msgstr "Kapat"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1006
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1167
+#: NEEDS WORK
+msgid "Create Backup"
+msgstr "Yedek Oluştur"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1013
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1190
+#: NEEDS WORK
+msgid "Import Database"
+msgstr "Veritabanı İçe Aktar"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1029
+#: NEEDS WORK
+msgid "Current Database"
+msgstr "Geçerli Veritabanı"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1072
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error getting database info: {}"
+msgstr "Veritabanı bilgileri alınırken hata: {}"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1035
+#: NEEDS WORK
+msgid "Database Location"
+msgstr "Veritabanı Konumu"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1042
+#: NEEDS WORK
+#, python-brace-format
+msgid "{} projects, {} MB"
+msgstr "{} projeler, {} MB"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1053
+#: NEEDS WORK
+msgid "Available Backups"
+msgstr "Mevcut Yedeklemeler"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1054
+#: NEEDS WORK
+msgid "Backups are stored in Documents/TAC Projects/database_backups"
+msgstr "Yedekler Belgeler/TAC Projeleri/veritabanı_yedekleri içinde saklanır."
+# 
+# #-#-#-#-#  tac-writer.pot (tac-writer)  #-#-#-#-#
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1137
+# File: usr/share/tac-writer/core/services.py, line: 722
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error listing backups: {}"
+msgstr "Yedekleri listeleme hatası: {}"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1093
+#: NEEDS WORK
+msgid "No backups found"
+msgstr "Yedek bulunamadı"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1094
+#: NEEDS WORK
+msgid "Create a backup or import an existing database file"
+msgstr "Bir yedek oluşturun veya mevcut bir veritabanı dosyasını içe aktarın."
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1112
+#: NEEDS WORK
+#, python-brace-format
+msgid "{:.1f} MB • {} projects • {}"
+msgstr "{:.1f} MB • {} projeler • {}"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1120
+#: NEEDS WORK
+msgid "Valid backup"
+msgstr "Geçerli yedek"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1123
+#: NEEDS WORK
+msgid "Invalid or corrupted backup"
+msgstr "Geçersiz veya bozuk yedekleme"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1135
+#: NEEDS WORK
+msgid "Import this backup"
+msgstr "Bu yedeği içe aktar"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1143
+#: NEEDS WORK
+msgid "Delete backup"
+msgstr "Yedeklemeyi sil"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1155
+#: NEEDS WORK
+msgid "Creating..."
+msgstr "Oluşturuluyor..."
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1212
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error in backup thread: {}"
+msgstr "Yedekleme iş parçacığında hata: {}"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1173
+#: NEEDS WORK
+msgid "Backup created successfully"
+msgstr "Yedek başarıyla oluşturuldu."
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1179
+#: NEEDS WORK
+msgid "Backup Failed"
+msgstr "Yedekleme Başarısız"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1180
+#: NEEDS WORK
+msgid "Could not create backup. Check the console for details."
+msgstr "Yedek oluşturulamadı. Ayrıntılar için konsolu kontrol edin."
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1193
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1256
+#: NEEDS WORK
+msgid "Import"
+msgstr "İçe Aktar"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1199
+#: NEEDS WORK
+msgid "Database files (*.db)"
+msgstr "Veritabanı dosyaları (*.db)"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1204
+#: NEEDS WORK
+msgid "All files"
+msgstr "Tüm dosyalar"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1230
+#: NEEDS WORK
+msgid "Invalid Backup"
+msgstr "Geçersiz Yedekleme"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1231
+#: NEEDS WORK
+msgid "The selected file is not a valid TAC database backup."
+msgstr "Seçilen dosya geçerli bir TAC veritabanı yedeği değildir."
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1292
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error validating backup: {}"
+msgstr "Yedek doğrulama hatası: {}"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1302
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error reading backup info: {}"
+msgstr "Yedek bilgi okunurken hata: {}"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1249
+#: NEEDS WORK
+msgid "Import Database?"
+msgstr "Veritabanı İçe Aktar?"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1250
+#: NEEDS WORK
+#, python-brace-format
+msgid ""
+"This will replace your current database with the selected backup.\n"
+"\n"
+"The backup contains {} projects.\n"
+"\n"
+"Your current database will be backed up before importing."
+msgstr ""
+"Bu, mevcut veritabanınızı seçilen yedekle değiştirecektir.\n"
+"\n"
+"Yedek {} projeyi içermektedir.\n"
+"\n"
+"Mevcut veritabanınız, içe aktarmadan önce yedeklenecektir."
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1275
+#: NEEDS WORK
+msgid "Importing Database"
+msgstr "Veritabanı İçe Aktarma"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1276
+#: NEEDS WORK
+msgid "Please wait while the database is being imported..."
+msgstr "Lütfen veritabanı içe aktarılırken bekleyin..."
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1344
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error in import thread: {}"
+msgstr "İçe aktarma iş parçacığında hata: {}"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1295
+#: NEEDS WORK
+msgid "Import Successful"
+msgstr "İthalat Başarılı"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1296
+#: NEEDS WORK
+msgid "Database imported successfully. The application will refresh to show the imported projects."
+msgstr "Veritabanı başarıyla içe aktarıldı. Uygulama, içe aktarılan projeleri göstermek için yenilenecektir."
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1311
+#: NEEDS WORK
+msgid "Import Failed"
+msgstr "İthalat Başarısız"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1312
+#: NEEDS WORK
+msgid "Could not import the database. Your current database remains unchanged."
+msgstr "Veritabanı içe aktarılamadı. Mevcut veritabanınız değişmeden kalır."
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1323
+#: NEEDS WORK
+msgid "Delete Backup?"
+msgstr "Yedeklemeyi Sil?"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1324
+#: NEEDS WORK
+#, python-brace-format
+msgid ""
+"Are you sure you want to delete '{}'?\n"
+"\n"
+"This action cannot be undone."
+msgstr ""
+"'{}' silmek istediğinize emin misiniz?\n"
+"\n"
+"Bu işlem geri alınamaz."
+# 
+# #-#-#-#-#  tac-writer.pot (tac-writer)  #-#-#-#-#
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1328
+# File: usr/share/tac-writer/ui/components.py, line: 918
+#: NEEDS WORK
+msgid "Delete"
+msgstr "Silmek"
+# 
+# #-#-#-#-#  tac-writer.pot (tac-writer)  #-#-#-#-#
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1406
+# File: usr/share/tac-writer/core/services.py, line: 808
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error deleting backup: {}"
+msgstr "Yedek silinirken hata: {}"
+# 
+# #-#-#-#-#  tac-writer.pot (tac-writer)  #-#-#-#-#
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1609
+# File: usr/share/tac-writer/ui/main_window.py, line: 627
+#: NEEDS WORK
+msgid "Edit Image"
+msgstr "Görüntüyü Düzenle"
+# 
+# #-#-#-#-#  tac-writer.pot (tac-writer)  #-#-#-#-#
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1421
+# File: usr/share/tac-writer/ui/main_window.py, line: 357
+#: NEEDS WORK
+msgid "Insert Image"
+msgstr "Görüntü Ekle"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1649
+#: NEEDS WORK
+msgid "Update"
+msgstr "Güncelleme"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1454
+#: NEEDS WORK
+msgid "Insert"
+msgstr "Ekle"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1478
+#: NEEDS WORK
+msgid "Image File"
+msgstr "Görüntü Dosyası"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1479
+#: NEEDS WORK
+msgid "Select an image file to insert into your document"
+msgstr "Belgenize eklemek için bir resim dosyası seçin"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1484
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1658
+#: NEEDS WORK
+msgid "Select Image"
+msgstr "Görüntü Seçin"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1485
+#: NEEDS WORK
+msgid "No file selected"
+msgstr "Hiçbir dosya seçilmedi"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1489
+#: NEEDS WORK
+msgid "Browse..."
+msgstr "Gözat..."
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1501
+#: NEEDS WORK
+msgid "Preview"
+msgstr "Önizleme"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1523
+#: NEEDS WORK
+msgid "Image Formatting"
+msgstr "Görüntü Biçimlendirme"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1529
+#: NEEDS WORK
+msgid "Display Width (%)"
+msgstr "Görüntü Genişliği (%)"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1530
+#: NEEDS WORK
+msgid "Percentage of page width"
+msgstr "Sayfa genişliğinin yüzdesi"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1548
+#: NEEDS WORK
+msgid "Alignment"
+msgstr "Hizalama"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1549
+#: NEEDS WORK
+msgid "Image position on the page"
+msgstr "Sayfanın üzerindeki resim konumu"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1556
+#: NEEDS WORK
+msgid "Left"
+msgstr "Sol"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1557
+#: NEEDS WORK
+msgid "Center"
+msgstr "Merkez"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1558
+#: NEEDS WORK
+msgid "Right"
+msgstr "Sağ"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1579
+#: NEEDS WORK
+msgid "Caption (optional)"
+msgstr "Başlık (isteğe bağlı)"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1585
+#: NEEDS WORK
+msgid "Alternative Text (optional)"
+msgstr "Alternatif Metin (isteğe bağlı)"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1592
+#: NEEDS WORK
+msgid "Position in Document"
+msgstr "Belgedeki Konum"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1598
+#: NEEDS WORK
+msgid "Insert After"
+msgstr "Sonra Ekle"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1599
+#: NEEDS WORK
+msgid "Choose where to place the image"
+msgstr "Görüntüyü nereye yerleştireceğinizi seçin"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1610
+#: NEEDS WORK
+msgid "Beginning of document"
+msgstr "Belgenin başı"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1620
+#: NEEDS WORK
+msgid "Image"
+msgstr "Görüntü"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1622
+#: NEEDS WORK
+msgid "(empty)"
+msgstr "(boş)"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1645
+#: NEEDS WORK
+msgid "Image Files"
+msgstr "Görüntü Dosyaları"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1672
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error selecting file: {}"
+msgstr "Dosya seçerken hata: {}"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1695
+#: NEEDS WORK
+#, python-brace-format
+msgid "Size: {} x {} pixels  •  {:.1f} KB"
+msgstr "Boyut: {} x {} piksel  •  {:.1f} KB"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1714
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error loading image: {}"
+msgstr "Görüntü yüklenirken hata: {}"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1718
+#: NEEDS WORK
+msgid "Error Loading Image"
+msgstr "Görüntü Yüklenirken Hata"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1901
+#: NEEDS WORK
+msgid "Could not load the selected image file."
+msgstr "Seçilen resim dosyası yüklenemedi."
+# 
+# #-#-#-#-#  tac-writer.pot (tac-writer)  #-#-#-#-#
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 2013
+# File: usr/share/tac-writer/ui/main_window.py, line: 733
+#: NEEDS WORK
+msgid "Error updating image"
+msgstr "Görüntü güncellenirken hata"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 1056
+#: NEEDS WORK
+msgid "Error inserting image"
+msgstr "Görüntü eklenirken hata"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 2021
+#: NEEDS WORK
+#, python-brace-format
+msgid "Could not {} the image."
+msgstr "Görüntüyü {} yapamadı."
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 2021
+#: NEEDS WORK
+msgid "update"
+msgstr "güncelleme"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 2021
+#: NEEDS WORK
+msgid "insert"
+msgstr "ekle"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 2069
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error loading existing image: {}"
+msgstr "Mevcut görüntü yüklenirken hata: {}"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 1992
+#: NEEDS WORK
+msgid "PDF Review by AI"
+msgstr "AI ile PDF İncelemesi"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 2027
+#: NEEDS WORK
+msgid ""
+"Select a PDF file of your text for review.\n"
+"The AI ​​will perform a spelling, grammar, and semantic analysis.\n"
+"IMPORTANT: Consider the 10,000 character limit for free APIs. Splitting your text into multiple "
+"files may be an alternative to paid API."
+msgstr ""
+"Metin incelemesi için bir PDF dosyası seçin.  \n"
+"Yapay zeka, yazım, dilbilgisi ve anlamsal analiz gerçekleştirecektir.  \n"
+"ÖNEMLİ: Ücretsiz API'ler için 10.000 karakter sınırını dikkate alın. Metninizi birden fazla dosyaya "
+"ayırmak, ücretli API'ye bir alternatif olabilir."
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 2041
+#: NEEDS WORK
+msgid "Choose PDF..."
+msgstr "PDF Seçin..."
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 2049
+#: NEEDS WORK
+msgid "Run Analysis"
+msgstr "Analiz Çalıştır"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 2065
+#: NEEDS WORK
+msgid "Select PDF"
+msgstr "PDF Seçin"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 2092
+#: NEEDS WORK
+msgid "Analyzing (may take a few minutes)"
+msgstr "Analiz ediliyor (birkaç dakika sürebilir)"
+# 
+# File: usr/share/tac-writer/ui/dialogs.py, line: 2105
+#: NEEDS WORK
+msgid "Analysis Results"
+msgstr "Analiz Sonuçları"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 163
+#: NEEDS WORK
+#, python-brace-format
+msgid "Session {}"
+msgstr "Oturum {}"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 170
+#: NEEDS WORK
+msgid "Long Break"
+msgstr "Uzun Ara"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 176
+#: NEEDS WORK
+msgid "Rest Time"
+msgstr "Dinlenme Süresi"
+# 
+# #-#-#-#-#  tac-writer.pot (tac-writer)  #-#-#-#-#
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 189
+# File: usr/share/tac-writer/ui/main_window.py, line: 115
+#: NEEDS WORK
+msgid "Pomodoro Timer"
+msgstr "Pomodoro Zamanlayıcı"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 228
+#: NEEDS WORK
+msgid "Minimize"
+msgstr "Küçültme"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 281
+#: NEEDS WORK
+msgid "Reset"
+msgstr "Sıfırla"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 360
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error setting up Pomodoro dialog styles: {}"
+msgstr "Pomodoro diyalog stillerini ayarlarken hata: {}"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 386
+#: NEEDS WORK
+msgid "⏸ Pause"
+msgstr "⏸ Duraklat"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 390
+#: NEEDS WORK
+msgid "▶ Start"
+msgstr "▶ Başla"
+# 
+# #-#-#-#-#  tac-writer.pot (tac-writer)  #-#-#-#-#
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 494
+# File: usr/share/tac-writer/application.py, line: 229
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error checking dictionary {}: {}"
+msgstr "Hata kontrolü sözlüğü {}: {}"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 497
+#: NEEDS WORK
+#, python-brace-format
+msgid "Enchant not available for spell checking: {}"
+msgstr "Büyü, yazım denetimi için mevcut değil: {}"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 521
+# File: usr/share/tac-writer/ui/components.py, line: 1020
+#: NEEDS WORK
+#, python-brace-format
+msgid "Spell check setup failed: {}"
+msgstr "Yazım denetimi kurulumu başarısız oldu: {}"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 539
+# File: usr/share/tac-writer/ui/components.py, line: 1092
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error toggling spell check: {}"
+msgstr "Hata, yazım denetimini açıp kapatırken: {}"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 575
+#: NEEDS WORK
+msgid "Welcome to TAC"
+msgstr "TAC'a hoş geldiniz"
+# 
+# #-#-#-#-#  tac-writer.pot (tac-writer)  #-#-#-#-#
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 581
+# File: usr/share/tac-writer/ui/main_window.py, line: 777
+#: NEEDS WORK
+msgid "Continuous Argumentation Technique"
+msgstr "Sürekli Argümantasyon Tekniği"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 588
+#: NEEDS WORK
+msgid "Create structured academic texts with guided paragraph types"
+msgstr "Yapılandırılmış akademik metinler oluşturun, yönlendirilmiş paragraf türleri ile."
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 600
+#: NEEDS WORK
+msgid "How To Wiki"
+msgstr "Nasıl Yapılır Wiki"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 604
+#: NEEDS WORK
+msgid "Access the online documentation and tutorials"
+msgstr "Çevrimiçi belgeleri ve eğitimleri erişin"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 614
+#: NEEDS WORK
+msgid "Note:"
+msgstr "Not:"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 614
+#: NEEDS WORK
+msgid "exporting to ODT might require some adjustment in your Office Suite."
+msgstr "ODT'ye dışa aktarmak, Ofis Paketinizi ayarlamanızı gerektirebilir."
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 627
+#: NEEDS WORK
+msgid "Start Writing"
+msgstr "Yazmaya Başla"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 628
+#: NEEDS WORK
+msgid "Choose a template to get started"
+msgstr "Başlamak için bir şablon seçin"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 638
+#: NEEDS WORK
+msgid "Start"
+msgstr "Başla"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 687
+#: NEEDS WORK
+msgid "Search projects..."
+msgstr "Projeleri ara..."
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 781
+#: NEEDS WORK
+msgid "Rename project"
+msgstr "Projeyi yeniden adlandır"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 790
+#: NEEDS WORK
+msgid "Delete project"
+msgstr "Projeyi sil"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 863
+#: NEEDS WORK
+msgid "Rename Project"
+msgstr "Projeyi Yeniden Adlandır"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 864
+#: NEEDS WORK
+#, python-brace-format
+msgid "Enter new name for '{}'"
+msgstr "'{}' için yeni ad girin"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 881
+#: NEEDS WORK
+msgid "Rename"
+msgstr "Yeniden Adlandır"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 913
+#: NEEDS WORK
+#, python-brace-format
+msgid "Delete '{}'?"
+msgstr "'{}' silinsin mi?"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 914
+#: NEEDS WORK
+msgid "This project will be moved to trash and can be recovered."
+msgstr "Bu proje çöp kutusuna taşınacak ve geri yüklenebilir."
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1000
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error during paragraph editor initialization: {}"
+msgstr "Paragraf düzenleyici başlatılırken hata: {}"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1044
+#: NEEDS WORK
+msgid "Manage footnotes"
+msgstr "Dipnotları yönet"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1053
+#: NEEDS WORK
+msgid "Toggle spell checking"
+msgstr "Yazım denetimini aç/kapat"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1069
+#: NEEDS WORK
+msgid "Remove paragraph"
+msgstr "Paragrafı kaldırın"
+# 
+# #-#-#-#-#  tac-writer.pot (tac-writer)  #-#-#-#-#
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1195
+# File: usr/share/tac-writer/ui/main_window.py, line: 329
+#: NEEDS WORK
+msgid "Title 1"
+msgstr "Başlık 1"
+# 
+# #-#-#-#-#  tac-writer.pot (tac-writer)  #-#-#-#-#
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1196
+# File: usr/share/tac-writer/ui/main_window.py, line: 330
+#: NEEDS WORK
+msgid "Title 2"
+msgstr "Başlık 2"
+# 
+# #-#-#-#-#  tac-writer.pot (tac-writer)  #-#-#-#-#
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1197
+# File: usr/share/tac-writer/ui/main_window.py, line: 331
+#: NEEDS WORK
+msgid "Introduction"
+msgstr "Giriş"
+# 
+# #-#-#-#-#  tac-writer.pot (tac-writer)  #-#-#-#-#
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1198
+# File: usr/share/tac-writer/ui/main_window.py, line: 332
+#: NEEDS WORK
+msgid "Argument"
+msgstr "Argüman"
+# 
+# #-#-#-#-#  tac-writer.pot (tac-writer)  #-#-#-#-#
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1202
+# File: usr/share/tac-writer/ui/main_window.py, line: 332
+#: NEEDS WORK
+msgid "Argument Resumption"
+msgstr "Argüman Devamı"
+# 
+# #-#-#-#-#  tac-writer.pot (tac-writer)  #-#-#-#-#
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1199
+# File: usr/share/tac-writer/ui/main_window.py, line: 333
+#: NEEDS WORK
+msgid "Quote"
+msgstr "Alıntı"
+# 
+# #-#-#-#-#  tac-writer.pot (tac-writer)  #-#-#-#-#
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1204
+# File: usr/share/tac-writer/ui/main_window.py, line: 334
+#: NEEDS WORK
+msgid "Epigraph"
+msgstr "Epigraf"
+# 
+# #-#-#-#-#  tac-writer.pot (tac-writer)  #-#-#-#-#
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1200
+# File: usr/share/tac-writer/ui/main_window.py, line: 334
+#: NEEDS WORK
+msgid "Conclusion"
+msgstr "Sonuç"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1202
+#: NEEDS WORK
+msgid "Paragraph"
+msgstr "Paragraf"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1260
+#: NEEDS WORK
+msgid "Remove Paragraph?"
+msgstr "Paragrafı Kaldır?"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1261
+#: NEEDS WORK
+msgid "This action cannot be undone."
+msgstr "Bu işlem geri alınamaz."
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1265
+#: NEEDS WORK
+msgid "Remove"
+msgstr "Kaldır"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1335
+#: NEEDS WORK
+msgid "1 footnote"
+msgstr "1 dipnot"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1337
+#: NEEDS WORK
+#, python-brace-format
+msgid "{} footnotes"
+msgstr "{} dipnotlar"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1338
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error setting up spell check: {}"
+msgstr "Hata: yazım denetimi kurulumu sırasında bir hata oluştu: {}"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1364
+#: NEEDS WORK
+msgid "Manage Footnotes"
+msgstr "Dipnotları Yönet"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1391
+#: NEEDS WORK
+msgid "Save"
+msgstr "Kaydet"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1408
+#: NEEDS WORK
+msgid "Add footnotes that will appear as numbered references in your paragraph:"
+msgstr "Paragrafınızda numaralı referanslar olarak görünecek dipnotlar ekleyin:"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1424
+#: NEEDS WORK
+msgid "Add Footnote"
+msgstr "Dipnot Ekle"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1498
+#: NEEDS WORK
+msgid "Enter footnote text..."
+msgstr "Dipnot metnini girin..."
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1620
+#: NEEDS WORK
+msgid "Welcome to TAC Writer!"
+msgstr "TAC Writer'a hoş geldiniz!"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1621
+#: NEEDS WORK
+msgid "Let's take a quick tour. Click here to create your first project and start writing."
+msgstr "Hızlı bir tur atalım. İlk projenizi oluşturmak ve yazmaya başlamak için buraya tıklayın."
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1626
+#: NEEDS WORK
+msgid "Project Library"
+msgstr "Proje Kütüphanesi"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1627
+#: NEEDS WORK
+msgid "All your projects are listed here. You can search, rename, or delete them at any time."
+msgstr ""
+"Tüm projeleriniz burada listelenmiştir. İstediğiniz zaman arama yapabilir, yeniden adlandırabilir "
+"veya silebilirsiniz."
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1633
+#: NEEDS WORK
+msgid "Stay focused with the built-in Pomodoro timer. Perfect for writing sessions!"
+msgstr "Yerleşik Pomodoro zamanlayıcısıyla odaklanın. Yazma oturumları için mükemmel!"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1639
+#: NEEDS WORK
+msgid "Use AI to revise your exported text. Configure in Preferences. Read wiki for guided configuration."
+msgstr ""
+"Yüklediğiniz metni gözden geçirmek için AI kullanın. Tercihlerde yapılandırın. Rehberli "
+"yapılandırma için wiki'yi okuyun."
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1644
+#: NEEDS WORK
+msgid "Save Your Work"
+msgstr "Çalışmanızı Kaydedin"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1645
+#: NEEDS WORK
+msgid "Don't worry! Auto-save is enabled by default, but you can also save manually here."
+msgstr ""
+"Endişelenmeyin! Otomatik kaydetme varsayılan olarak etkinleştirilmiştir, ancak burada manuel olarak "
+"da kaydedebilirsiniz."
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1751
+#: NEEDS WORK
+msgid "Skip Tour"
+msgstr "Turu Atla"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1757
+#: NEEDS WORK
+msgid "Previous"
+msgstr "Önceki"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1763
+#: NEEDS WORK
+msgid "Next"
+msgstr "Sonraki"
+# 
+# File: usr/share/tac-writer/ui/components.py, line: 1767
+#: NEEDS WORK
+msgid "Finish"
+msgstr "Bitir"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 64
+#: NEEDS WORK
+msgid "TAC - Continuous Argumentation Technique"
+msgstr "TAC - Sürekli Argümantasyon Tekniği"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 108
+#: NEEDS WORK
+msgid "New Project (Ctrl+N)"
+msgstr "Yeni Proje (Ctrl+N)"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 132
+#: NEEDS WORK
+msgid "Main Menu"
+msgstr "Ana Menü"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 123
+#: NEEDS WORK
+msgid "Save Project (Ctrl+S)"
+msgstr "Projeyi Kaydet (Ctrl+S)"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 149
+#: NEEDS WORK
+msgid "Ask AI Assistant (Ctrl+Shift+I)"
+msgstr "Yapay Zeka Asistanı (Ctrl+Shift+I)"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 165
+#: NEEDS WORK
+msgid "Search..."
+msgstr "Ara..."
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 172
+#: NEEDS WORK
+msgid "Find next occurrence"
+msgstr "Sonraki durumu bul"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 142
+#: NEEDS WORK
+msgid "Export Project..."
+msgstr "Projeyi Dışa Aktar..."
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 143
+#: NEEDS WORK
+msgid "Backup Manager..."
+msgstr "Yedekleme Yöneticisi..."
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 148
+# File: usr/share/tac-writer/ui/main_window.py, line: 477
+#: NEEDS WORK
+msgid "Undo"
+msgstr "Geri Al"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 149
+# File: usr/share/tac-writer/ui/main_window.py, line: 497
+#: NEEDS WORK
+msgid "Redo"
+msgstr "Yeniden Yap"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 159
+#: NEEDS WORK
+msgid "Welcome Guide"
+msgstr "Karşılama Kılavuzu"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 210
+#: NEEDS WORK
+msgid "Ask AI Assistant"
+msgstr "Yapay Zeka Asistanı Sorun"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 160
+#: NEEDS WORK
+msgid "About TAC"
+msgstr "TAC Hakkında"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 192
+#: NEEDS WORK
+msgid "Projects"
+msgstr "Projeler"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 322
+#: NEEDS WORK
+msgid "Add Paragraph"
+msgstr "Paragraf Ekle"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 409
+#: NEEDS WORK
+msgid "Insert Image (Ctrl+Alt+I)"
+msgstr "Görüntü Ekle (Ctrl+Alt+I)"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 357
+#: NEEDS WORK
+msgid "Go to beginning"
+msgstr "Başa git"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 367
+#: NEEDS WORK
+msgid "Go to end"
+msgstr "Sonuna git"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 476
+#: NEEDS WORK
+msgid "⚠️ Error: Invalid image data"
+msgstr "⚠️ Hata: Geçersiz resim verisi"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 541
+#: NEEDS WORK
+#, python-brace-format
+msgid "⚠️ Image not found: {}"
+msgstr "⚠️ Görüntü bulunamadı: {}"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 549
+#: NEEDS WORK
+#, python-brace-format
+msgid "⚠️ Error loading image: {}"
+msgstr "⚠️ Görüntü yüklenirken hata: {}"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 565
+#: NEEDS WORK
+msgid "Remove Image"
+msgstr "Resmi Kaldır"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 580
+#: NEEDS WORK
+msgid "Remove Image?"
+msgstr "Görüntüyü Kaldır?"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 581
+#: NEEDS WORK
+msgid "Are you sure you want to remove this image from the document?"
+msgstr "Bu resmi belgeden kaldırmak istediğinizden emin misiniz?"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 603
+#: NEEDS WORK
+msgid "Image removed"
+msgstr "Görüntü kaldırıldı"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 606
+#: NEEDS WORK
+msgid "Error removing image"
+msgstr "Görüntü silinirken hata"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 728
+#: NEEDS WORK
+msgid "Image updated"
+msgstr "Görüntü güncellendi"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 487
+#: NEEDS WORK
+msgid "Nothing to undo"
+msgstr "Geri alacak hiçbir şey yok"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 507
+#: NEEDS WORK
+msgid "Nothing to redo"
+msgstr "Yeniden yapılacak hiçbir şey yok"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 563
+#: NEEDS WORK
+msgid "Paragraph reordered"
+msgstr "Paragraf sıralandı"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 789
+#: NEEDS WORK
+msgid "No project open"
+msgstr "Açık proje yok"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 614
+#: NEEDS WORK
+msgid "Open Project"
+msgstr "Proje Aç"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 617
+#: NEEDS WORK
+msgid "Open"
+msgstr "Açık"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 626
+#: NEEDS WORK
+msgid "TAC Projects (*.json)"
+msgstr "TAC Projeleri (*.json)"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 631
+#: NEEDS WORK
+msgid "All Files"
+msgstr "Tüm Dosyalar"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 645
+# File: usr/share/tac-writer/ui/main_window.py, line: 832
+#: NEEDS WORK
+#, python-brace-format
+msgid "Opened project: {}"
+msgstr "Açık proje: {}"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 647
+# File: usr/share/tac-writer/ui/main_window.py, line: 834
+#: NEEDS WORK
+msgid "Failed to open project"
+msgstr "Proje açılamadı"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 660
+#: NEEDS WORK
+msgid "Project saved successfully"
+msgstr "Proje başarıyla kaydedildi."
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 664
+#: NEEDS WORK
+msgid "Failed to save project"
+msgstr "Proje kaydedilemedi"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 730
+#: NEEDS WORK
+msgid "Auto-save failed"
+msgstr "Otomatik kaydetme başarısız oldu"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 671
+#: NEEDS WORK
+msgid "No project to export"
+msgstr "Dışa aktarılacak proje yok"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 710
+#: NEEDS WORK
+msgid "Database imported successfully"
+msgstr "Veritabanı başarıyla içe aktarıldı"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 746
+#: NEEDS WORK
+#, python-brace-format
+msgid "Created project: {}"
+msgstr "Oluşturulan proje: {}"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 1111
+#: NEEDS WORK
+msgid ""
+"Click here to start writing!\n"
+"\n"
+"Add paragraphs to build your text."
+msgstr ""
+"Buraya tıklayarak yazmaya başlayın!\n"
+"\n"
+"Metninizi oluşturmak için paragraflar ekleyin."
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 1118
+#: NEEDS WORK
+msgid "Got it!"
+msgstr "Anladım!"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 1043
+#: NEEDS WORK
+msgid "Image inserted successfully"
+msgstr "Görüntü başarıyla eklendi"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 1125
+#: NEEDS WORK
+msgid "Enable the AI assistant in Preferences ▸ AI Assistant."
+msgstr "Ayarlar ▸ AI Asistanı'nda AI asistanını etkinleştir."
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 1134
+#: NEEDS WORK
+msgid "API key"
+msgstr "API anahtarı"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 1138
+#: NEEDS WORK
+#, python-brace-format
+msgid "Configure {items} in Preferences ▸ AI Assistant."
+msgstr "Tercihler ▸ AI Asistanı'nda {items} yapılandır."
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 1145
+#: NEEDS WORK
+msgid "Enable AI in Preferences. API key is required. Read Wiki if there is any doubt."
+msgstr "Tercihlerde AI'yi etkinleştir. API anahtarı gereklidir. Herhangi bir şüpheniz varsa Wiki'yi okuyun."
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 1339
+#: NEEDS WORK
+msgid "Please enter a question for the assistant."
+msgstr "Lütfen asistan için bir soru girin."
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 1344
+#: NEEDS WORK
+msgid "The AI assistant is processing your request..."
+msgstr "Yapay zeka asistanı isteğinizi işliyor..."
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 1381
+#: NEEDS WORK
+msgid "Here is the assistant's suggestion."
+msgstr "İşte asistanın önerisi."
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 1413
+#: NEEDS WORK
+msgid "Response"
+msgstr "Yanıt"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 1431
+#: NEEDS WORK
+msgid "Copy to clipboard"
+msgstr "Pano kopyala"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 1450
+#: NEEDS WORK
+msgid "Insert at cursor"
+msgstr "İmleçte Ekle"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 1456
+#: NEEDS WORK
+msgid "Apply correction"
+msgstr "Düzeltmeyi uygula"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 1443
+#: NEEDS WORK
+msgid "Additional suggestions"
+msgstr "Ek öneriler"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 1507
+#: NEEDS WORK
+msgid "Copied to clipboard."
+msgstr "Panoza kopyalandı."
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 1513
+#: NEEDS WORK
+msgid "Place the cursor inside a paragraph to insert the text."
+msgstr "Metni eklemek için imleci bir paragrafın içine yerleştirin."
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 1520
+#: NEEDS WORK
+msgid "Nothing to insert."
+msgstr "Eklenecek hiçbir şey yok."
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 1531
+#: NEEDS WORK
+msgid "Text inserted into the document."
+msgstr "Belgeye eklenen metin."
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 1545
+#: NEEDS WORK
+msgid "No paragraph context available. Try inserting at the cursor."
+msgstr "Paragraf bağlamı mevcut değil. İmleci kullanarak eklemeyi deneyin."
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 1558
+#: NEEDS WORK
+msgid "Could not determine the original paragraph."
+msgstr "Orijinal paragraf belirlenemedi."
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 1572
+#: NEEDS WORK
+msgid "Paragraph updated with AI suggestion."
+msgstr "Paragraf, AI önerisi ile güncellendi."
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 1556
+# File: usr/share/tac-writer/ui/main_window.py, line: 1563
+#: NEEDS WORK
+msgid "Enter text to search."
+msgstr "Metin girin."
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 1559
+#: NEEDS WORK
+msgid "No matches found."
+msgstr "Eşleşme bulunamadı."
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 1574
+#: NEEDS WORK
+msgid "No editable paragraphs available."
+msgstr "Düzenlenebilir paragraf yok."
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 1598
+#: NEEDS WORK
+msgid "Reached the end of the document."
+msgstr "Belgenin sonuna ulaşıldı."
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 807
+#: NEEDS WORK
+msgid "Loading project..."
+msgstr "Proje yükleniyor..."
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 824
+#: NEEDS WORK
+#, python-brace-format
+msgid "Failed to open project: {}"
+msgstr "Proje açılamadı: {}"
+# 
+# File: usr/share/tac-writer/ui/main_window.py, line: 1638
+#: NEEDS WORK
+msgid "Analysis Failure"
+msgstr "Analiz Hatası"
+# 
+# File: usr/share/tac-writer/application.py, line: 127
+#: NEEDS WORK
+#, python-brace-format
+msgid "Warning: Could not set system locale: {}"
+msgstr "Uyarı: Sistem yerel ayarını ayarlamak mümkün olmadı: {}"
+# 
+# File: usr/share/tac-writer/application.py, line: 210
+#: NEEDS WORK
+msgid "PyGTKSpellcheck not installed - disabling spell checking"
+msgstr "PyGTKSpellcheck yüklü değil - yazım denetimi devre dışı bırakılıyor"
+# 
+# File: usr/share/tac-writer/application.py, line: 216
+#: NEEDS WORK
+msgid "Enchant backend not available - disabling spell checking"
+msgstr "Enchant arka ucu mevcut değil - yazım denetimi devre dışı bırakılıyor"
+# 
+# File: usr/share/tac-writer/application.py, line: 233
+#: NEEDS WORK
+#, python-brace-format
+msgid "Available spell check dictionaries: {}"
+msgstr "Mevcut yazım denetimi sözlükleri: {}"
+# 
+# File: usr/share/tac-writer/application.py, line: 242
+#: NEEDS WORK
+#, python-brace-format
+msgid "Using auto-detected language: {}"
+msgstr "Otomatik algılanan dil kullanılıyor: {}"
+# 
+# File: usr/share/tac-writer/application.py, line: 247
+#: NEEDS WORK
+#, python-brace-format
+msgid "Auto-detected language not available, using fallback: {}"
+msgstr "Otomatik algılanan dil mevcut değil, yedek kullanılıyor: {}"
+# 
+# File: usr/share/tac-writer/application.py, line: 253
+#: NEEDS WORK
+msgid "No spell check dictionaries found - disabling spell checking"
+msgstr "Hiçbir yazım denetimi sözlüğü bulunamadı - yazım denetimi devre dışı bırakılıyor"
+# 
+# File: usr/share/tac-writer/application.py, line: 258
+#: NEEDS WORK
+#, python-brace-format
+msgid "Import error while checking spell dependencies: {}"
+msgstr "Hata: Büyü bağımlılıkları kontrol edilirken içe aktarma hatası: {}"
+# 
+# File: usr/share/tac-writer/application.py, line: 262
+#: NEEDS WORK
+#, python-brace-format
+msgid "Unexpected error checking spell dependencies: {}"
+msgstr "Beklenmedik hata, büyü bağımlılıklarını kontrol etme: {}"
+# 
+# File: usr/share/tac-writer/application.py, line: 285
+#: NEEDS WORK
+#, python-brace-format
+msgid "Custom icons loaded with priority: {}"
+msgstr "Özel simgeler öncelikle yüklendi: {}"
+# 
+# File: usr/share/tac-writer/application.py, line: 289
+#: NEEDS WORK
+#, python-brace-format
+msgid "Warning: Could not setup icon theme: {}"
+msgstr "Uyarı: Simge temasını ayarlamak mümkün olmadı: {}"
+# 
+# File: usr/share/tac-writer/application.py, line: 278
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error during application startup: {}: {}"
+msgstr "Uygulama başlatılırken hata: {}: {}"
+# 
+# File: usr/share/tac-writer/application.py, line: 291
+#: NEEDS WORK
+msgid "Main window created"
+msgstr "Ana pencere oluşturuldu"
+# 
+# File: usr/share/tac-writer/application.py, line: 295
+#: NEEDS WORK
+msgid "Main window presented"
+msgstr "Ana pencere sunuldu"
+# 
+# File: usr/share/tac-writer/application.py, line: 298
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error activating application: {}: {}"
+msgstr "Uygulama etkinleştirilirken hata: {}: {}"
+# 
+# File: usr/share/tac-writer/application.py, line: 320
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error setting up actions: {}: {}"
+msgstr "Eylemleri ayarlarken hata: {}: {}"
+# 
+# File: usr/share/tac-writer/application.py, line: 343
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error setting up menu: {}: {}"
+msgstr "Menü ayarlanırken hata: {}: {}"
+# 
+# File: usr/share/tac-writer/application.py, line: 433
+#: NEEDS WORK
+#, python-brace-format
+msgid "Could not apply CSS: {}"
+msgstr "CSS uygulanamadı: {}"
+# 
+# File: usr/share/tac-writer/application.py, line: 436
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error setting up theme: {}: {}"
+msgstr "Tema ayarlarında hata: {}: {}"
+# 
+# File: usr/share/tac-writer/application.py, line: 446
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error showing new project dialog: {}: {}"
+msgstr "Yeni proje iletişim kutusunu gösterirken hata: {}: {}"
+# 
+# File: usr/share/tac-writer/application.py, line: 454
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error showing open project dialog: {}: {}"
+msgstr "Açık proje iletişim kutusunu gösterirken hata: {}: {}"
+# 
+# File: usr/share/tac-writer/application.py, line: 462
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error saving project: {}: {}"
+msgstr "Proje kaydedilirken hata: {}: {}"
+# 
+# File: usr/share/tac-writer/application.py, line: 470
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error showing export dialog: {}: {}"
+msgstr "Hata, dışa aktarma iletişim kutusunu gösterirken: {}: {}"
+# 
+# File: usr/share/tac-writer/application.py, line: 478
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error showing preferences dialog: {}: {}"
+msgstr "Tercihler iletişim kutusunu gösterirken hata: {}: {}"
+# 
+# File: usr/share/tac-writer/application.py, line: 486
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error showing about dialog: {}: {}"
+msgstr "Hakkında iletişim kutusunu gösterirken hata: {}: {}"
+# 
+# File: usr/share/tac-writer/application.py, line: 583
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error opening AI assistant: {}: {}"
+msgstr "AI asistanı açılırken hata: {}: {}"
+# 
+# File: usr/share/tac-writer/application.py, line: 493
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error quitting application: {}: {}"
+msgstr "Uygulamayı kapatırken hata: {}: {}"
+# 
+# File: usr/share/tac-writer/application.py, line: 502
+#: NEEDS WORK
+msgid "Configuration saved"
+msgstr "Ayarlar kaydedildi"
+# 
+# File: usr/share/tac-writer/application.py, line: 508
+#: NEEDS WORK
+msgid "Application shutdown complete"
+msgstr "Uygulama kapatıldı."
+# 
+# File: usr/share/tac-writer/application.py, line: 511
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error during shutdown: {}: {}"
+msgstr "Kapatma sırasında hata: {}: {}"
+# 
+# File: usr/share/tac-writer/application.py, line: 520
+#: NEEDS WORK
+msgid "No config available for spell check debug"
+msgstr "Hata ayıklama için yazım denetimi yapılandırması mevcut değil"
+# 
+# File: usr/share/tac-writer/core/ai_assistant.py, line: 67
+#: NEEDS WORK
+msgid "The AI assistant is already processing another request."
+msgstr "Yapay zeka asistanı zaten başka bir isteği işliyor."
+# 
+# File: usr/share/tac-writer/core/ai_assistant.py, line: 95
+#: NEEDS WORK
+#, python-brace-format
+msgid "AI assistant error: {error}"
+msgstr "Yapay zeka asistanı hatası: {error}"
+# 
+# File: usr/share/tac-writer/core/ai_assistant.py, line: 111
+#: NEEDS WORK
+msgid "Select an AI provider in Preferences ▸ AI Assistant."
+msgstr "Tercihler ▸ AI Asistanı'nda bir AI sağlayıcısı seçin."
+# 
+# File: usr/share/tac-writer/core/ai_assistant.py, line: 130
+#: NEEDS WORK
+#, python-brace-format
+msgid ""
+"Instrução do usuário:\n"
+"{instruction}\n"
+"\n"
+"Texto para revisão:\n"
+"{context}"
+msgstr ""
+"Kullanıcı Talimatı:  \n"
+"{instruction}  \n"
+"\n"
+"Gözden Geçirme Metni:  \n"
+"{context}"
+# 
+# File: usr/share/tac-writer/core/ai_assistant.py, line: 137
+#: NEEDS WORK
+#, python-brace-format
+msgid ""
+"Revise o texto a seguir, corrigindo apenas o necessário e mantendo o tom acadêmico:\n"
+"{context}"
+msgstr ""
+"Aşağıdaki metni gözden geçirin, yalnızca gerekli düzeltmeleri yapın ve akademik tonu koruyun:  \n"
+"{context}"
+# 
+# File: usr/share/tac-writer/core/ai_assistant.py, line: 141
+#: NEEDS WORK
+msgid "Revise o texto a seguir e responda apenas com a versão corrigida."
+msgstr "Aşağıdaki metni gözden geçirin ve yalnızca düzeltilmiş versiyonunu yanıtlayın."
+# 
+# File: usr/share/tac-writer/core/ai_assistant.py, line: 150
+#: NEEDS WORK
+#, python-brace-format
+msgid "Provider '{provider}' is not supported."
+msgstr "Sağlayıcı '{provider}' desteklenmiyor."
+# 
+# File: usr/share/tac-writer/core/ai_assistant.py, line: 186
+#: NEEDS WORK
+msgid "Configure the Gemini API key in Preferences."
+msgstr "Tercihlerde Gemini API anahtarını yapılandırın."
+# 
+# File: usr/share/tac-writer/core/ai_assistant.py, line: 204
+#: NEEDS WORK
+#, python-brace-format
+msgid "Failed to contact Gemini: {error}"
+msgstr "Gemini ile iletişim kurulamadı: {error}"
+# 
+# File: usr/share/tac-writer/core/ai_assistant.py, line: 209
+#: NEEDS WORK
+#, python-brace-format
+msgid "Gemini responded with HTTP {status}: {detail}"
+msgstr "Gemini, HTTP {status} ile yanıt verdi: {detail}"
+# 
+# File: usr/share/tac-writer/core/ai_assistant.py, line: 217
+#: NEEDS WORK
+msgid "Gemini returned an invalid JSON response."
+msgstr "Gemini geçersiz bir JSON yanıtı döndürdü."
+# 
+# File: usr/share/tac-writer/core/ai_assistant.py, line: 233
+#: NEEDS WORK
+msgid "Gemini did not return any usable content."
+msgstr "Gemini kullanılabilir içerik döndürmedi."
+# 
+# File: usr/share/tac-writer/core/ai_assistant.py, line: 240
+#: NEEDS WORK
+msgid "Configure the OpenRouter API key in Preferences."
+msgstr "Ayarlar'da OpenRouter API anahtarını yapılandırın."
+# 
+# File: usr/share/tac-writer/core/ai_assistant.py, line: 262
+#: NEEDS WORK
+#, python-brace-format
+msgid "Failed to contact OpenRouter: {error}"
+msgstr "OpenRouter ile iletişim kurulamadı: {error}"
+# 
+# File: usr/share/tac-writer/core/ai_assistant.py, line: 274
+#: NEEDS WORK
+msgid "AI provider returned an invalid JSON response."
+msgstr "AI sağlayıcısı geçersiz bir JSON yanıtı döndürdü."
+# 
+# File: usr/share/tac-writer/core/ai_assistant.py, line: 278
+#: NEEDS WORK
+msgid "The AI provider returned an empty response."
+msgstr "Yapay zeka sağlayıcısı boş bir yanıt döndürdü."
+# 
+# File: usr/share/tac-writer/core/ai_assistant.py, line: 290
+#: NEEDS WORK
+msgid "The AI provider did not return any usable content."
+msgstr "Yapay zeka sağlayıcısı kullanılabilir içerik döndürmedi."
+# 
+# File: usr/share/tac-writer/core/ai_assistant.py, line: 422
+#: NEEDS WORK
+msgid "Unknown error."
+msgstr "Bilinmeyen hata."
+# 
+# File: usr/share/tac-writer/core/ai_assistant.py, line: 426
+# File: usr/share/tac-writer/core/ai_assistant.py, line: 432
+#: NEEDS WORK
+#, python-brace-format
+msgid "OpenRouter respondeu com HTTP {status}: {message}"
+msgstr "OpenRouter HTTP {status} ile yanıt verdi: {message}"
+# 
+# File: usr/share/tac-writer/core/ai_assistant.py, line: 446
+#: NEEDS WORK
+#, python-brace-format
+msgid "OpenRouter respondeu com HTTP {status}: {message}{detail}"
+msgstr "OpenRouter, HTTP {status} ile yanıt verdi: {message}{detail}"
+# 
+# File: usr/share/tac-writer/core/ai_assistant.py, line: 472
+#: NEEDS WORK
+msgid "Biblioteca pypdf não instalada."
+msgstr "pypdf kütüphanesi kurulu değil."
+# 
+# File: usr/share/tac-writer/core/ai_assistant.py, line: 480
+#: NEEDS WORK
+msgid "O assistente já está processando uma solicitação."
+msgstr "Asistan zaten bir isteği işliyor."
+# 
+# File: usr/share/tac-writer/core/ai_assistant.py, line: 502
+#: NEEDS WORK
+#, python-brace-format
+msgid "Erro ao ler PDF: {}"
+msgstr "PDF okuma hatası: {}"
+# 
+# File: usr/share/tac-writer/core/ai_assistant.py, line: 508
+#: NEEDS WORK
+msgid "Não foi possível extrair texto do PDF (pode ser uma imagem ou vazio)."
+msgstr "PDF'den metin çıkarılamadı (bir resim veya boş olabilir)."
+# 
+# File: usr/share/tac-writer/core/ai_assistant.py, line: 556
+#: NEEDS WORK
+#, python-brace-format
+msgid "Erro IA: {}"
+msgstr "Hata IA: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 49
+#: NEEDS WORK
+#, python-brace-format
+msgid "ProjectManager initialized with database: {}"
+msgstr "Proje Yöneticisi veritabanı ile başlatıldı: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 66
+#: NEEDS WORK
+#, python-brace-format
+msgid "Database connection error: {}"
+msgstr "Veritabanı bağlantı hatası: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 77
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error checking project existence: {}"
+msgstr "Proje varlığını kontrol etme hatası: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 86
+#: NEEDS WORK
+#, python-brace-format
+msgid "Invalid project data: missing field '{}'"
+msgstr "Geçersiz proje verisi: eksik alan '{}'"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 95
+#: NEEDS WORK
+#, python-brace-format
+msgid "Invalid paragraph {}: missing field '{}'"
+msgstr "Geçersiz paragraf {}: eksik alan '{}'"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 113
+#: NEEDS WORK
+#, python-brace-format
+msgid "Created migration backup: {}"
+msgstr "Oluşturulan göç yedeği: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 117
+#: NEEDS WORK
+#, python-brace-format
+msgid "Failed to create migration backup: {}"
+msgstr "Göç yedeği oluşturulamadı: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 131
+#: NEEDS WORK
+#, python-brace-format
+msgid "Found {} old JSON projects. Starting migration..."
+msgstr "{} eski JSON projesi bulundu. Göç başlatılıyor..."
+# 
+# File: usr/share/tac-writer/core/services.py, line: 136
+#: NEEDS WORK
+msgid "Migration aborted: Could not create backup"
+msgstr "Göç iptal edildi: Yedek oluşturulamadı"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 156
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error loading {}: {}"
+msgstr "Hata yükleniyor {}: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 160
+#: NEEDS WORK
+#, python-brace-format
+msgid "Warning: {} files have validation errors and will be skipped"
+msgstr "Uyarı: {} dosyaların doğrulama hataları var ve atlanacaktır."
+# 
+# File: usr/share/tac-writer/core/services.py, line: 163
+#: NEEDS WORK
+msgid "No valid projects to migrate"
+msgstr "Göç ettirilecek geçerli proje yok"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 185
+#: NEEDS WORK
+#, python-brace-format
+msgid "Failed to migrate {} projects"
+msgstr "{} projeyi taşımak başarısız oldu"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 189
+#: NEEDS WORK
+msgid "Migration transaction committed successfully"
+msgstr "Göç işlemi başarıyla tamamlandı."
+# 
+# File: usr/share/tac-writer/core/services.py, line: 197
+#: NEEDS WORK
+#, python-brace-format
+msgid "Warning: Could not rename {}: {}"
+msgstr "Uyarı: {} yeniden adlandırılamadı: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 202
+#: NEEDS WORK
+#, python-brace-format
+msgid "Migration failed, transaction rolled back: {}"
+msgstr "Göç başarısız oldu, işlem geri alındı: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 206
+#: NEEDS WORK
+#, python-brace-format
+msgid "Migration failed with database error: {}"
+msgstr "Göç, veritabanı hatasıyla başarısız oldu: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 209
+#: NEEDS WORK
+#, python-brace-format
+msgid "Migration complete. {} projects successfully migrated."
+msgstr "Göç tamamlandı. {} proje başarıyla taşındı."
+# 
+# File: usr/share/tac-writer/core/services.py, line: 222
+#: NEEDS WORK
+#, python-brace-format
+msgid "JSON serialization error for project {}: {}"
+msgstr "Proje {} için JSON serileştirme hatası: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 252
+#: NEEDS WORK
+#, python-brace-format
+msgid "JSON serialization error for paragraph {}: {}"
+msgstr "Paragraf {} için JSON serileştirme hatası: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 270
+#: NEEDS WORK
+#, python-brace-format
+msgid "Database error saving project {}: {}"
+msgstr "Veritabanı hatası projeyi kaydederken {}: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 290
+#: NEEDS WORK
+#, python-brace-format
+msgid "Saved project to database: {}"
+msgstr "Veritabanına kaydedilen proje: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 294
+#: NEEDS WORK
+#, python-brace-format
+msgid "Failed to save project to database: {}"
+msgstr "Veritabanına proje kaydedilemedi: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 298
+#: NEEDS WORK
+#, python-brace-format
+msgid "Database error saving project '{}': {}"
+msgstr "Veritabanı hatası projeyi kaydederken '{}': {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 302
+#: NEEDS WORK
+#, python-brace-format
+msgid "Unexpected error saving project '{}': {}: {}"
+msgstr "Beklenmedik hata projenin kaydedilmesinde '{}': {}: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 307
+#: NEEDS WORK
+#, python-brace-format
+msgid "Database connection error for project '{}': {}"
+msgstr "Proje '{}' için veritabanı bağlantı hatası: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 310
+#: NEEDS WORK
+#, python-brace-format
+msgid "Unexpected error in save_project for '{}': {}: {}"
+msgstr "Beklenmedik hata save_project için '{}': {}: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 342
+#: NEEDS WORK
+#, python-brace-format
+msgid "Database backup created: {}"
+msgstr "Veritabanı yedeği oluşturuldu: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 346
+#: NEEDS WORK
+#, python-brace-format
+msgid "Warning: Database backup failed: {}"
+msgstr "Uyarı: Veritabanı yedeği başarısız oldu: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 360
+#: NEEDS WORK
+#, python-brace-format
+msgid "Removed old backup: {}"
+msgstr "Eski yedekleme kaldırıldı: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 363
+#: NEEDS WORK
+#, python-brace-format
+msgid "Warning: Cleanup of old backups failed: {}"
+msgstr "Uyarı: Eski yedeklerin temizlenmesi başarısız oldu: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 467
+#: NEEDS WORK
+#, python-brace-format
+msgid "Database error listing projects: {}"
+msgstr "Veritabanı hatası projeleri listeleme: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 469
+#: NEEDS WORK
+#, python-brace-format
+msgid "Unexpected error listing projects: {}: {}"
+msgstr "Projeleri listeleme sırasında beklenmedik hata: {}: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 479
+#: NEEDS WORK
+msgid "Database maintenance completed"
+msgstr "Veritabanı bakımı tamamlandı"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 481
+#: NEEDS WORK
+#, python-brace-format
+msgid "Database maintenance failed: {}"
+msgstr "Veritabanı bakımı başarısız oldu: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 510
+#: NEEDS WORK
+#, python-brace-format
+msgid "error: {}"
+msgstr "hata: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 517
+#: NEEDS WORK
+#, python-brace-format
+msgid "unexpected error: {}"
+msgstr "beklenmedik hata: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 561
+#: NEEDS WORK
+#, python-brace-format
+msgid "Database initialization error: {}"
+msgstr "Veritabanı başlatma hatası: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 573
+#: NEEDS WORK
+#, python-brace-format
+msgid "Created project: {} ({})"
+msgstr "Oluşturulan proje: {} ({})"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 576
+#: NEEDS WORK
+msgid "Failed to save new project to database"
+msgstr "Yeni projeyi veritabanına kaydetme başarısız oldu."
+# 
+# File: usr/share/tac-writer/core/services.py, line: 578
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error creating project: {}: {}"
+msgstr "Proje oluşturulurken hata: {}: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 591
+#: NEEDS WORK
+#, python-brace-format
+msgid "Project with ID {} not found in database."
+msgstr "Veritabanında ID'si {} olan proje bulunamadı."
+# 
+# File: usr/share/tac-writer/core/services.py, line: 620
+#: NEEDS WORK
+#, python-brace-format
+msgid "Loaded project from database: {}"
+msgstr "Veritabanından yüklü proje: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 624
+#: NEEDS WORK
+#, python-brace-format
+msgid "Database error loading project: {}"
+msgstr "Veritabanı hatası proje yüklenirken: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 627
+#: NEEDS WORK
+#, python-brace-format
+msgid "Data error loading project: {}: {}"
+msgstr "Proje yüklenirken veri hatası: {}: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 630
+#: NEEDS WORK
+#, python-brace-format
+msgid "Unexpected error loading project: {}: {}"
+msgstr "Beklenmedik hata, proje yüklenirken: {}: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 643
+#: NEEDS WORK
+#, python-brace-format
+msgid "Deleted project from database: {}"
+msgstr "Veritabanından silinen proje: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 646
+#: NEEDS WORK
+#, python-brace-format
+msgid "Database error deleting project: {}"
+msgstr "Veritabanı hatası projeyi silerken: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 671
+#: NEEDS WORK
+#, python-brace-format
+msgid "Manual backup created: {}"
+msgstr "Manuel yedek oluşturuldu: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 675
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error creating manual backup: {}"
+msgstr "Manuel yedek oluşturulurken hata: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 715
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error reading backup file {}: {}"
+msgstr "Yedek dosyası okunurken hata oluştu {}: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 754
+#: NEEDS WORK
+#, python-brace-format
+msgid "Backup validation error: {}"
+msgstr "Yedek doğrulama hatası: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 762
+#: NEEDS WORK
+msgid "Invalid backup file"
+msgstr "Geçersiz yedek dosyası"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 771
+#: NEEDS WORK
+#, python-brace-format
+msgid "Current database backed up to: {}"
+msgstr "Mevcut veritabanı yedeklendi: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 782
+#: NEEDS WORK
+#, python-brace-format
+msgid "Successfully imported database with {} projects"
+msgstr "{} projeyle veritabanı başarıyla içe aktarıldı."
+# 
+# File: usr/share/tac-writer/core/services.py, line: 790
+#: NEEDS WORK
+msgid "Import failed, restored previous database"
+msgstr "İthalat başarısız oldu, önceki veritabanı geri yüklendi"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 794
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error importing database: {}: {}"
+msgstr "Veritabanı içe aktarım hatası: {}: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 804
+#: NEEDS WORK
+#, python-brace-format
+msgid "Deleted backup: {}"
+msgstr "Silinmiş yedek: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 825
+#: NEEDS WORK
+msgid "Warning: ODT export not available (missing xml dependencies)"
+msgstr "Uyarı: ODT dışa aktarma mevcut değil (eksik xml bağımlılıkları)"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 827
+#: NEEDS WORK
+msgid "Warning: PDF export not available (missing reportlab)"
+msgstr "Uyarı: PDF dışa aktarma mevcut değil (reportlab eksik)"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 1014
+#: NEEDS WORK
+#, python-brace-format
+msgid "Export format '{}' not available"
+msgstr "Export format '{}' mevcut değil"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 1018
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error exporting project: {}: {}"
+msgstr "Proje dışa aktarılırken hata: {}: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 1060
+# File: usr/share/tac-writer/core/services.py, line: 1557
+#: NEEDS WORK
+msgid "Footnotes:"
+msgstr "Dipnotlar:"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 1067
+#: NEEDS WORK
+#, python-brace-format
+msgid "File error exporting to TXT: {}"
+msgstr "TXT'ye aktarımda dosya hatası: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 1070
+#: NEEDS WORK
+#, python-brace-format
+msgid "Unexpected error exporting to TXT: {}: {}"
+msgstr "TXT'ye aktarımda beklenmedik hata: {}: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 1124
+#: NEEDS WORK
+#, python-brace-format
+msgid "File error exporting to ODT: {}"
+msgstr "ODT'ye aktarımda dosya hatası: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 1127
+#: NEEDS WORK
+#, python-brace-format
+msgid "Unexpected error exporting to ODT: {}: {}"
+msgstr "ODT'ye aktarımda beklenmedik hata: {}: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 1827
+#: NEEDS WORK
+#, python-brace-format
+msgid "Error adding image to PDF: {}"
+msgstr "PDF'ye resim eklenirken hata: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 1567
+#: NEEDS WORK
+#, python-brace-format
+msgid "File error exporting to PDF: {}"
+msgstr "PDF'ye aktarımda dosya hatası: {}"
+# 
+# File: usr/share/tac-writer/core/services.py, line: 1570
+#: NEEDS WORK
+#, python-brace-format
+msgid "Unexpected error exporting to PDF: {}: {}"
+msgstr "PDF'ye aktarımda beklenmedik hata: {}: {}"
+# 
+# File: usr/share/tac-writer/core/models.py, line: 440
+#: NEEDS WORK
+msgid "Academic Essay"
+msgstr "Akademik Makale"
+# 
+# File: usr/share/tac-writer/core/models.py, line: 441
+#: NEEDS WORK
+msgid "Standard academic essay structure"
+msgstr "Standart akademik makale yapısı"
