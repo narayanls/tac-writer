@@ -8,6 +8,7 @@ import shutil
 import zipfile
 import sqlite3
 import threading
+import re
 from pathlib import Path
 from typing import Dict, List, Optional, Any
 from datetime import datetime
@@ -1200,6 +1201,56 @@ class ExportService:
             traceback.print_exc()
             return False
 
+    def _format_text_for_odt(self, text: str) -> str:
+        """
+        Converts internal HTML-like tags (<b>, <i>, <u>) to ODT XML tags.
+        Also handles XML escaping for the content.
+        """
+        if not text:
+            return ""
+
+        # 1. Escape XML special characters first
+        text = text.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+
+        # 2. Replace escaped tags with ODT spans
+        # Bold
+        text = text.replace('&lt;b&gt;', '<text:span text:style-name="T_Bold">')
+        text = text.replace('&lt;/b&gt;', '</text:span>')
+        # Italic
+        text = text.replace('&lt;i&gt;', '<text:span text:style-name="T_Italic">')
+        text = text.replace('&lt;/i&gt;', '</text:span>')
+        # Underline
+        text = text.replace('&lt;u&gt;', '<text:span text:style-name="T_Underline">')
+        text = text.replace('&lt;/u&gt;', '</text:span>')
+        
+        # Handle line breaks
+        text = text.replace('\n', '<text:line-break/>')
+
+        return text
+
+    def _format_text_for_pdf(self, text: str) -> str:
+        """
+        Prepares text for ReportLab PDF.
+        Escapes XML characters but preserves <b>, <i>, <u> tags.
+        """
+        if not text:
+            return ""
+
+        # 1. Escape everything first to ensure safety
+        text = text.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+
+        # 2. Restore the specific formatting tags we support
+        # ReportLab uses <b>, <i>, <u> natively
+        tags = ['b', 'i', 'u']
+        for tag in tags:
+            text = text.replace(f'&lt;{tag}&gt;', f'<{tag}>')
+            text = text.replace(f'&lt;/{tag}&gt;', f'</{tag}>')
+        
+        # Handle line breaks for PDF
+        text = text.replace('\n', '<br/>')
+
+        return text
+
     def _generate_odt_content(self, project: Project) -> str:
         """Generate content.xml for ODT with proper formatting"""
         
@@ -1213,7 +1264,8 @@ class ExportService:
         last_was_quote = False
         
         for i, paragraph in enumerate(project.paragraphs):
-            content = paragraph.content.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+            # Usando o novo método auxiliar
+            content = self._format_text_for_odt(paragraph.content)
             
             if paragraph.type == ParagraphType.TITLE_1:
                 if current_paragraph_content:
@@ -1336,10 +1388,20 @@ class ExportService:
                         xmlns:xlink="http://www.w3.org/1999/xlink"
                         xmlns:svg="urn:oasis:names:tc:opendocument:xmlns:svg-compatible:1.0"
                         xmlns:fo="urn:oasis:names:tc:opendocument:xmlns:xsl-fo-compatible:1.0">
-<office:automatic-styles/>
+<office:automatic-styles>
+    <style:style style:name="T_Bold" style:family="text">
+      <style:text-properties fo:font-weight="bold" style:font-weight-asian="bold" style:font-weight-complex="bold"/>
+    </style:style>
+    <style:style style:name="T_Italic" style:family="text">
+      <style:text-properties fo:font-style="italic" style:font-style-asian="italic" style:font-style-complex="italic"/>
+    </style:style>
+    <style:style style:name="T_Underline" style:family="text">
+      <style:text-properties style:text-underline-style="solid" style:text-underline-width="auto" style:text-underline-color="font-color"/>
+    </style:style>
+</office:automatic-styles>
 <office:body>
 <office:text>'''
-        
+
         # Project title
         content_xml += f'<text:p text:style-name="Title">{project.name}</text:p>\n'
         
@@ -1637,7 +1699,8 @@ class ExportService:
             last_was_quote = False
             
             for i, paragraph in enumerate(project.paragraphs):
-                content = paragraph.content.strip()
+                # Using new method for PDF
+                content = self._format_text_for_pdf(paragraph.content)
                 
                 if paragraph.type == ParagraphType.TITLE_1:
                     if current_paragraph_content:
@@ -1836,7 +1899,9 @@ class ExportService:
                 story.append(Spacer(1, 20))
                 story.append(RLParagraph(_("Footnotes:"), title2_style))
                 for i, footnote_text in enumerate(all_footnotes):
-                    footnote_content = f"{i + 1}. {footnote_text}"
+                    # Formatar o texto da nota de rodapé também
+                    formatted_footnote = self._format_text_for_pdf(footnote_text)
+                    footnote_content = f"{i + 1}. {formatted_footnote}"
                     story.append(RLParagraph(footnote_content, footnote_style))
             
             # Build PDF

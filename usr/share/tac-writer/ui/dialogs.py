@@ -634,7 +634,7 @@ class PreferencesDialog(Adw.PreferencesWindow):
         # General page
         general_page = Adw.PreferencesPage()
         general_page.set_title(_("General"))
-        general_page.set_icon_name('preferences-system-symbolic')
+        general_page.set_icon_name('tac-preferences-system-symbolic')
         self.add(general_page)
 
         # Appearance group
@@ -652,7 +652,7 @@ class PreferencesDialog(Adw.PreferencesWindow):
         # Editor page
         editor_page = Adw.PreferencesPage()
         editor_page.set_title(_("Editor"))
-        editor_page.set_icon_name('accessories-text-editor-symbolic')
+        editor_page.set_icon_name('tac-accessories-text-editor-symbolic')
         self.add(editor_page)
 
         '''# Font group
@@ -725,6 +725,21 @@ class PreferencesDialog(Adw.PreferencesWindow):
             _("Configure the provider and credentials used to generate suggestions.")
         )
         ai_page.add(ai_group)
+
+         # Link para a Wiki
+        wiki_row = Adw.ActionRow()
+        wiki_row.set_title(_("Configuration Guide"))
+        wiki_row.set_subtitle(_("Read the documentation to learn how to get API keys"))
+        
+        wiki_button = Gtk.Button()
+        wiki_button.set_icon_name('tac-help-browser-symbolic') # Usando seu ícone personalizado
+        wiki_button.set_valign(Gtk.Align.CENTER)
+        wiki_button.add_css_class("flat")
+        wiki_button.set_tooltip_text(_("Open Documentation"))
+        wiki_button.connect('clicked', self._on_ai_wiki_clicked)
+        
+        wiki_row.add_suffix(wiki_button)
+        ai_group.add(wiki_row)
 
         self.ai_enabled_row = Adw.SwitchRow(
             title=_("Enable AI Assistant"),
@@ -812,6 +827,15 @@ class PreferencesDialog(Adw.PreferencesWindow):
             self.ai_openrouter_title_row,
             self.ai_openrouter_title_entry,
         ]
+
+    def _on_ai_wiki_clicked(self, button):
+        """Open the AI Assistant wiki page"""
+        import webbrowser
+        url = "https://github.com/narayanls/tac-writer/wiki/Fun%C3%A7%C3%B5es-Adicionais#-assistente-de-ia-para-revis%C3%A3o-textual"
+        try:
+            webbrowser.open(url)
+        except Exception as e:
+            print(_("Error opening wiki: {}").format(e))
 
     def _load_preferences(self):
         """Load preferences from config"""
@@ -1031,7 +1055,7 @@ class WelcomeDialog(Adw.Window):
         title_box.set_halign(Gtk.Align.CENTER)
 
         # App icon
-        icon = Gtk.Image.new_from_icon_name('document-edit-symbolic')
+        icon = Gtk.Image.new_from_icon_name('tac-document-tac-edit-symbolic')
         icon.set_pixel_size(56)
         icon.add_css_class("accent")
         title_box.append(icon)
@@ -1068,7 +1092,7 @@ class WelcomeDialog(Adw.Window):
 
         wiki_button = Gtk.Button()
         wiki_button.set_label(_("Learn More - Online Documentation"))
-        wiki_button.set_icon_name('help-browser-symbolic')
+        wiki_button.set_icon_name('tac-help-browser-symbolic')
         wiki_button.add_css_class("suggested-action")
         wiki_button.add_css_class("wiki-help-button")
         wiki_button.set_tooltip_text(_("Access the complete guide and tutorials"))
@@ -1138,7 +1162,7 @@ class WelcomeDialog(Adw.Window):
         """Handle wiki button click - open external browser"""
         import webbrowser
         
-        wiki_url = "https://github.com/big-comm/comm-tac-writer/wiki"
+        wiki_url = "https://github.com/narayanls/tac-writer/wiki"
         
         try:
             # Try to open with default browser
@@ -1348,10 +1372,10 @@ class BackupManagerDialog(Adw.Window):
 
         # Status indicator
         if backup['is_valid']:
-            status_icon = Gtk.Image.new_from_icon_name('emblem-ok-symbolic')
+            status_icon = Gtk.Image.new_from_icon_name('tac-emblem-ok-symbolic')
             status_icon.set_tooltip_text(_("Valid backup"))
         else:
-            status_icon = Gtk.Image.new_from_icon_name('dialog-warning-symbolic')
+            status_icon = Gtk.Image.new_from_icon_name('tac-dialog-warning-symbolic')
             status_icon.set_tooltip_text(_("Invalid or corrupted backup"))
             status_icon.add_css_class("warning")
 
@@ -1363,7 +1387,7 @@ class BackupManagerDialog(Adw.Window):
         # Restore button
         if backup['is_valid']:
             restore_button = Gtk.Button()
-            restore_button.set_icon_name('document-revert-symbolic')
+            restore_button.set_icon_name('tac-document-revert-symbolic')
             restore_button.set_tooltip_text(_("Import this backup"))
             restore_button.add_css_class("flat")
             restore_button.connect('clicked', lambda btn, b=backup: self._on_restore_backup(b))
@@ -1371,7 +1395,7 @@ class BackupManagerDialog(Adw.Window):
 
         # Delete button
         delete_button = Gtk.Button()
-        delete_button.set_icon_name('user-trash-symbolic')
+        delete_button.set_icon_name('tac-user-trash-symbolic')
         delete_button.set_tooltip_text(_("Delete backup"))
         delete_button.add_css_class("flat")
         delete_button.add_css_class("destructive-action")

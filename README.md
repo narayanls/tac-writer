@@ -298,7 +298,7 @@ We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.
 
 ### Getting Help
 
-- **Documentation**: [GitHub Wiki](https://github.com/big-comm/comm-tac-writer/wiki)
+- **Documentation**: [GitHub Wiki](https://github.com/narayanls/tac-writer/wiki)
 - **Community**: [BigCommunity Telegram](https://t.me/+kmobYSt2PMhhZTFh)
 - **Issues**: [GitHub Issues](https://github.com/big-comm/comm-tac-writer/issues)
 
