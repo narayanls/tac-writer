@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/big-comm/comm-tac-writer/releases"><img src="https://img.shields.io/badge/Version-1.1.0-blue.svg" alt="Version"/></a>
+  <a href="https://github.com/big-comm/comm-tac-writer/releases"><img src="https://img.shields.io/badge/Version-1.2.0-blue.svg" alt="Version"/></a>
   <a href="https://github.com/big-comm/comm-tac-writer/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-GPL--3.0-green.svg" alt="License"/></a>
   <a href="https://www.gtk.org/"><img src="https://img.shields.io/badge/GTK-4.0+-orange.svg" alt="GTK Version"/></a>
   <a href="https://gnome.pages.gitlab.gnome.org/libadwaita/"><img src="https://img.shields.io/badge/libadwaita-1.0+-purple.svg" alt="libadwaita Version"/></a>
@@ -88,63 +88,7 @@ The Continuous Argumentation Technique emphasizes interconnected paragraphs that
 
 ## Installation
 
-### Option 1: Package Manager (Recommended)
 
-For Arch-based distributions, add the BigCommunity repository and install via pacman:
-
-#### 1. Add Repository Key
-```bash
-sudo pacman-key --recv-keys 1EA0CEEEB09B44A3
-sudo pacman-key --lsign-key 1EA0CEEEB09B44A3
-```
-
-#### 2. Add Repository
-Edit `/etc/pacman.conf` and add:
-```ini
-[community-stable]
-SigLevel = PackageRequired
-Server = https://repo.communitybig.org/stable/$arch
-```
-
-#### 3. Install Package
-```bash
-sudo pacman -Sy comm-tac-writer
-```
-
-### Option 2: Manual Installation
-
-#### Prerequisites
-```bash
-# Install system dependencies
-sudo pacman -Sy python gtk4 libadwaita python-gobject python-cairo
-
-# Optional: Development tools
-sudo pacman -S python-pip git base-devel
-```
-
-#### Install from Source
-```bash
-# Clone repository
-git clone https://github.com/big-comm/comm-tac-writer.git
-cd comm-tac-writer
-
-# Install Python dependencies
-pip install --user -r requirements.txt
-
-# Run application
-python main.py
-```
-
-## Usage
-
-### Getting Started
-
-1. **Launch TAC Writer**
-   ```bash
-   tac-writer  # If installed via package manager
-   # OR
-   python main.py  # If running from source
-   ```
 
 2. **Create Your First Project**
    - Click "Start" on the Academic Essay template
@@ -237,21 +181,6 @@ tac/
 
 ## Development
 
-### Setting Up Development Environment
-
-```bash
-# Clone repository
-git clone https://github.com/big-comm/comm-tac-writer.git
-cd comm-tac-writer
-
-# Install development dependencies
-sudo pacman -S python-pytest python-black python-flake8 python-mypy
-
-# Install Python development packages
-pip install --user pre-commit black flake8 mypy pytest
-
-# Set up pre-commit hooks
-pre-commit install
 ```
 
 ### Code Standards
@@ -275,18 +204,7 @@ python -m pytest --cov=src
 python -m pytest tests/test_models.py
 ```
 
-## Contributing
-
-We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
-
-### How to Contribute
-
-1. **Fork** the repository
-2. **Create** a feature branch (`git checkout -b feature/amazing-feature`)
-3. **Commit** your changes (`git commit -m 'Add amazing feature'`)
-4. **Push** to the branch (`git push origin feature/amazing-feature`)
-5. **Open** a Pull Request
-
+## How to Contribute
 ### Areas for Contribution
 
 - **Bug Fixes**: Help improve stability and user experience
@@ -298,8 +216,7 @@ We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.
 ### Getting Help
 
 - **Documentation**: [GitHub Wiki](https://github.com/narayanls/tac-writer/wiki)
-- **Community**: [BigCommunity Telegram](https://t.me/+kmobYSt2PMhhZTFh)
-- **Issues**: [GitHub Issues](https://github.com/big-comm/comm-tac-writer/issues)
+- **Issues**: [GitHub Issues](https://github.com/narayanls/tac-writer/issues)
 
 ### Reporting Bugs
 
@@ -314,14 +231,6 @@ When reporting bugs, please include:
 ## License
 
 This project is licensed under the **GNU General Public License v3.0**. See the [LICENSE](LICENSE) file for details.
-
-## Acknowledgments
-
-- **GNOME Project** for GTK4 and libadwaita framework
-- **Python GObject** community for excellent Python bindings
-- **BigCommunity** platform for hosting and support
-- **Academic Community** for feedback and testing
-- **Contributors** who help improve TAC Writer
 
 ## Citation
 
@@ -340,6 +249,5 @@ If you use TAC Writer in academic work, please cite:
 ---
 
 <p align="center">
-  <strong>Made with ❤️ by the BigCommunity Team</strong><br>
-  <a href="https://bigcommunity.com">BigCommunity.com</a> • <a href="https://github.com/big-comm">GitHub</a>
-</p>
+  <strong>Made with ❤️ by Narayan Silva</strong><br>
+  </p>
