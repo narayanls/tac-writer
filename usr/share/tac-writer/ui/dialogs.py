@@ -655,38 +655,6 @@ class PreferencesDialog(Adw.PreferencesWindow):
         editor_page.set_icon_name('tac-accessories-text-editor-symbolic')
         self.add(editor_page)
 
-        '''# Font group
-        font_group = Adw.PreferencesGroup()
-        font_group.set_title(_("Default Font"))
-        editor_page.add(font_group)
-
-        # Font family
-        self.font_family_row = Adw.ComboRow()
-        self.font_family_row.set_title(_("Font Family"))
-        font_model = Gtk.StringList()
-
-        # Get system fonts
-        try:
-            font_names = get_system_fonts()
-        except Exception as e:
-            print(_("Error loading system fonts: {}").format(e))
-            font_names = ["Liberation Serif", "DejaVu Sans", "Ubuntu"]
-        
-        for font_name in font_names:
-            font_model.append(font_name)
-
-        self.font_family_row.set_model(font_model)
-        self.font_family_row.connect('notify::selected', self._on_font_family_changed)
-        font_group.add(self.font_family_row)
-
-        # Font size
-        adjustment = Gtk.Adjustment(value=12, lower=8, upper=72, step_increment=1, page_increment=2)
-        self.font_size_row = Adw.SpinRow()
-        self.font_size_row.set_title(_("Font Size"))
-        self.font_size_row.set_adjustment(adjustment)
-        self.font_size_row.connect('notify::value', self._on_font_size_changed)
-        font_group.add(self.font_size_row)'''
-
         # Behavior group
         behavior_group = Adw.PreferencesGroup()
         behavior_group.set_title(_("Behavior"))
@@ -732,7 +700,7 @@ class PreferencesDialog(Adw.PreferencesWindow):
         wiki_row.set_subtitle(_("Read the documentation to learn how to get API keys"))
         
         wiki_button = Gtk.Button()
-        wiki_button.set_icon_name('tac-help-browser-symbolic') # Usando seu ícone personalizado
+        wiki_button.set_icon_name('tac-help-browser-symbolic')
         wiki_button.set_valign(Gtk.Align.CENTER)
         wiki_button.add_css_class("flat")
         wiki_button.set_tooltip_text(_("Open Documentation"))
@@ -761,11 +729,11 @@ class PreferencesDialog(Adw.PreferencesWindow):
 
         self.ai_model_row = Adw.ActionRow(
             title=_("Model Identifier"),
-            subtitle=_("Examples:gemini-2.5-flash."),
+            subtitle=_("Examples: gemini-2.5-flash"),
         )
         self.ai_model_entry = Gtk.Entry()
         self.ai_model_entry.set_placeholder_text(_("gemini-2.5-flash"))
-        self.ai_model_entry.connect("changed", self._on_ai_model_changed)
+        # Removido o salvamento automático no 'changed' para usar o botão
         self.ai_model_row.add_suffix(self.ai_model_entry)
         self.ai_model_row.set_activatable_widget(self.ai_model_entry)
         ai_group.add(self.ai_model_row)
@@ -779,53 +747,32 @@ class PreferencesDialog(Adw.PreferencesWindow):
             show_peek_icon=True,
             hexpand=True,
         )
-        self.ai_api_key_entry.connect("changed", self._on_ai_api_key_changed)
+        # auto save removed for use save button
         self.ai_api_key_row.add_suffix(self.ai_api_key_entry)
         self.ai_api_key_row.set_activatable_widget(self.ai_api_key_entry)
         ai_group.add(self.ai_api_key_row)
 
-        self.ai_openrouter_site_row = Adw.ActionRow(
-            title=_("Site URL (optional)"),
-            subtitle=_("Used as HTTP Referer header for OpenRouter rankings."),
-        )
-        self.ai_openrouter_site_entry = Gtk.Entry(
-            placeholder_text=_("https://example.com"),
-        )
-        self.ai_openrouter_site_entry.connect(
-            "changed", self._on_openrouter_site_url_changed
-        )
-        self.ai_openrouter_site_row.add_suffix(self.ai_openrouter_site_entry)
-        self.ai_openrouter_site_row.set_activatable_widget(
-            self.ai_openrouter_site_entry
-        )
-        ai_group.add(self.ai_openrouter_site_row)
+        # Save button
+        save_btn = Gtk.Button(label=_("Save AI Settings"))
+        save_btn.add_css_class("suggested-action")
+        save_btn.add_css_class("pill")
+        save_btn.set_margin_top(10)
+        save_btn.set_margin_bottom(10)
+        save_btn.set_halign(Gtk.Align.CENTER)
+        save_btn.set_size_request(200, -1)
+        save_btn.connect("clicked", self._on_save_ai_clicked)
+        
+        # Add button to group
+        ai_group.add(save_btn)
 
-        self.ai_openrouter_title_row = Adw.ActionRow(
-            title=_("Site title (optional)"),
-            subtitle=_("Sent via X-Title header for OpenRouter rankings."),
-        )
-        self.ai_openrouter_title_entry = Gtk.Entry(
-            placeholder_text=_("My Project"),
-        )
-        self.ai_openrouter_title_entry.connect(
-            "changed", self._on_openrouter_site_name_changed
-        )
-        self.ai_openrouter_title_row.add_suffix(self.ai_openrouter_title_entry)
-        self.ai_openrouter_title_row.set_activatable_widget(
-            self.ai_openrouter_title_entry
-        )
-        ai_group.add(self.ai_openrouter_title_row)
-
+        # Lista de widgets para habilitar/desabilitar
         self._ai_config_widgets = [
             self.ai_provider_row,
             self.ai_model_row,
             self.ai_model_entry,
             self.ai_api_key_row,
             self.ai_api_key_entry,
-            self.ai_openrouter_site_row,
-            self.ai_openrouter_site_entry,
-            self.ai_openrouter_title_row,
-            self.ai_openrouter_title_entry,
+            save_btn # Inclui o botão na lista para desabilitar se a IA estiver desligada
         ]
 
     def _on_ai_wiki_clicked(self, button):
@@ -843,20 +790,12 @@ class PreferencesDialog(Adw.PreferencesWindow):
             # Appearance
             self.dark_theme_row.set_active(self.config.get('use_dark_theme', False))
 
-            # Font
-            font_family = self.config.get('font_family', 'Liberation Serif')
-            model = self.font_family_row.get_model()
-            for i in range(model.get_n_items()):
-                if model.get_string(i) == font_family:
-                    self.font_family_row.set_selected(i)
-                    break
-
-            self.font_size_row.set_value(self.config.get('font_size', 12))
-
             # Behavior
             self.auto_save_row.set_active(self.config.get('auto_save', True))
             self.word_wrap_row.set_active(self.config.get('word_wrap', True))
             self.line_numbers_row.set_active(self.config.get('show_line_numbers', True))
+            
+            # AI Assistant
             self.ai_enabled_row.set_active(self.config.get_ai_assistant_enabled())
             provider = self.config.get_ai_assistant_provider()
             provider_ids = [pid for pid, _label in self._ai_provider_options]
@@ -865,20 +804,51 @@ class PreferencesDialog(Adw.PreferencesWindow):
             except ValueError:
                 self.ai_provider_row.set_selected(0)
                 provider = provider_ids[0]
+            
             self.ai_model_entry.set_text(self.config.get_ai_assistant_model() or "")
             self.ai_api_key_entry.set_text(self.config.get_ai_assistant_api_key() or "")
-            self.ai_openrouter_site_entry.set_text(self.config.get_openrouter_site_url() or "")
-            self.ai_openrouter_title_entry.set_text(self.config.get_openrouter_site_name() or "")
+            
             self._update_ai_controls_sensitive(self.config.get_ai_assistant_enabled())
             self._update_ai_provider_ui(provider)
             
         except Exception as e:
             print(_("Error loading preferences: {}").format(e))
 
+    def _on_save_ai_clicked(self, button):
+        """Handle manual save of AI settings"""
+        try:
+            # 1. Get Provider
+            index = self.ai_provider_row.get_selected()
+            if 0 <= index < len(self._ai_provider_options):
+                provider_id = self._ai_provider_options[index][0]
+                self.config.set_ai_assistant_provider(provider_id)
+
+            # 2. Get Model
+            model = self.ai_model_entry.get_text().strip()
+            self.config.set_ai_assistant_model(model)
+
+            # 3. Get API Key
+            api_key = self.ai_api_key_entry.get_text().strip()
+            self.config.set_ai_assistant_api_key(api_key)
+
+            # 4. Save to disk
+            self.config.save()
+
+            # 5. Show Feedback (Toast)
+            toast = Adw.Toast.new(_("AI Settings Saved"))
+            toast.set_timeout(2)
+            self.add_toast(toast)
+            
+        except Exception as e:
+            print(_("Error saving AI settings: {}").format(e))
+            error_toast = Adw.Toast.new(_("Error saving settings"))
+            self.add_toast(error_toast)
+
     def _on_dark_theme_changed(self, switch, pspec):
         """Handle dark theme toggle"""
         try:
             self.config.set('use_dark_theme', switch.get_active())
+            self.config.save()
 
             # Apply theme immediately
             style_manager = Adw.StyleManager.get_default()
@@ -895,6 +865,7 @@ class PreferencesDialog(Adw.PreferencesWindow):
             model = combo.get_model()
             selected_font = model.get_string(combo.get_selected())
             self.config.set('font_family', selected_font)
+            self.config.save()
         except Exception as e:
             print(_("Error changing font family: {}").format(e))
 
@@ -902,6 +873,7 @@ class PreferencesDialog(Adw.PreferencesWindow):
         """Handle font size change"""
         try:
             self.config.set('font_size', int(spin.get_value()))
+            self.config.save()
         except Exception as e:
             print(_("Error changing font size: {}").format(e))
 
@@ -909,6 +881,7 @@ class PreferencesDialog(Adw.PreferencesWindow):
         """Handle auto save toggle"""
         try:
             self.config.set('auto_save', switch.get_active())
+            self.config.save()
         except Exception as e:
             print(_("Error changing auto save: {}").format(e))
 
@@ -916,6 +889,7 @@ class PreferencesDialog(Adw.PreferencesWindow):
         """Handle word wrap toggle"""
         try:
             self.config.set('word_wrap', switch.get_active())
+            self.config.save()
         except Exception as e:
             print(_("Error changing word wrap: {}").format(e))
 
@@ -923,32 +897,22 @@ class PreferencesDialog(Adw.PreferencesWindow):
         """Handle line numbers toggle"""
         try:
             self.config.set('show_line_numbers', switch.get_active())
+            self.config.save()
         except Exception as e:
             print(_("Error changing line numbers: {}").format(e))
 
     def _on_ai_enabled_changed(self, switch, pspec):
         enabled = switch.get_active()
         self.config.set_ai_assistant_enabled(enabled)
+        self.config.save()
         self._update_ai_controls_sensitive(enabled)
 
     def _on_ai_provider_changed(self, combo_row, pspec):
+        # Apenas atualiza a UI, o salvamento real ocorre no botão Salvar
         index = combo_row.get_selected()
         if 0 <= index < len(self._ai_provider_options):
             provider_id = self._ai_provider_options[index][0]
-            self.config.set_ai_assistant_provider(provider_id)
             self._update_ai_provider_ui(provider_id)
-
-    def _on_ai_model_changed(self, entry):
-        self.config.set_ai_assistant_model(entry.get_text().strip())
-
-    def _on_ai_api_key_changed(self, entry):
-        self.config.set_ai_assistant_api_key(entry.get_text().strip())
-
-    def _on_openrouter_site_url_changed(self, entry):
-        self.config.set_openrouter_site_url(entry.get_text().strip())
-
-    def _on_openrouter_site_name_changed(self, entry):
-        self.config.set_openrouter_site_name(entry.get_text().strip())
 
     def _update_ai_controls_sensitive(self, enabled: bool) -> None:
         for widget in getattr(self, "_ai_config_widgets", []):
@@ -965,8 +929,6 @@ class PreferencesDialog(Adw.PreferencesWindow):
                 _("Gemini model identifier (for example: gemini-2.5-flash).")
             )
             self.ai_api_key_row.set_subtitle(_("Google AI Studio API key."))
-            self.ai_openrouter_site_row.set_visible(False)
-            self.ai_openrouter_title_row.set_visible(False)
         
         elif provider == "openrouter":
             self.ai_model_entry.set_placeholder_text("x-ai/grok-4.1-fast:free")
@@ -974,8 +936,6 @@ class PreferencesDialog(Adw.PreferencesWindow):
                 _("OpenRouter model identifier (for example: x-ai/grok-4.1-fast:free).")
             )
             self.ai_api_key_row.set_subtitle(_("OpenRouter API key."))
-            self.ai_openrouter_site_row.set_visible(True)
-            self.ai_openrouter_title_row.set_visible(True)
         
         else:
             # Fallback genérico
@@ -984,8 +944,6 @@ class PreferencesDialog(Adw.PreferencesWindow):
                 _("Model identifier required by the selected provider.")
             )
             self.ai_api_key_row.set_subtitle(_("API key used to authenticate requests."))
-            self.ai_openrouter_site_row.set_visible(False)
-            self.ai_openrouter_title_row.set_visible(False)
 
 
 class WelcomeDialog(Adw.Window):

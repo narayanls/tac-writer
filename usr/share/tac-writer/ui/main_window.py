@@ -1283,7 +1283,7 @@ class MainWindow(Adw.ApplicationWindow):
         context_text, context_label = self._collect_ai_context()
         self._show_ai_prompt_dialog(context_text, context_label)
 
-        # Adicione este método na MainWindow para abrir o diálogo de seleção
+        # Open selection window
     def _on_ai_pdf_clicked(self, btn):
         if not self.config.get_ai_assistant_enabled():
             self._show_toast(_("Enable AI in Preferences. API key is required. Read Wiki if there is any doubt."), Adw.ToastPriority.HIGH)
@@ -1293,14 +1293,14 @@ class MainWindow(Adw.ApplicationWindow):
         self.pdf_loading_dialog = AiPdfDialog(self, self.ai_assistant)
         self.pdf_loading_dialog.present()
 
-    # Adicione este método para exibir o resultado (chamado pelo ai_assistant)
+        # Add method to show result (called by ai_assistant)
     def show_ai_pdf_result_dialog(self, result_text: str):
-        # 1. Fecha a janela de "Analisando..." se ela estiver aberta
+        # 1. Close "Analysing" window if it's open
         if self.pdf_loading_dialog:
             self.pdf_loading_dialog.destroy()
             self.pdf_loading_dialog = None
 
-        # 2. Abre a janela de resultado (com o layout corrigido)
+        # 2. Open result window
         from ui.dialogs import AiResultDialog
         dialog = AiResultDialog(self, result_text)
         dialog.present()
@@ -1326,8 +1326,7 @@ class MainWindow(Adw.ApplicationWindow):
                 return
             dlg.destroy()
 
-        #key_controller = Gtk.EventControllerKey.new()
-        #buffer.connect("changed", lambda *_args: update_suggestions())
+        
 
         def on_prompt_key_pressed(_controller, keyval, _keycode, state):
             if keyval in (Gdk.KEY_Return, Gdk.KEY_KP_Enter) and not (
@@ -1338,10 +1337,8 @@ class MainWindow(Adw.ApplicationWindow):
                 return Gdk.EVENT_STOP
             return Gdk.EVENT_PROPAGATE
 
-        #key_controller.connect("key-pressed", on_prompt_key_pressed)
-        #text_view.add_controller(key_controller)
+        
 
-        dialog.connect("response", on_response)
         dialog.present()
 
     def show_ai_response_dialog(
