@@ -57,9 +57,10 @@ class MainWindow(Adw.ApplicationWindow):
         self.search_query: str = ""
         self._search_state = {'paragraph_index': -1, 'offset': -1}
 
-        # Estado de carregamento e scroll
+        # Scroll and loading state
         self._is_loading_paragraphs = False
         self._pending_scroll_to_bottom = False
+        self._preserved_scroll_position = None
 
         # Auto-save timer tracking
         self.auto_save_timeout_id = None
@@ -489,6 +490,15 @@ class MainWindow(Adw.ApplicationWindow):
         if not self.current_project:
             return
     
+        # Save scroll position before any changes
+        if hasattr(self, 'editor_scrolled') and self.editor_scrolled:
+            vadj = self.editor_scrolled.get_vadjustment()
+            # Só salvamos se não estivermos já no topo (0)
+            if vadj.get_value() > 0:
+                self._preserved_scroll_position = vadj.get_value()
+            else:
+                self._preserved_scroll_position = None
+
         # Limpa widgets antigos que não estão mais no projeto
         existing_widgets = {}
         child = self.paragraphs_box.get_first_child()
@@ -524,15 +534,6 @@ class MainWindow(Adw.ApplicationWindow):
 
     def _process_paragraph_batch(self):
         """Process a batch of paragraphs for asynchronous loading"""
-        if not self._paragraphs_to_add:
-            self._is_loading_paragraphs = False
-            
-            # Se o usuário clicou em "Ir para o fim" durante o carregamento
-            if self._pending_scroll_to_bottom:
-                GLib.idle_add(self._execute_pending_scroll)
-                self._pending_scroll_to_bottom = False
-            return False # Para o loop do GLib
-
         # CONFIGURAÇÃO DE PERFORMANCE
         BATCH_SIZE = 10 
         
@@ -540,7 +541,7 @@ class MainWindow(Adw.ApplicationWindow):
         while self._paragraphs_to_add and count < BATCH_SIZE:
             paragraph = self._paragraphs_to_add.pop(0)
             
-            # Lógica de criação/reuso do widget (igual ao anterior)
+            # Lógica de criação/reuso do widget
             widget = None
             if paragraph.id in self._existing_widgets:
                 widget = self._existing_widgets[paragraph.id]
@@ -558,13 +559,35 @@ class MainWindow(Adw.ApplicationWindow):
             self.paragraphs_box.append(widget)
             count += 1
 
-        
-        if self._pending_scroll_to_bottom and hasattr(self, 'editor_scrolled'):
-            adjustment = self.editor_scrolled.get_vadjustment()
-            # Rola para o novo "fim" que acabou de ser criado
-            adjustment.set_value(adjustment.get_upper())
+        # VERIFICAÇÃO DE TÉRMINO
+        if not self._paragraphs_to_add:
+            self._is_loading_paragraphs = False
+            
+            # CORREÇÃO: Restaurar a rolagem APENAS quando tudo estiver carregado
+            if self._preserved_scroll_position is not None:
+                # Usamos idle_add com prioridade baixa para garantir que o layout foi calculado
+                GLib.idle_add(self._restore_scroll_position, priority=GLib.PRIORITY_LOW)
+            
+            # Se o usuário clicou em "Ir para o fim" durante o carregamento
+            elif self._pending_scroll_to_bottom:
+                GLib.idle_add(self._execute_pending_scroll)
+                self._pending_scroll_to_bottom = False
+                
+            return False # Para o loop do GLib
 
-        return True
+        return True # Continua o loop no próximo frame
+
+    def _restore_scroll_position(self):
+        """Helper to restore scroll position after refresh"""
+        if hasattr(self, 'editor_scrolled') and self._preserved_scroll_position is not None:
+            adj = self.editor_scrolled.get_vadjustment()
+            # O GTK fará o clamp automaticamente se o valor for maior que o permitido,
+            # mas como já carregamos tudo, a altura deve ser suficiente agora.
+            adj.set_value(self._preserved_scroll_position)
+            
+            # Limpa a posição preservada para evitar saltos futuros indesejados
+            self._preserved_scroll_position = None
+        return False
 
     def _execute_pending_scroll(self):
         """Helper to execute the final scroll after loading is complete"""
