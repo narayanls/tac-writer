@@ -16,6 +16,7 @@
 </p>
 
 ---
+## Metrics
 
 ![GitHub Release](https://img.shields.io/github/v/release/narayanls/tac-writer?include_prereleases&style=flat-square)
 ![GitHub Issues](https://img.shields.io/github/issues/narayanls/tac-writer?style=flat-square)
