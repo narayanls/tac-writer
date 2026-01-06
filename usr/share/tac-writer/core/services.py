@@ -832,7 +832,7 @@ class ProjectManager:
         # Caminho do banco atual (definido no config ou self.db_path)
         current_db = self.config.get('database_file')
         
-        merger = DatabaseMerger(current_db)
+        merger = DatabaseMerger(self.db_path)
         try:
             stats = merger.merge(external_db_path)
             # Força recarregamento se houver cache
