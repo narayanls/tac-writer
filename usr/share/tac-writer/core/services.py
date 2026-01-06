@@ -835,8 +835,6 @@ class ProjectManager:
         merger = DatabaseMerger(self.db_path)
         try:
             stats = merger.merge(external_db_path)
-            # Força recarregamento se houver cache
-            self.load_projects() 
             return stats
         except Exception as e:
             print(f"Erro no merge: {e}")
