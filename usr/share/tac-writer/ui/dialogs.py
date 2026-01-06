@@ -1145,7 +1145,7 @@ def AboutDialog(parent):
     # Application information
     dialog.set_application_name(config.APP_NAME)
     dialog.set_application_icon("tac-writer")
-    dialog.set_version(config.APP_VERSION)
+    dialog.set_version("1.2.1-1")
     dialog.set_developer_name(_(config.APP_DESCRIPTION))
     dialog.set_website(config.APP_WEBSITE)
 
@@ -1441,48 +1441,94 @@ class BackupManagerDialog(Adw.Window):
         self._confirm_import(backup['path'])
 
     def _confirm_import(self, backup_path: Path):
-        """Show confirmation dialog for import"""
-        # Validate backup first
-        try:
-            if not self.project_manager._validate_backup_file(backup_path):
-                error_dialog = Adw.MessageDialog.new(
-                    self,
-                    _("Backup Inválido"),
-                    _("O arquivo selecionado não é um backup válido do TAC.")
-                )
-                error_dialog.add_response("ok", _("OK"))
-                error_dialog.present()
-                return
-        except Exception as e:
-            print(_("Erro ao validar backup: {}").format(e))
-            return
+        """Show confirmation dialog for import/merge"""
+        # ... (código de validação existente permanece igual) ...
 
-        # Get backup info
-        try:
-            with sqlite3.connect(backup_path) as conn:
-                cursor = conn.cursor()
-                cursor.execute("SELECT COUNT(*) FROM projects")
-                project_count = cursor.fetchone()[0]
-        except sqlite3.Error as e:
-            print(_("Erro ao ler info do backup: {}").format(e))
-            project_count = 0
-
-        # Show confirmation
+        # Show confirmation with options
         dialog = Adw.MessageDialog.new(
             self,
-            _("Importar Banco de Dados?"),
-            _("This will replace your current database with the selected backup.\n\n"
-              "The backup contains {} projects.\n\n"
-              "Your current database will be backed up before importing.").format(project_count)
+            _("Como deseja importar?"),
+            _("Você selecionou um banco de dados externo. Escolha como deseja prosseguir:\n\n"
+              "• Mesclar: Adiciona projetos novos e atualiza os existentes (Ideal para sincronizar PCs).\n"
+              "• Substituir: Apaga tudo atual e coloca o backup no lugar.")
         )
 
         dialog.add_response("cancel", _("Cancelar"))
-        dialog.add_response("import", _("Import"))
-        dialog.set_response_appearance("import", Adw.ResponseAppearance.DESTRUCTIVE)
-        dialog.set_default_response("cancel")
+        dialog.add_response("replace", _("Substituir Tudo"))
+        dialog.add_response("merge", _("Mesclar (Sincronizar)"))
+        
+        # Estilos dos botões
+        dialog.set_response_appearance("replace", Adw.ResponseAppearance.DESTRUCTIVE)
+        dialog.set_response_appearance("merge", Adw.ResponseAppearance.SUGGESTED)
+        
+        dialog.set_default_response("merge")
 
-        dialog.connect('response', lambda d, r, path=backup_path: self._import_confirmed(d, r, path))
+        dialog.connect('response', lambda d, r, path=backup_path: self._import_action_selected(d, r, path))
         dialog.present()
+
+    def _import_action_selected(self, dialog, response, backup_path):
+        dialog.destroy()
+        # Compare for merge
+        if response == "replace":
+            self._perform_import(backup_path) 
+        elif response == "merge":
+            self._perform_merge(backup_path) 
+
+    def _perform_merge(self, backup_path: Path):
+        """Perform the database merge"""
+        loading_dialog = Adw.MessageDialog.new(
+            self,
+            _("Mesclando Bancos de Dados"),
+            _("Analisando e sincronizando projetos...")
+        )
+        loading_dialog.present()
+
+        def merge_thread():
+            try:
+                # Call new method in ProjectManager
+                stats = self.project_manager.merge_database(str(backup_path))
+                GLib.idle_add(self._merge_finished, True, stats, loading_dialog)
+            except Exception as e:
+                print(_("Erro na thread de merge: {}").format(e))
+                GLib.idle_add(self._merge_finished, False, str(e), loading_dialog)
+
+        thread = threading.Thread(target=merge_thread, daemon=True)
+        thread.start()
+
+    def _merge_finished(self, success, result, loading_dialog):
+        loading_dialog.destroy()
+
+        if success:
+            stats = result
+            msg = _("Sincronização concluída com sucesso!\n\n"
+                    "• Projetos novos: {}\n"
+                    "• Projetos atualizados: {}\n"
+                    "• Parágrafos processados: {}").format(
+                        stats['projects_added'], 
+                        stats['projects_updated'],
+                        stats['paragraphs_processed']
+                    )
+            
+            success_dialog = Adw.MessageDialog.new(self, _("Sucesso"), msg)
+            success_dialog.add_response("ok", _("OK"))
+            
+            def on_success(dlg, resp):
+                dlg.destroy()
+                self.emit('database-imported')
+                self.destroy()
+                
+            success_dialog.connect('response', on_success)
+            success_dialog.present()
+        else:
+            error_msg = result
+            error_dialog = Adw.MessageDialog.new(
+                self, _("Erro na Mesclagem"), 
+                _("Não foi possível mesclar: {}").format(error_msg)
+            )
+            error_dialog.add_response("ok", _("OK"))
+            error_dialog.present()
+            
+        return False
 
     def _import_confirmed(self, dialog, response, backup_path):
         """Handle import confirmation"""

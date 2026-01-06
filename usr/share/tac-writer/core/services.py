@@ -823,6 +823,25 @@ class ProjectManager:
         return self.config.data_dir / 'projects'
 
 
+    def merge_database(self, external_db_path: str) -> dict:
+        """
+        Mescla um banco de dados externo com o atual.
+        """
+        from core.merger import DatabaseMerger
+        
+        # Caminho do banco atual (definido no config ou self.db_path)
+        current_db = self.config.get('database_file')
+        
+        merger = DatabaseMerger(current_db)
+        try:
+            stats = merger.merge(external_db_path)
+            # Força recarregamento se houver cache
+            self.load_projects() 
+            return stats
+        except Exception as e:
+            print(f"Erro no merge: {e}")
+            raise e
+
 class ExportService:
     """Handles document export operations"""
     
