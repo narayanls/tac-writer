@@ -683,20 +683,36 @@ class WelcomeView(Gtk.Box):
         template_group.set_description(_("Escolha um modelo para começar"))
 
         # Template cards
-        for template in DEFAULT_TEMPLATES:
-            row = Adw.ActionRow()
-            row.set_title(template.name)
-            row.set_subtitle(template.description)
+        # 1. Deafult
+        row_std = Adw.ActionRow()
+        row_std.set_title(_("Ensaio Acadêmico"))
+        row_std.set_subtitle(_("Estrutura padrão (Humanas, Biológicas, etc)"))
 
-            # Start button
-            start_button = Gtk.Button()
-            start_button.set_label(_("Iniciar"))
-            start_button.add_css_class("suggested-action")
-            start_button.set_valign(Gtk.Align.CENTER)
-            start_button.connect('clicked', lambda btn, tmpl=template.name: self.emit('create-project', tmpl))
-            row.add_suffix(start_button)
+        btn_std = Gtk.Button()
+        btn_std.set_label(_("Iniciar"))
+        btn_std.add_css_class("suggested-action")
+        btn_std.set_valign(Gtk.Align.CENTER)
+        # Send 'standard' to main_window
+        btn_std.connect('clicked', lambda btn: self.emit('create-project', 'standard'))
 
-            template_group.add(row)
+        row_std.add_suffix(btn_std)
+        template_group.add(row_std)
+
+        # 2. LaTeX
+        row_latex = Adw.ActionRow()
+        row_latex.set_title(_("Ensaio LaTeX"))
+        row_latex.set_subtitle(_("Otimizado para Exatas (Suporte a fórmulas)"))
+
+        btn_latex = Gtk.Button()
+        btn_latex.set_label(_("Iniciar"))
+        btn_latex.add_css_class("suggested-action") 
+        btn_latex.set_valign(Gtk.Align.CENTER)
+        # Send 'latex' to main_window
+        btn_latex.connect('clicked', lambda btn: self.emit('create-project', 'latex'))
+
+        row_latex.add_suffix(btn_latex)
+        template_group.add(row_latex)
+
 
         self.append(template_group)
 
