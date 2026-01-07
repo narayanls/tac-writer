@@ -76,7 +76,14 @@ class NewProjectDialog(Adw.Window):
 
     def __init__(self, parent, **kwargs):
         super().__init__(**kwargs)
-        self.set_title(_("Novo Projeto"))
+        self.project_type = project_type
+        
+        # Adjust title based on type
+        if self.project_type == 'latex':
+            self.set_title(_("Novo Projeto LaTeX"))
+        else:
+            self.set_title(_("Novo Projeto"))
+            
         self.set_transient_for(parent)
         self.set_modal(True)
         self.set_default_size(600, 700)
@@ -293,6 +300,7 @@ class NewProjectDialog(Adw.Window):
             project.update_metadata({
                 'author': author,
                 'description': description
+                'type': self.project_type
             })
             
             # Save project
