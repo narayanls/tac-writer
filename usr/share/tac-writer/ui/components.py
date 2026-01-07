@@ -683,20 +683,36 @@ class WelcomeView(Gtk.Box):
         template_group.set_description(_("Escolha um modelo para começar"))
 
         # Template cards
-        for template in DEFAULT_TEMPLATES:
-            row = Adw.ActionRow()
-            row.set_title(template.name)
-            row.set_subtitle(template.description)
+        # 1. Deafult
+        row_std = Adw.ActionRow()
+        row_std.set_title(_("Ensaio Acadêmico"))
+        row_std.set_subtitle(_("Estrutura padrão (Humanas, Biológicas, etc)"))
 
-            # Start button
-            start_button = Gtk.Button()
-            start_button.set_label(_("Iniciar"))
-            start_button.add_css_class("suggested-action")
-            start_button.set_valign(Gtk.Align.CENTER)
-            start_button.connect('clicked', lambda btn, tmpl=template.name: self.emit('create-project', tmpl))
-            row.add_suffix(start_button)
+        btn_std = Gtk.Button()
+        btn_std.set_label(_("Iniciar"))
+        btn_std.add_css_class("suggested-action")
+        btn_std.set_valign(Gtk.Align.CENTER)
+        # Send 'standard' to main_window
+        btn_std.connect('clicked', lambda btn: self.emit('create-project', 'standard'))
 
-            template_group.add(row)
+        row_std.add_suffix(btn_std)
+        template_group.add(row_std)
+
+        # 2. LaTeX
+        row_latex = Adw.ActionRow()
+        row_latex.set_title(_("Ensaio LaTeX"))
+        row_latex.set_subtitle(_("Otimizado para Exatas (Suporte a fórmulas)"))
+
+        btn_latex = Gtk.Button()
+        btn_latex.set_label(_("Iniciar"))
+        btn_latex.add_css_class("suggested-action") 
+        btn_latex.set_valign(Gtk.Align.CENTER)
+        # Send 'latex' to main_window
+        btn_latex.connect('clicked', lambda btn: self.emit('create-project', 'latex'))
+
+        row_latex.add_suffix(btn_latex)
+        template_group.add(row_latex)
+
 
         self.append(template_group)
 
@@ -1033,8 +1049,32 @@ class ParagraphEditor(Gtk.Box):
         """Called when widget is mapped to screen (visible)"""
         try:
             formatting = self.paragraph.formatting
-            font_family = formatting.get('font_family', 'Adwaita Sans')
-            font_size = formatting.get('font_size', 12)
+            
+            # Logic for LaTeX
+            if self.paragraph.type == ParagraphType.LATEX:
+                font_family = 'Monospace'
+                font_size = formatting.get('font_size', 11)
+                
+                # Add specific visual style
+                css_provider = Gtk.CssProvider()
+                css = """
+                .latex-view {
+                    font-family: 'Monospace';
+                    background-color: alpha(@theme_fg_color, 0.05);
+                    border-radius: 4px;
+                    padding: 6px;
+                }
+                """
+                css_provider.load_from_data(css.encode())
+                self.text_view.get_style_context().add_provider(
+                    css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+                )
+                self.text_view.add_css_class("latex-view")
+                
+            else:
+                # Default type
+                font_family = formatting.get('font_family', 'Adwaita Sans')
+                font_size = formatting.get('font_size', 12)
 
             # Use CSS cache instead of creating individual provider
             css_cache = get_cached_css_provider(font_family, font_size)
@@ -1053,12 +1093,9 @@ class ParagraphEditor(Gtk.Box):
 
             self._apply_formatting()
             
-            # --- DEBUG: Visual confirmation in terminal ---
-            print(f"DEBUG: ParagraphEditor {self.paragraph.id[:8]} MAPPED", flush=True)
+            # DEBUG: Visual confirmation in terminal ---
+            print(f"DEBUG: ParagraphEditor {self.paragraph.id[:8]} MAPPED (Type: {self.paragraph.type})", flush=True)
             
-            # --- Spellcheck init ---
-            #GLib.timeout_add(200, self._setup_spell_check)
-        
         except Exception as e:
             print(f"Error during paragraph editor initialization: {e}", flush=True)
 
@@ -1170,7 +1207,7 @@ class ParagraphEditor(Gtk.Box):
         header_box.append(self.format_box)
 
         # Spell check toggle button
-        if SPELL_CHECK_AVAILABLE and self.config:
+        if SPELL_CHECK_AVAILABLE and self.config and self.paragraph.type != ParagraphType.LATEX:
             self.spell_button = Gtk.ToggleButton()
             self.spell_button.set_icon_name('tac-tools-check-spelling-symbolic')
             self.spell_button.set_tooltip_text(_("Alternar verificação ortográfica"))
@@ -1303,6 +1340,10 @@ class ParagraphEditor(Gtk.Box):
     def _ensure_formatting_buttons(self):
         """Create formatting buttons only when needed"""
         if self._formatting_buttons_created:
+            return
+
+        # If LaTeX, do not create text formatting buttons
+        if self.paragraph.type == ParagraphType.LATEX:
             return
 
         # Bold
@@ -1550,7 +1591,8 @@ class ParagraphEditor(Gtk.Box):
             ParagraphType.ARGUMENT_RESUMPTION: _("Retomada do Argumento"),
             ParagraphType.QUOTE: _("Citação"),
             ParagraphType.EPIGRAPH: _("Epígrafe"),
-            ParagraphType.CONCLUSION: _("Conclusão")
+            ParagraphType.CONCLUSION: _("Conclusão"),
+            ParagraphType.LATEX: _("Equação LaTeX")
         }
         return type_labels.get(self.paragraph.type, _("Parágrafo"))
 

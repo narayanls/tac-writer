@@ -18,6 +18,22 @@ from .models import Project, Paragraph, ParagraphType
 from utils.helpers import FileHelper
 from utils.i18n import _
 
+# PyLaTeX dependencies
+try:
+    from pylatex import Document, Section, Subsection, Command, Package, \
+                        Figure, NoEscape, NewLine
+
+    from pylatex.base_classes import Environment
+    from pylatex.utils import italic, bold, escape_latex
+
+    class Quote(Environment):
+        pass
+
+    PYLATEX_AVAILABLE = True
+except ImportError as e:
+    print(f"ERRO PYLATEX: {e}")
+    PYLATEX_AVAILABLE = False
+
 # ODT export dependencies
 try:
     from xml.etree import ElementTree as ET
@@ -846,11 +862,14 @@ class ExportService:
     def __init__(self):
         self.odt_available = ODT_AVAILABLE
         self.pdf_available = PDF_AVAILABLE
+        self.pylatex_available = PYLATEX_AVAILABLE
         
         if not self.odt_available:
             print(_("Aviso: Exportação ODT indisponível (faltando dependências xml)"))
         if not self.pdf_available:
             print(_("Aviso: Exportação PDF indisponível (faltando reportlab)"))
+        if not self.pylatex_available:
+            print(_("Aviso: Exportação LaTeX indisponível (faltando biblioteca pylatex)"))
     
     def _collect_footnotes(self, project: Project) -> tuple:
         """
@@ -1059,8 +1078,12 @@ class ExportService:
             formats.append('odt')
         if self.pdf_available:
             formats.append('pdf')
+        if self.pylatex_available:
+            formats.append('tex')
             
         return formats
+
+
 
     def export_project(self, project: Project, file_path: str, format_type: str) -> bool:
         """Export project to specified format"""
@@ -1071,9 +1094,13 @@ class ExportService:
                 return self._export_odt(project, file_path)
             elif format_type.lower() == 'pdf' and self.pdf_available:
                 return self._export_pdf(project, file_path)
+            elif format_type.lower() == 'tex' and self.pylatex_available:
+                return self._export_latex(project, file_path)
             else:
                 print(_("Formato de exportação '{}' não disponível").format(format_type))
                 return False
+
+            
                 
         except Exception as e:
             print(_("Erro ao exportar projeto: {}: {}").format(type(e).__name__, e))
@@ -1267,6 +1294,32 @@ class ExportService:
         text = text.replace('\n', '<br/>')
 
         return text
+
+    def _format_text_for_latex(self, text: str) -> Any:
+        """
+        Converte tags internas (HTML-like) para comandos LaTeX usando utilitários do PyLaTeX.
+        Retorna um objeto NoEscape pronto para ser inserido no documento.
+        """
+        if not text:
+            return ""
+
+        # 1. Use placeholders for tags 
+        text = text.replace("<b>", "@@BOLD_START@@").replace("</b>", "@@BOLD_END@@")
+        text = text.replace("<i>", "@@ITALIC_START@@").replace("</i>", "@@ITALIC_END@@")
+        text = text.replace("<u>", "@@UNDER_START@@").replace("</u>", "@@UNDER_END@@")
+
+        # 2. Escape the whole text for LaTeX (treat %, $, _, {, }, etc.)
+        text = escape_latex(text)
+
+        # 3. Rrestore tags converting to LaTex commands
+        text = text.replace("@@BOLD_START@@", "\\textbf{").replace("@@BOLD_END@@", "}")
+        text = text.replace("@@ITALIC_START@@", "\\textit{").replace("@@ITALIC_END@@", "}")
+        text = text.replace("@@UNDER_START@@", "\\underline{").replace("@@UNDER_END@@", "}")
+        
+        # Treat line break
+        text = text.replace("\n", "\n\n")
+
+        return NoEscape(text)
 
     def _generate_odt_content(self, project: Project) -> str:
         """Generate content.xml for ODT with proper formatting"""
@@ -1930,6 +1983,106 @@ class ExportService:
             return False
         except Exception as e:
             print(_("Erro inesperado ao exportar para PDF: {}: {}").format(type(e).__name__, e))
+            import traceback
+            traceback.print_exc()
+            return False
+
+    def _export_latex(self, project: Project, file_path: str) -> bool:
+        """Export for LaTeX format (.tex)"""
+        try:
+            file_path_obj = Path(file_path)
+            file_path_obj.parent.mkdir(parents=True, exist_ok=True)
+
+            # Create document with deafult ABNT margins
+            geometry_options = {"tmargin": "3cm", "lmargin": "3cm", "rmargin": "2cm", "bmargin": "2cm"}
+            doc = Document(geometry_options=geometry_options)
+
+            # Add essential packages
+            doc.packages.append(Package('babel', options=['brazil'])) # Idioma
+            doc.packages.append(Package('inputenc', options=['utf8']))
+            doc.packages.append(Package('fontenc', options=['T1']))
+            doc.packages.append(Package('graphicx')) # Imagens
+            doc.packages.append(Package('amsmath'))  # Equações matemáticas
+            doc.packages.append(Package('indentfirst')) # Indentar primeiro parágrafo
+            
+            # Metadados
+            doc.preamble.append(Command('title', project.name))
+            if project.metadata.get('author'):
+                doc.preamble.append(Command('author', project.metadata.get('author')))
+            doc.preamble.append(Command('date', NoEscape(r'\today')))
+            
+            doc.append(NoEscape(r'\maketitle'))
+
+            # Iterar sobre os parágrafos
+            for paragraph in project.paragraphs:
+                
+                # 1. Tratar Bloco de Equação LaTeX
+                if paragraph.type == ParagraphType.LATEX:
+                    content = paragraph.content.strip()
+                    if not content:
+                        continue
+                    
+                    # Se o usuário já escreveu um ambiente
+                    if content.startswith('\\begin') or content.startswith('$$') or content.startswith('\\['):
+                        doc.append(NoEscape(content))
+                    else:
+                        doc.append(NoEscape(r'\begin{equation}'))
+                        doc.append(NoEscape(content))
+                        doc.append(NoEscape(r'\end{equation}'))
+                    
+                    continue 
+
+                # 2. Tratar Imagens
+                if paragraph.type == ParagraphType.IMAGE:
+                    img_metadata = paragraph.get_image_metadata()
+                    if img_metadata and Path(img_metadata['path']).exists():
+                        with doc.create(Figure(position='h!')) as pic:
+                            # Calcula largura
+                            width_str = r'0.8\textwidth'
+                            if 'width_percent' in img_metadata:
+                                width_str = f"{img_metadata['width_percent']/100:.2f}\\textwidth"
+                            
+                            pic.add_image(img_metadata['path'], width=NoEscape(width_str))
+                            
+                            if img_metadata.get('caption'):
+                                pic.add_caption(img_metadata['caption'])
+                    continue
+
+                # 3. Tratar Texto Comum (Títulos, Citações, Parágrafos)
+                formatted_text = self._format_text_for_latex(paragraph.content)
+                
+                if paragraph.type == ParagraphType.TITLE_1:
+                    doc.append(Section(formatted_text))
+                
+                elif paragraph.type == ParagraphType.TITLE_2:
+                    doc.append(Subsection(formatted_text))
+                
+                elif paragraph.type == ParagraphType.QUOTE:
+                    doc.append(Quote(formatted_text))
+                    
+                elif paragraph.type == ParagraphType.EPIGRAPH:
+                    # Formatação customizada para epígrafe
+                    doc.append(NoEscape(r'\begin{flushright}\textit{' + formatted_text + r'}\end{flushright}'))
+                
+                else:
+                    doc.append(formatted_text)
+                    
+                    # Tratar Notas de Rodapé
+                    if hasattr(paragraph, 'footnotes') and paragraph.footnotes:
+                        for note in paragraph.footnotes:
+                            doc.append(Command('footnote', self._format_text_for_latex(note)))
+                    
+                    # Add new line after paragraph
+                    doc.append(NewLine())
+
+            # Gerar o arquivo .tex
+            
+            doc.generate_tex(str(file_path_obj.with_suffix('')))
+            
+            return True
+
+        except Exception as e:
+            print(_("Erro inesperado ao exportar para LaTeX: {}: {}").format(type(e).__name__, e))
             import traceback
             traceback.print_exc()
             return False

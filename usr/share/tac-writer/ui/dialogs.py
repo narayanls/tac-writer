@@ -74,9 +74,16 @@ class NewProjectDialog(Adw.Window):
         'project-created': (GObject.SIGNAL_RUN_FIRST, None, (object,)),
     }
 
-    def __init__(self, parent, **kwargs):
+    def __init__(self, parent, project_type="strandard", **kwargs):
         super().__init__(**kwargs)
-        self.set_title(_("Novo Projeto"))
+        self.project_type = project_type
+        
+        # Adjust title based on type
+        if self.project_type == 'latex':
+            self.set_title(_("Novo Projeto LaTeX"))
+        else:
+            self.set_title(_("Novo Projeto"))
+            
         self.set_transient_for(parent)
         self.set_modal(True)
         self.set_default_size(600, 700)
@@ -292,7 +299,8 @@ class NewProjectDialog(Adw.Window):
             # Update metadata
             project.update_metadata({
                 'author': author,
-                'description': description
+                'description': description,
+                'type': self.project_type
             })
             
             # Save project
@@ -405,11 +413,28 @@ class ExportDialog(Adw.Window):
         self.format_row.set_title(_("Formato"))
         format_model = Gtk.StringList()
 
-        formats = [
-            ("ODT", "odt"),
-            ("TXT", "txt"),
-            ("PDF", "pdf")
-        ]
+        formats = []
+
+        # Verify project type
+        is_latex_project = self.project.metadata.get('type') == 'latex'
+
+        if is_latex_project:
+            # if LaTex only tex format
+            if self.export_service.pylatex_available:
+                formats.append(("LaTeX Source (.tex)", "tex"))
+
+            # txt for backup
+            formats.append(("Texto Puro (.txt)", "txt"))
+
+        else:
+            # if deafult type
+            if self.export_service.odt_available:
+                formats.append(("OpenDocument (.odt)", "odt"))
+                
+            if self.export_service.pdf_available:
+                formats.append(("PDF (.pdf)", "pdf"))
+
+            formats.append(("Texto Puro (.txt)", "txt"))
 
         self.format_data = []
         for display_name, format_code in formats:

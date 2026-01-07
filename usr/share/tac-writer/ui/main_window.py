@@ -144,10 +144,16 @@ class MainWindow(Adw.ApplicationWindow):
         self.header_bar.set_title_widget(title_widget)
 
         # Left side buttons
-        self.new_project_button = Gtk.Button()
+        self.new_project_button = Gtk.MenuButton()
         self.new_project_button.set_icon_name('tac-document-new-symbolic')
-        self.new_project_button.set_tooltip_text(_("Novo Projeto (Ctrl+N)"))
-        self.new_project_button.set_action_name("app.new_project")
+        self.new_project_button.set_tooltip_text(_("Novo Projeto"))
+        
+        new_project_menu=Gio.Menu()
+
+        new_project_menu.append(_("Ensaio Padrão (Humanas/Biológicas)"), "win.new_project('standard')")
+        new_project_menu.append(_("Ensaio LaTeX (Exatas)"), "win.new_project('latex')")
+
+        self.new_project_button.set_menu_model(new_project_menu)
         self.header_bar.pack_start(self.new_project_button)
 
         # Pomodoro Timer Button
@@ -279,6 +285,7 @@ class MainWindow(Adw.ApplicationWindow):
             ('undo', self._action_undo),
             ('redo', self._action_redo),
             ('backup_manager', self._action_backup_manager),
+            ('new_project', self._action_new_project, 's'),
         ]
 
         for action_data in actions:
@@ -412,6 +419,12 @@ class MainWindow(Adw.ApplicationWindow):
             (_("Epígrafe"), ParagraphType.EPIGRAPH),
             (_("Conclusão"), ParagraphType.CONCLUSION),
         ]
+
+        # Add LaTex condition
+        if self.current_project and self.current_project.metadata.get('type') == 'latex':
+            paragraph_types.append((_("Equação LaTeX"), ParagraphType.LATEX))
+            
+
 
         for label, ptype in paragraph_types:
             menu_model.append(label, f"win.add_paragraph('{ptype.value}')")
@@ -877,7 +890,7 @@ class MainWindow(Adw.ApplicationWindow):
     # Event handlers
     def _on_create_project_from_welcome(self, widget, template_name):
         """Handle create project from welcome view"""
-        self.show_new_project_dialog()
+        self.show_new_project_dialog(project_type=template_name)
 
     def _on_open_project_from_welcome(self, widget, project_info):
         """Handle open project from welcome view"""
@@ -966,6 +979,12 @@ class MainWindow(Adw.ApplicationWindow):
         self.pomodoro_dialog.show_dialog()
 
     # Action handlers
+
+    def _action_new_project(self, action, param):
+        """Handle new project action with type parameter"""
+        project_type = param.get_string() if param else "standard"
+        self.show_new_project_dialog(project_type)
+
     def _action_toggle_sidebar(self, action, param):
         """Toggle sidebar visibility"""
         pass
@@ -1012,9 +1031,9 @@ class MainWindow(Adw.ApplicationWindow):
         self.show_backup_manager_dialog()
 
     # Public methods called by application
-    def show_new_project_dialog(self):
+    def show_new_project_dialog(self, project_type="strandard"):
         """Show new project dialog"""
-        dialog = NewProjectDialog(self)
+        dialog = NewProjectDialog(self, project_type=project_type)
         dialog.connect('project-created', self._on_project_created)
         dialog.present()
 

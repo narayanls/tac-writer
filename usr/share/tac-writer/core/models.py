@@ -22,6 +22,7 @@ class ParagraphType(Enum):
     EPIGRAPH = "epigraph"
     CONCLUSION = "conclusion"
     IMAGE = "image"
+    LATEX = "latex"
 
 class Paragraph:
     """Represents a single paragraph in a document"""
@@ -91,6 +92,14 @@ class Paragraph:
                 'line_spacing': 1.5,
                 'alignment': 'right',
                 'italic': True
+            })
+        elif self.type == ParagraphType.LATEX:
+            self.formatting.update({
+                'font_family': 'Monospace',
+                'font_size': 11,
+                'indent_left': 2.0,        
+                'indent_right': 2.0,
+                'line_spacing': 1.2,
             })
 
     def update_content(self, content: str) -> None:
