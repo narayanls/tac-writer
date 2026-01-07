@@ -21,10 +21,17 @@ from utils.i18n import _
 # PyLaTeX dependencies
 try:
     from pylatex import Document, Section, Subsection, Command, Package, \
-                        Figure, NoEscape, NewLine, Quote, Footnote
+                        Figure, NoEscape, NewLine
+
+    from pylatex.base_classes import Environment
     from pylatex.utils import italic, bold, escape_latex
+
+    class Quote(Environment):
+        pass
+
     PYLATEX_AVAILABLE = True
-except ImportError:
+except ImportError as e:
+    print(f"ERRO PYLATEX: {e}")
     PYLATEX_AVAILABLE = False
 
 # ODT export dependencies
@@ -2063,7 +2070,7 @@ class ExportService:
                     # Tratar Notas de Rodapé
                     if hasattr(paragraph, 'footnotes') and paragraph.footnotes:
                         for note in paragraph.footnotes:
-                            doc.append(Footnote(self._format_text_for_latex(note)))
+                            doc.append(Command('footnote', self._format_text_for_latex(note)))
                     
                     # Add new line after paragraph
                     doc.append(NewLine())
