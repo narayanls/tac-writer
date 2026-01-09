@@ -1347,21 +1347,21 @@ class ParagraphEditor(Gtk.Box):
             return
 
         # Bold
-        btn_bold = Gtk.Button(icon_name='format-text-bold-symbolic')
+        btn_bold = Gtk.Button(icon_name='format-text-bold')
         btn_bold.set_tooltip_text(_("Negrito"))
         btn_bold.add_css_class("flat")
         btn_bold.connect('clicked', lambda b: self._on_format_clicked(b, 'bold'))
         self.format_box.append(btn_bold)
         
         # Italic
-        btn_italic = Gtk.Button(icon_name='format-text-italic-symbolic')
+        btn_italic = Gtk.Button(icon_name='format-text-italic')
         btn_italic.set_tooltip_text(_("Itálico"))
         btn_italic.add_css_class("flat")
         btn_italic.connect('clicked', lambda b: self._on_format_clicked(b, 'italic'))
         self.format_box.append(btn_italic)
         
         # Underline
-        btn_underline = Gtk.Button(icon_name='format-text-underline-symbolic')
+        btn_underline = Gtk.Button(icon_name='format-text-underline')
         btn_underline.set_tooltip_text(_("Sublinhado"))
         btn_underline.add_css_class("flat")
         btn_underline.connect('clicked', lambda b: self._on_format_clicked(b, 'underline'))
