@@ -98,6 +98,14 @@ package() {
         fi
     done
 
+    # Install symbolic icons
+    if [ -d "${srcdir}/tac-writer/icons/hicolor" ]; then
+        echo "Instalando ícones simbólicos adicionais..."
+        install -d "${pkgdir}/usr/share/icons/hicolor"
+        
+        cp -a "${srcdir}/tac-writer/icons/hicolor/"* "${pkgdir}/usr/share/icons/hicolor/"
+    fi
+
     # Install license file if present
     if [ -f "LICENSE" ]; then
         install -Dm644 LICENSE "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
