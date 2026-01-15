@@ -17,7 +17,7 @@
 
 ---
 ## Metrics
-
+![Downloads](https://img.shields.io/github/downloads/narayanls/tac-writer/total?style=flat-square)
 ![GitHub Release](https://img.shields.io/github/v/release/narayanls/tac-writer?include_releases&style=flat-square)
 ![GitHub Issues](https://img.shields.io/github/issues/narayanls/tac-writer?style=flat-square)
 ![GitHub Stars](https://img.shields.io/github/stars/narayanls/tac-writer?style=flat-square)
