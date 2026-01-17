@@ -18,7 +18,7 @@ from core.config import Config
 from core.ai_assistant import WritingAiAssistant
 from utils.helpers import FormatHelper
 from utils.i18n import _
-from .components import WelcomeView, ParagraphEditor, ProjectListWidget, SpellCheckHelper, PomodoroTimer, FirstRunTour
+from .components import WelcomeView, ParagraphEditor, ProjectListWidget, SpellCheckHelper, PomodoroTimer, FirstRunTour, ReorderableParagraphRow
 from .dialogs import NewProjectDialog, ExportDialog, PreferencesDialog, AboutDialog, WelcomeDialog, BackupManagerDialog, ImageDialog
 
 
@@ -528,7 +528,6 @@ class MainWindow(Adw.ApplicationWindow):
                 del existing_widgets[paragraph_id]
     
         # Remove todos da view para reordenar/reinserir corretamente
-        # (Isso é rápido pois não destrói os objetos Python, apenas desanexa do GTK)
         child = self.paragraphs_box.get_first_child()
         while child:
             next_child = child.get_next_sibling()
@@ -555,21 +554,33 @@ class MainWindow(Adw.ApplicationWindow):
             paragraph = self._paragraphs_to_add.pop(0)
             
             # Lógica de criação/reuso do widget
-            widget = None
+            row_widget = None
             if paragraph.id in self._existing_widgets:
-                widget = self._existing_widgets[paragraph.id]
+                row_widget = self._existing_widgets[paragraph.id]
             else:
+                editor_widget = None # Inicializa variável
+
+                # --- CORREÇÃO AQUI: Usar 'editor_widget' em vez de 'widget' ---
                 if paragraph.type == ParagraphType.IMAGE:
-                    widget = self._create_image_widget(paragraph)
+                    editor_widget = self._create_image_widget(paragraph)
+                    # Garante que o widget de imagem tenha a referência do parágrafo
+                    if not hasattr(editor_widget, 'paragraph'):
+                        editor_widget.paragraph = paragraph
                 else:
-                    widget = ParagraphEditor(paragraph, config=self.config)
-                    widget.connect('content-changed', self._on_paragraph_changed)
-                    widget.connect('remove-requested', self._on_paragraph_remove_requested)
-                    widget.connect('paragraph-reorder', self._on_paragraph_reorder)
+                    editor_widget = ParagraphEditor(paragraph, config=self.config)
+                    editor_widget.connect('content-changed', self._on_paragraph_changed)
+                    editor_widget.connect('remove-requested', self._on_paragraph_remove_requested)
+
+                # Agora editor_widget não é mais None
+                from ui.components import ReorderableParagraphRow 
+                row_widget = ReorderableParagraphRow(editor_widget)
+
+                # Connect Row Signal 
+                row_widget.connect('paragraph-reorder', self._on_paragraph_reorder)
                 
-                self._existing_widgets[paragraph.id] = widget
+                self._existing_widgets[paragraph.id] = row_widget
             
-            self.paragraphs_box.append(widget)
+            self.paragraphs_box.append(row_widget)
             count += 1
 
         # VERIFICAÇÃO DE TÉRMINO
@@ -578,24 +589,20 @@ class MainWindow(Adw.ApplicationWindow):
             
             # CORREÇÃO: Restaurar a rolagem APENAS quando tudo estiver carregado
             if self._preserved_scroll_position is not None:
-                # Usamos idle_add com prioridade baixa para garantir que o layout foi calculado
                 GLib.idle_add(self._restore_scroll_position, priority=GLib.PRIORITY_LOW)
             
-            # Se o usuário clicou em "Ir para o fim" durante o carregamento
             elif self._pending_scroll_to_bottom:
                 GLib.idle_add(self._execute_pending_scroll)
                 self._pending_scroll_to_bottom = False
                 
-            return False # Para o loop do GLib
+            return False
 
-        return True # Continua o loop no próximo frame
+        return True
 
     def _restore_scroll_position(self):
         """Helper to restore scroll position after refresh"""
         if hasattr(self, 'editor_scrolled') and self._preserved_scroll_position is not None:
             adj = self.editor_scrolled.get_vadjustment()
-            # O GTK fará o clamp automaticamente se o valor for maior que o permitido,
-            # mas como já carregamos tudo, a altura deve ser suficiente agora.
             adj.set_value(self._preserved_scroll_position)
             
             # Limpa a posição preservada para evitar saltos futuros indesejados
@@ -1247,11 +1254,16 @@ class MainWindow(Adw.ApplicationWindow):
         paragraph_editor = ParagraphEditor(paragraph, config=self.config)
         paragraph_editor.connect('content-changed', self._on_paragraph_changed)
         paragraph_editor.connect('remove-requested', self._on_paragraph_remove_requested)
-        paragraph_editor.connect('paragraph-reorder', self._on_paragraph_reorder)
-        self.paragraphs_box.append(paragraph_editor)
+        
+        # Create Wrapper
+        from ui.components import ReorderableParagraphRow
+        row_widget = ReorderableParagraphRow(paragraph_editor)
+        row_widget.connect('paragraph-reorder', self._on_paragraph_reorder)
+
+        self.paragraphs_box.append(row_widget)
+        self._existing_widgets[paragraph.id] = row_widget 
 
         self._update_header_for_view("editor")
-        # Update sidebar project list in real-time with current statistics
         current_stats = self.current_project.get_statistics()
         self.project_list.update_project_statistics(self.current_project.id, current_stats)
 

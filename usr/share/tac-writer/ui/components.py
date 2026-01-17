@@ -1022,7 +1022,6 @@ class ParagraphEditor(Gtk.Box):
 
         self.drag_start_x = 0
         self.drag_start_y = 0
-        self._setup_dnd_styles()
         
         # Spell check components - initialize once
         self.spell_checker = None
@@ -1516,16 +1515,6 @@ class ParagraphEditor(Gtk.Box):
         else:
             self.add_controller(drag_source)
 
-        # 2. DROP TARGET
-        drop_target = Gtk.DropTarget.new(GObject.TYPE_STRING, Gdk.DragAction.MOVE)
-        
-        drop_target.connect('accept', self._on_drop_accept)
-        drop_target.connect('enter', self._on_drop_enter)
-        drop_target.connect('leave', self._on_drop_leave)
-        drop_target.connect('drop', self._on_drop)
-        drop_target.connect('motion', self._on_drop_motion) 
-        self.add_controller(drop_target)
-
     def _on_drag_prepare(self, drag_source, x, y):
         """Prepare drag - Set global state and return dummy content"""
         global _CURRENT_DRAG_ID
@@ -1562,71 +1551,12 @@ class ParagraphEditor(Gtk.Box):
         global _CURRENT_DRAG_ID
         self.is_dragging = False
         self.remove_css_class("dragging")
-        self.remove_css_class("drop-target-top")
-        self.remove_css_class("drop-target-bottom")
         
         # Limpa a variável global
         _CURRENT_DRAG_ID = None
         
         if hasattr(self, 'drag_handle'):
             self.drag_handle.set_cursor(Gdk.Cursor.new_from_name("grab", None))
-
-    def _on_drop_accept(self, drop_target, drop):
-        """Check if drop is acceptable"""
-        global _CURRENT_DRAG_ID
-        # Only accet Internal ID when dropped
-        return _CURRENT_DRAG_ID is not None
-
-    def _on_drop_enter(self, drop_target, x, y):
-        return Gdk.DragAction.MOVE
-
-    def _on_drop_motion(self, drop_target, x, y):
-        global _CURRENT_DRAG_ID
-        if _CURRENT_DRAG_ID == self.paragraph.id:
-            return Gdk.DragAction.NONE
-
-        widget_height = self.get_allocated_height()
-        
-        # Try Kanri Logic
-        self.remove_css_class("drop-target-top")
-        self.remove_css_class("drop-target-bottom")
-        
-        if y < widget_height / 2:
-            self.add_css_class("drop-target-top")
-        else:
-            self.add_css_class("drop-target-bottom")
-            
-        return Gdk.DragAction.MOVE
-
-    def _on_drop_leave(self, drop_target):
-        self.remove_css_class("drop-target-top")
-        self.remove_css_class("drop-target-bottom")
-
-    def _on_drop(self, drop_target, value, x, y):
-        """Handle drop operation using Global State"""
-        global _CURRENT_DRAG_ID
-        
-        # Limpa visual
-        self.remove_css_class("drop-target-top")
-        self.remove_css_class("drop-target-bottom")
-
-        # Recupera o ID da variável global, ignorando o 'value' do GTK
-        dragged_id = _CURRENT_DRAG_ID
-        target_id = self.paragraph.id
-
-        if not dragged_id or dragged_id == target_id:
-            return False
-
-        widget_height = self.get_allocated_height()
-        drop_position = "after" if y > widget_height / 2 else "before"
-
-        def do_reorder():
-            self.emit('paragraph-reorder', dragged_id, target_id, drop_position)
-            return False
-
-        GLib.timeout_add(50, do_reorder)
-
-        return True
 
     def _get_type_label(self) -> str:
         """Get display label for paragraph type"""
@@ -2253,3 +2183,128 @@ class FirstRunTour:
         # Save config to not show tour again
         self.config.set('show_first_run_tutorial', False)
         self.config.save()
+
+class ReorderableParagraphRow(Gtk.Box):
+    """
+    Wrapper around ParagraphEditor that implements Planify-style 
+    fluid drag and drop with expanding landing pads.
+    """
+    __gtype_name__ = 'TacReorderableParagraphRow'
+    
+    # Repassa o sinal de reordenação vindo do drop target
+    __gsignals__ = {
+        'paragraph-reorder': (GObject.SIGNAL_RUN_FIRST, None, (str, str, str)),
+    }
+
+    def __init__(self, editor_widget, **kwargs):
+        super().__init__(orientation=Gtk.Orientation.VERTICAL, **kwargs)
+        self.editor = editor_widget
+        
+        self.paragraph = editor_widget.paragraph 
+        
+        # 1. Pad Superior
+        self.top_drop_area = Gtk.Box(height_request=50) 
+        self.top_drop_area.add_css_class("drop-landing-pad") 
+        
+        self.top_revealer = Gtk.Revealer(transition_type=Gtk.RevealerTransitionType.SLIDE_UP)
+        self.top_revealer.set_child(self.top_drop_area)
+        self.top_revealer.set_transition_duration(200) 
+        self.append(self.top_revealer)
+
+        # 2. O Conteúdo (Editor)
+        self.append(self.editor)
+
+        # 3. Pad Inferior
+        self.bottom_drop_area = Gtk.Box(height_request=50)
+        self.bottom_drop_area.add_css_class("drop-landing-pad")
+        
+        self.bottom_revealer = Gtk.Revealer(transition_type=Gtk.RevealerTransitionType.SLIDE_DOWN)
+        self.bottom_revealer.set_child(self.bottom_drop_area)
+        self.bottom_revealer.set_transition_duration(200)
+        self.append(self.bottom_revealer)
+
+        # --- Controladores ---
+        self._setup_drop_targets()
+        self._setup_motion_controller()
+        self._setup_css()
+
+    def _setup_css(self):
+        # Style
+        css_provider = Gtk.CssProvider()
+        css = """
+        .drop-landing-pad {
+            background-color: alpha(@accent_color, 0.1);
+            border: 2px dashed @accent_color;
+            border-radius: 6px;
+            margin: 4px 12px;
+        }
+        """
+        try:
+            css_provider.load_from_data(css.encode())
+            display = Gdk.Display.get_default()
+            Gtk.StyleContext.add_provider_for_display(display, css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+        except:
+            pass
+
+    def _setup_drop_targets(self):
+        """Configura os DropTargets nos Pads (e não no widget principal)"""
+        
+        # Target Superior
+        target_top = Gtk.DropTarget.new(GObject.TYPE_STRING, Gdk.DragAction.MOVE)
+        target_top.connect('drop', self._on_drop_top)
+        self.top_drop_area.add_controller(target_top)
+
+        # Target Inferior
+        target_bottom = Gtk.DropTarget.new(GObject.TYPE_STRING, Gdk.DragAction.MOVE)
+        target_bottom.connect('drop', self._on_drop_bottom)
+        self.bottom_drop_area.add_controller(target_bottom)
+
+    def _setup_motion_controller(self):
+        """Detecta onde o mouse está para abrir o revealer correto"""
+        motion_ctrl = Gtk.DropControllerMotion()
+        motion_ctrl.connect('motion', self._on_hover_motion)
+        motion_ctrl.connect('leave', self._on_hover_leave)
+        self.add_controller(motion_ctrl)
+
+    def _on_hover_motion(self, controller, x, y):
+        global _CURRENT_DRAG_ID
+        
+        if _CURRENT_DRAG_ID == self.paragraph.id:
+            return
+
+        height = self.get_height()
+        is_top_half = y < (height / 2)
+
+        # Lógica do Planify:
+        if self.top_revealer.get_reveal_child() != is_top_half:
+            self.top_revealer.set_reveal_child(is_top_half)
+            
+        if self.bottom_revealer.get_reveal_child() != (not is_top_half):
+            self.bottom_revealer.set_reveal_child(not is_top_half)
+
+    def _on_hover_leave(self, controller):
+        """Fecha tudo ao sair"""
+        self.top_revealer.set_reveal_child(False)
+        self.bottom_revealer.set_reveal_child(False)
+
+    def _on_drop_top(self, target, value, x, y):
+        return self._handle_drop("before")
+
+    def _on_drop_bottom(self, target, value, x, y):
+        return self._handle_drop("after")
+
+    def _handle_drop(self, position):
+        global _CURRENT_DRAG_ID
+        
+        # Limpa visual
+        self._on_hover_leave(None)
+
+        dragged_id = _CURRENT_DRAG_ID
+        target_id = self.paragraph.id
+
+        if not dragged_id or dragged_id == target_id:
+            return False
+            
+        # Emite o sinal para a MainWindow lidar com a lógica de dados e UI
+        self.emit('paragraph-reorder', dragged_id, target_id, position)
+        return True
