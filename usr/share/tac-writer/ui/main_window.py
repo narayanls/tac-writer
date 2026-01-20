@@ -1720,9 +1720,14 @@ class MainWindow(Adw.ApplicationWindow):
             return views
         child = self.paragraphs_box.get_first_child()
         while child:
-            text_view = getattr(child, "text_view", None)
-            if text_view:
-                views.append(text_view)
+            # Verify if is a Wrapper (ReorderableParagraphRow)
+            if hasattr(child, 'editor') and hasattr(child.editor, 'text_view'):
+                if child.editor.text_view:
+                    views.append(child.editor.text_view)
+            
+            # Fallback
+            elif hasattr(child, 'text_view') and child.text_view:
+                views.append(child.text_view)
             child = child.get_next_sibling()
         return views
 
