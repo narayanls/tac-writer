@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/big-comm/comm-tac-writer/releases"><img src="https://img.shields.io/badge/Version-1.2.5-blue.svg" alt="Version"/></a>
+  <a href="https://github.com/big-comm/comm-tac-writer/releases"><img src="https://img.shields.io/badge/Version-1.2.6-blue.svg" alt="Version"/></a>
   <a href="https://github.com/big-comm/comm-tac-writer/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-GPL--3.0-green.svg" alt="License"/></a>
   <a href="https://www.gtk.org/"><img src="https://img.shields.io/badge/GTK-4.0+-orange.svg" alt="GTK Version"/></a>
   <a href="https://gnome.pages.gitlab.gnome.org/libadwaita/"><img src="https://img.shields.io/badge/libadwaita-1.0+-purple.svg" alt="libadwaita Version"/></a>
@@ -84,16 +84,17 @@ The Continuous Argumentation Technique emphasizes interconnected paragraphs that
 ## System Requirements
 
 ### Minimum Requirements
-- **OS**: Arch Linux, Manjaro, BigCommunity, or Arch-based distributions
+- **OS**: Any Linux Os
 - **Python**: 3.9+
-- **GTK**: 4.0+
+- **GTK**: 3.0+
 - **libadwaita**: 1.0+
 - **Memory**: 2GB RAM
-- **Storage**: 100MB available space
+- **CPU**: 2 cores / 2 threads
+- **Storage**: 400MB available space
 
 ### Recommended
 - **Memory**: 4GB+ RAM for large documents
-- **Display**: 1920x1080 or higher resolution
+- **CPU**: 4 cores / 4 threads
 - **Storage**: 500MB+ for project storage and backups
 
 ## Installation
