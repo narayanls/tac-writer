@@ -646,7 +646,7 @@ class WelcomeView(Gtk.Box):
 
         # Description
         description = Gtk.Label()
-        description.set_text(_("Crie textos acadêmicos estruturados com tipos de parágrafos guiados"))
+        description.set_text(_("Crie textos acadêmicos estruturados com parágrafos guiados"))
         description.set_halign(Gtk.Align.CENTER)
         description.set_wrap(True)
         description.set_max_width_chars(50)

@@ -2146,7 +2146,7 @@ class AiPdfDialog(Adw.Window):
 
     def __init__(self, parent, ai_assistant, **kwargs):
         super().__init__(**kwargs)
-        self.set_title(_("Revisão de PDF pela IA"))
+        self.set_title(_("Revisão de PDF por IA"))
         self.set_transient_for(parent)
         self.set_modal(True)
         self.set_default_size(600, 400)
