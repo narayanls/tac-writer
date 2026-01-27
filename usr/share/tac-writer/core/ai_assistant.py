@@ -477,10 +477,10 @@ class WritingAiAssistant:
 
             # 2. Prompt Assembly
             fixed_prompt = (
-                "Faça uma revisão ortográfica, gramatical e semântica do texto abaixo. "
-                "Procure por palavras que, ainda que digitadas corretamente, possam não fazer sentido "
-                "com o conteúdo de uma frase. Identifique repetições de palavras em excesso em pequenos "
-                "períodos de texto.\n\n"
+                "Check the spelling, grammar, and semantics of the attached text. "
+                "Look for words that, even if spelled correctly, may not make sense "
+                "in the context of a sentence. Identify excessive word repetitions in small "
+                "sections of text. Present your considerations in Brazilian Portuguese.\n\n"
                 "--- INÍCIO DO TEXTO ---\n"
                 f"{text_content}\n"
                 "--- FIM DO TEXTO ---"
@@ -489,7 +489,7 @@ class WritingAiAssistant:
             messages = [
                 {
                     "role": "system", 
-                    "content": "Você é um especialista em revisão de textos acadêmicos em Português. Responda apenas com a revisão solicitada, sem JSON."
+                    "content": "You are an expert in proofreading academic texts in Portuguese. Please respond only with the requested proofreading, without JSON."
                 },
                 {
                     "role": "user", 

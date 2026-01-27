@@ -2175,7 +2175,7 @@ class AiPdfDialog(Adw.Window):
         content_box.append(main_box)
 
         # Icon
-        icon = Gtk.Image.new_from_icon_name("application-pdf-symbolic")
+        icon = Gtk.Image.new_from_icon_name("tac-x-office-document-symbolic")
         icon.set_pixel_size(64)
         main_box.append(icon)
 
