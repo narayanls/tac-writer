@@ -137,6 +137,9 @@ class MainWindow(Adw.ApplicationWindow):
     def _setup_header_bar(self):
         """Setup the header bar"""
         self.header_bar = Adw.HeaderBar()
+        
+        # Prevent to show tac icon in KDE Plasma
+        self.header_bar.set_show_start_title_buttons(False)
 
         # Title widget
         title_widget = Adw.WindowTitle()
@@ -265,6 +268,8 @@ class MainWindow(Adw.ApplicationWindow):
         # Sidebar header
         sidebar_header = Adw.HeaderBar()
         sidebar_header.set_show_end_title_buttons(False)
+        # Prevent to show tac icon in KDE Plasma
+        sidebar_header.set_show_start_title_buttons(False)
         sidebar_title = Adw.WindowTitle()
         sidebar_title.set_title(_("Projetos"))
         sidebar_header.set_title_widget(sidebar_title)
