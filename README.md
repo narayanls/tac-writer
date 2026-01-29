@@ -86,7 +86,7 @@ A Técnica de Argumentação Contínua enfatiza parágrafos interconectados que 
 
 ### Requisitos Mínimos
 - **SO**: Qualquer SO Linux
-- **Python**: 3.12+
+- **Python**: 3.11+
 - **GTK**: 3.0+
 - **libadwaita**: 1.0+
 - **Memória**: 2GB RAM
@@ -109,9 +109,8 @@ A Técnica de Argumentação Contínua enfatiza parágrafos interconectados que 
 
 1. Abra **Preferências ▸ Assistente de IA**, habilite o recurso e escolha seu provedor (Gemini ou OpenRouter).
 2. Informe o **Model ID** e a **API key** correspondente (OpenRouter também aceita Referer e Título opcionais para ranking).
-3. No editor, posicione o cursor ou selecione o trecho desejado e pressione `Ctrl+Shift+I` (ou clique no avatar da barra superior).
-4. Descreva como quer melhorar o parágrafo, escolha uma sugestão rápida se quiser e envie.  
-5. Analise o retorno: copie, insira diretamente no texto ou aproveite as sugestões adicionais.
+3. Abra o assistente com `Ctrl+Shift+I` (ou clique no avatar da barra superior).
+4. Anexe o arquivo pdf que será revisado.  
 
 ### Escrevendo com a Metodologia TAC
 
@@ -135,7 +134,7 @@ A **Técnica de Argumentação Contínua** segue esta estrutura:
 | `Ctrl+Z` | Desfazer | Desfazer a última ação |
 | `Ctrl+Shift+Z` | Refazer | Refazer a última ação desfeita |
 | `Ctrl+Alt+I` | Inserir Imagem | Abrir o diálogo de inserção de imagem |
-| `Ctrl+Shift+I` | Perguntar ao Assistente de IA | Abrir o diálogo de prompt de IA |
+| `Ctrl+Shift+I` | Revisão de texto por IA | Abrir o diálogo de prompt de IA |
 | `Ctrl+Q` | Sair | Sair do aplicativo |
 | `F11` | Modo Foco | Alternar escrita livre de distrações |
 
@@ -155,7 +154,6 @@ O TAC Writer segue a especificação XDG Base Directory:
 - **Correção de Bugs**: Ajude a melhorar a estabilidade e a experiência do usuário
 - **Desenvolvimento de Recursos**: Implemente itens do nosso roteiro (roadmap)
 - **Documentação**: Melhore guias de usuário e documentos de desenvolvedor
-- **Traduções**: Adicione suporte para idiomas adicionais
 - **Testes**: Expanda a cobertura de testes e adicione testes de integração
 
 ### Obtendo Ajuda
