@@ -19,7 +19,7 @@ from core.ai_assistant import WritingAiAssistant
 from utils.helpers import FormatHelper
 from utils.i18n import _
 from .components import WelcomeView, ParagraphEditor, ProjectListWidget, SpellCheckHelper, PomodoroTimer, FirstRunTour, ReorderableParagraphRow
-from .dialogs import NewProjectDialog, ExportDialog, PreferencesDialog, AboutDialog, WelcomeDialog, BackupManagerDialog, ImageDialog
+from .dialogs import NewProjectDialog, ExportDialog, PreferencesDialog, AboutDialog, WelcomeDialog, BackupManagerDialog, ImageDialog, CloudSyncDialog
 
 
 
@@ -111,13 +111,12 @@ class MainWindow(Adw.ApplicationWindow):
         self.tour_overlay_container.set_child(self.toast_overlay)
 
         # Create dark overlay for tour (initially hidden)
-        # Use Gtk.DrawingArea to ensure background is rendered
         self.tour_dark_overlay = Gtk.DrawingArea()
         self.tour_dark_overlay.set_vexpand(True)
         self.tour_dark_overlay.set_hexpand(True)
         self.tour_dark_overlay.add_css_class('dark-overlay')
         self.tour_dark_overlay.set_visible(False)
-        self.tour_dark_overlay.set_can_target(False)  # Don't block mouse events
+        self.tour_dark_overlay.set_can_target(False)
         self.tour_overlay_container.add_overlay(self.tour_dark_overlay)
 
         # Main container
@@ -168,8 +167,15 @@ class MainWindow(Adw.ApplicationWindow):
         self.pomodoro_button.set_sensitive(False)
         self.header_bar.pack_start(self.pomodoro_button)
 
+        # Cloud Sync Button (Dropbox)
+        self.cloud_button = Gtk.Button()
+        self.cloud_button.set_icon_name('tac-cloud-symbolic')
+        self.cloud_button.set_tooltip_text(_("Sincronização com Dropbox"))
+        self.cloud_button.connect('clicked', self._on_cloud_sync_clicked)
+        self.cloud_button.set_sensitive(True) 
+        self.header_bar.pack_start(self.cloud_button)
+
         # Right side buttons
-        
         # Menu button
         menu_button = Gtk.MenuButton()
         menu_button.set_icon_name('tac-open-menu-symbolic')
@@ -177,7 +183,7 @@ class MainWindow(Adw.ApplicationWindow):
         self._setup_menu(menu_button)
         self.header_bar.pack_end(menu_button)
 
-	# Save button
+	    # Save button
         save_button = Gtk.Button()
         save_button.set_icon_name('tac-document-save-symbolic')
         save_button.set_tooltip_text(_("Salvar Projeto (Ctrl+S)"))
@@ -568,7 +574,7 @@ class MainWindow(Adw.ApplicationWindow):
             if paragraph.id in self._existing_widgets:
                 row_widget = self._existing_widgets[paragraph.id]
             else:
-                editor_widget = None # Inicializa variável
+                editor_widget = None 
 
                 # Use 'editor_widget' instead of 'widget
                 if paragraph.type == ParagraphType.IMAGE:
@@ -638,14 +644,14 @@ class MainWindow(Adw.ApplicationWindow):
             error_label = Gtk.Label(label=_("⚠️ Erro: Dados de imagem inválidos"))
             error_label.add_css_class('error')
             error_box.append(error_label)
-            error_box.paragraph = paragraph  # Store reference
+            error_box.paragraph = paragraph  
             return error_box
         
         # Create main container
         image_container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
         image_container.set_margin_top(12)
         image_container.set_margin_bottom(12)
-        image_container.paragraph = paragraph  # Store reference for tracking
+        image_container.paragraph = paragraph  
         
         # Set alignment
         alignment = metadata.get('alignment', 'center')
@@ -1021,6 +1027,11 @@ class MainWindow(Adw.ApplicationWindow):
             from ui.components import PomodoroDialog
             self.pomodoro_dialog = PomodoroDialog(self, self.timer)
         self.pomodoro_dialog.show_dialog()
+
+    def _on_cloud_sync_clicked(self, button):
+        """Handle cloud sync button click"""
+        # TODO: Implementar lógica do Dropbox (Dialog de Auth ou Trigger de Sync)
+        self._show_toast(_("Configuração de sincronização em breve..."))
 
     # Action handlers
 
@@ -1938,3 +1949,8 @@ class MainWindow(Adw.ApplicationWindow):
         error_dialog.connect("response", lambda dlg, resp: dlg.destroy())
         
         error_dialog.present()
+
+    def _on_cloud_sync_clicked(self, button):
+        """Handle cloud sync button click"""
+        dialog = CloudSyncDialog(self)
+        dialog.present()

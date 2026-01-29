@@ -22,6 +22,19 @@ from core.config import Config
 from utils.helpers import ValidationHelper, FileHelper
 from utils.i18n import _
 
+import webbrowser
+
+# Try to import Dropbox SDK
+try:
+    import dropbox
+    from dropbox import DropboxOAuth2FlowNoRedirect
+    from dropbox.files import WriteMode
+    from dropbox.exceptions import ApiError
+    DROPBOX_AVAILABLE = True
+except ImportError:
+    DROPBOX_AVAILABLE = False
+
+DROPBOX_APP_KEY = "x3h06acjg6fhbmq"
 
 def get_system_fonts():
     """Get list of system fonts using multiple fallback methods"""
@@ -2299,3 +2312,401 @@ class AiResultDialog(Adw.Window):
         buff.set_text(result_text)
         
         scrolled.set_child(text_view)
+
+
+class CloudSyncDialog(Adw.Window):
+    """Dialog for Dropbox Cloud Synchronization"""
+
+    __gtype_name__ = 'TacCloudSyncDialog'
+
+    def __init__(self, parent, **kwargs):
+        super().__init__(**kwargs)
+        self.set_title(_("Sincronização na Nuvem (Dropbox)"))
+        self.set_transient_for(parent)
+        self.set_modal(True)
+        self.set_default_size(500, 500)
+        self.set_resizable(False)
+        
+        self.parent_window = parent
+        self.config = parent.config
+        self.auth_flow = None
+        
+        # Estado inicial
+        self.is_connected = False
+        
+        self._create_ui()
+        self._check_existing_connection()
+
+    def _create_ui(self):
+        """Create the dialog UI"""
+        # 1. Overlay for notifications
+        self.toast_overlay = Adw.ToastOverlay()
+        self.set_content(self.toast_overlay) 
+
+        # 2. Box inside overlay
+        content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.toast_overlay.set_child(content_box)
+
+        # Header bar
+        header_bar = Adw.HeaderBar()
+        content_box.append(header_bar)
+
+        # Main content area
+        main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=24)
+        main_box.set_margin_top(20)
+        main_box.set_margin_bottom(20)
+        main_box.set_margin_start(20)
+        main_box.set_margin_end(20)
+        content_box.append(main_box)
+
+        # --- Section 1: Authentication / Login ---
+        auth_group = Adw.PreferencesGroup()
+        auth_group.set_title(_("Configuração de Acesso"))
+        auth_group.set_description(_("Para conectar, siga os passos abaixo:"))
+        main_box.append(auth_group)
+
+        # Step 1: Open Browser
+        self.step1_row = Adw.ActionRow()
+        self.step1_row.set_title(_("1. Autorizar no Dropbox"))
+        self.step1_row.set_subtitle(_("Clique para abrir o navegador e fazer login."))
+        
+        login_button = Gtk.Button()
+        login_button.set_label(_("Abrir Navegador"))
+        login_button.add_css_class("suggested-action")
+        login_button.set_valign(Gtk.Align.CENTER)
+        login_button.connect("clicked", self._on_open_browser_clicked)
+        
+        self.step1_row.add_suffix(login_button)
+        auth_group.add(self.step1_row)
+
+        # Step 2: Enter Code
+        self.step2_row = Adw.ActionRow()
+        self.step2_row.set_title(_("2. Inserir Código"))
+        self.step2_row.set_subtitle(_("Cole o código gerado pelo Dropbox."))
+        auth_group.add(self.step2_row)
+
+        # Entry container
+        entry_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        
+        self.auth_code_entry = Gtk.Entry()
+        self.auth_code_entry.set_placeholder_text(_("Ex: sl.Bz..."))
+        self.auth_code_entry.set_hexpand(True)
+        entry_box.append(self.auth_code_entry)
+
+        self.connect_btn = Gtk.Button(label=_("Conectar"))
+        self.connect_btn.add_css_class("suggested-action")
+        self.connect_btn.connect("clicked", self._on_connect_clicked)
+        entry_box.append(self.connect_btn)
+
+        # Card wrapper for entry
+        auth_card = Gtk.Frame()
+        auth_card.add_css_class("card")
+        auth_inner = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        auth_inner.set_margin_start(12)
+        auth_inner.set_margin_end(12)
+        auth_inner.set_margin_top(12)
+        auth_inner.set_margin_bottom(12)
+        
+        auth_inner.append(Gtk.Label(label=_("Cole o código de autorização aqui:"), xalign=0))
+        auth_inner.append(entry_box)
+        auth_card.set_child(auth_inner)
+        
+        main_box.append(auth_card)
+        self.auth_card_widget = auth_card
+
+        # Separator
+        main_box.append(Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL))
+
+        # --- Section 2: Sync Actions ---
+        sync_group = Adw.PreferencesGroup()
+        sync_group.set_title(_("Sincronização"))
+        main_box.append(sync_group)
+
+        self.sync_row = Adw.ActionRow()
+        self.sync_row.set_title(_("Estado: Não conectado"))
+        self.sync_row.set_subtitle(_("Última sincronização: Nunca"))
+        
+        # Status icon
+        self.status_icon = Gtk.Image.new_from_icon_name("tac-dialog-warning-symbolic")
+        self.sync_row.add_prefix(self.status_icon)
+        
+        sync_group.add(self.sync_row)
+
+        # Big Sync Button
+        self.sync_button = Gtk.Button(label=_("Sincronizar Agora"))
+        self.sync_button.set_icon_name("tac-emblem-synchronizing-symbolic")
+        self.sync_button.add_css_class("pill")
+        self.sync_button.set_size_request(-1, 50)
+        self.sync_button.set_margin_top(10)
+        self.sync_button.set_sensitive(False)
+        self.sync_button.connect("clicked", self._on_sync_now_clicked)
+        
+        main_box.append(self.sync_button)
+        
+        # Logout button
+        self.logout_button = Gtk.Button(label=_("Desconectar Conta"))
+        self.logout_button.add_css_class("flat")
+        self.logout_button.add_css_class("destructive-action")
+        self.logout_button.set_margin_top(10)
+        self.logout_button.set_visible(False)
+        self.logout_button.connect("clicked", self._on_logout_clicked)
+        main_box.append(self.logout_button)
+
+    
+    def _show_toast(self, message):
+        """Helper to show toast in this dialog"""
+        if hasattr(self, 'toast_overlay'):
+            toast = Adw.Toast.new(message)
+            self.toast_overlay.add_toast(toast)
+        else:
+            print(f"Toast (fallback): {message}")
+
+    def _check_existing_connection(self):
+        """Verifica se já existe um token salvo na config"""
+        refresh_token = self.config.get('dropbox_refresh_token')
+        
+        if refresh_token:
+            self.is_connected = True
+            self._update_ui_state(connected=True)
+            self.sync_row.set_subtitle(_("Pronto para sincronizar."))
+
+    def _update_ui_state(self, connected: bool):
+        """Atualiza a UI baseada no estado de conexão"""
+        if connected:
+            self.sync_row.set_title(_("Estado: Conectado ao Dropbox"))
+            self.status_icon.set_from_icon_name("tac-emblem-ok-symbolic")
+            self.status_icon.add_css_class("success")
+            
+            self.sync_button.set_sensitive(True)
+            self.sync_button.add_css_class("suggested-action")
+            
+            self.auth_code_entry.set_text(_("Conta vinculada."))
+            self.auth_code_entry.set_sensitive(False)
+            self.connect_btn.set_sensitive(False)
+            
+            self.logout_button.set_visible(True)
+        else:
+            self.sync_row.set_title(_("Estado: Não conectado"))
+            self.status_icon.set_from_icon_name("tac-dialog-warning-symbolic")
+            self.status_icon.remove_css_class("success")
+            
+            self.sync_button.set_sensitive(False)
+            self.sync_button.remove_css_class("suggested-action")
+            
+            self.auth_code_entry.set_text("")
+            self.auth_code_entry.set_sensitive(True)
+            self.connect_btn.set_sensitive(True)
+            
+            self.logout_button.set_visible(False)
+
+    def _on_open_browser_clicked(self, btn):
+        """Inicia o fluxo OAuth PKCE e abre o navegador"""
+        if not DROPBOX_AVAILABLE:
+            self._show_toast(_("Biblioteca 'dropbox' não instalada."))
+            return
+
+        # Verify if key was definied
+        try:
+            if not DROPBOX_APP_KEY or DROPBOX_APP_KEY == "YOUR_APP_KEY_HERE":
+                self._show_toast(_("Erro: App Key não configurada."))
+                return
+        except NameError:
+             self._show_toast(_("Erro: App Key não encontrada."))
+             return
+
+        try:
+            
+            self.auth_flow = DropboxOAuth2FlowNoRedirect(
+                DROPBOX_APP_KEY,
+                use_pkce=True,
+                token_access_type='offline'
+            )
+
+            authorize_url = self.auth_flow.start()
+            
+            # Try open browser
+            try:
+                launcher = Gtk.UriLauncher.new(uri=authorize_url)
+                launcher.launch(self, None, None)
+            except AttributeError:
+                webbrowser.open(authorize_url)
+            
+            self._show_toast(_("Navegador aberto. Autorize e copie o código."))
+            self.auth_code_entry.grab_focus()
+
+        except Exception as e:
+            self._show_toast(_("Erro ao iniciar autenticação: {}").format(str(e)))
+            print(f"Dropbox Auth Error: {e}")
+
+    def _on_connect_clicked(self, btn):
+        """Valida o código colado e obtém os tokens"""
+        code = self.auth_code_entry.get_text().strip()
+        
+        if not code:
+            self._show_toast(_("Por favor, cole o código de autorização."))
+            return
+            
+        if not self.auth_flow:
+            self._show_toast(_("Fluxo não iniciado. Clique em Abrir Navegador."))
+            return
+
+        btn.set_sensitive(False)
+        btn.set_label(_("Verificando..."))
+
+        # Execute in thread for prevent UI freeze
+        threading.Thread(target=self._finish_auth_flow, args=(code, btn), daemon=True).start()
+
+    def _finish_auth_flow(self, code, btn):
+        """Finaliza a troca do código pelo token (Background Thread)"""
+        try:
+            oauth_result = self.auth_flow.finish(code)
+            
+            
+            refresh_token = oauth_result.refresh_token
+            
+            GLib.idle_add(self._on_auth_success, btn, refresh_token)
+            
+        except Exception as e:
+            print(f"Auth Finish Error: {e}")
+            GLib.idle_add(self._on_auth_failure, btn, str(e))
+
+    def _on_auth_success(self, btn, refresh_token):
+        """Chamado na thread principal em caso de sucesso"""
+        btn.set_label(_("Conectar"))
+        
+        # Save in user config
+        self.config.set('dropbox_refresh_token', refresh_token)
+        self.config.save()
+        
+        self.is_connected = True
+        self._update_ui_state(connected=True)
+        self._show_toast(_("Conectado com sucesso!"))
+        
+        self.auth_flow = None
+
+    def _on_auth_failure(self, btn, error_message):
+        """Chamado na thread principal em caso de erro"""
+        btn.set_sensitive(True)
+        btn.set_label(_("Conectar"))
+        self._show_toast(_("Código inválido ou expirado."))
+
+    def _on_logout_clicked(self, btn):
+        """Remove as credenciais salvas"""
+        self.config.set('dropbox_refresh_token', None)
+        self.config.save()
+        
+        self.is_connected = False
+        self._update_ui_state(connected=False)
+        self._show_toast(_("Conta desconectada."))
+
+    def _on_sync_now_clicked(self, btn):
+        """Lógica de Sincronização"""
+        if not self.is_connected:
+            return
+
+        refresh_token = self.config.get('dropbox_refresh_token')
+        if not refresh_token:
+            self._show_toast(_("Erro: Credenciais não encontradas."))
+            return
+
+        btn.set_sensitive(False)
+        btn.set_label(_("Sincronizando..."))
+        self.sync_row.set_subtitle(_("Sincronização em andamento..."))
+        
+        # Initiate sync thread
+        threading.Thread(target=self._perform_sync, args=(refresh_token, btn), daemon=True).start()
+
+
+    def _perform_sync(self, refresh_token, btn):
+        """
+        Execute sync
+        Download -> Merge -> Upload
+        """
+        if not DROPBOX_AVAILABLE:
+            return
+
+        try:
+            dbx = dropbox.Dropbox(oauth2_refresh_token=refresh_token, app_key=DROPBOX_APP_KEY)
+            
+            local_db_path = self.config.database_path
+            remote_path = "/tac_writer.db"
+            temp_db_path = local_db_path.with_suffix('.temp_sync.db')
+            
+            sync_msg = ""
+            stats = None
+
+            # 1. Try to download remote file
+            remote_exists = False
+            try:
+                # Download to temp. file
+                dbx.files_download_to_file(str(temp_db_path), remote_path)
+                remote_exists = True
+                print("Download do Dropbox concluído.")
+            except ApiError as e:
+                # If "file not found", proceed to initial upload
+                if e.error.is_path() and e.error.get_path().is_not_found():
+                    print("Arquivo não encontrado no Dropbox. Iniciando primeiro upload.")
+                    remote_exists = False
+                else:
+                    raise e
+
+            # 2. Execute Merge (if something was downloaded)
+            if remote_exists:
+                # Use ProjectManager to access merge logic
+                stats = self.parent_window.project_manager.merge_database(str(temp_db_path))
+                
+                # Remove temporary file
+                if temp_db_path.exists():
+                    os.remove(temp_db_path)
+                
+                if stats['projects_added'] > 0 or stats['projects_updated'] > 0:
+                    sync_msg = _("Sincronizado: +{} novos, {} atualizados.").format(
+                        stats['projects_added'], stats['projects_updated']
+                    )
+                else:
+                    sync_msg = _("Sincronização concluída (sem alterações remotas).")
+            else:
+                sync_msg = _("Primeiro upload para a nuvem realizado.")
+
+            # 3. Upload from local (Overwrite)
+            with open(local_db_path, "rb") as f:
+                dbx.files_upload(
+                    f.read(), 
+                    remote_path, 
+                    mode=WriteMode('overwrite')
+                )
+            print("Upload para o Dropbox concluído.")
+
+            # Finalize with sucess
+            GLib.idle_add(self._on_sync_finished, btn, True, sync_msg)
+            
+        except Exception as e:
+            print(f"Erro de Sync: {e}")
+            
+            try:
+                temp_path = self.config.database_path.with_suffix('.temp_sync.db')
+                if temp_path.exists():
+                    os.remove(temp_path)
+            except:
+                pass
+                
+            GLib.idle_add(self._on_sync_finished, btn, False, str(e))
+
+    def _on_sync_finished(self, btn, success, message):
+        """Callback de finalização do sync"""
+        btn.set_sensitive(True)
+        btn.set_label(_("Sincronizar Agora"))
+        
+        if success:
+            timestamp = datetime.now().strftime("%d/%m %H:%M")
+            self.sync_row.set_subtitle(_("Última sincronização: {}").format(timestamp))
+            self._show_toast(message)
+            
+            # Reload project list in main window
+            if hasattr(self.parent_window, 'project_list'):
+                self.parent_window.project_list.refresh_projects()
+                
+            
+        else:
+            self.sync_row.set_subtitle(_("Erro na última sincronização"))
+            self._show_toast(_("Erro: {}").format(message))
