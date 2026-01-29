@@ -22,6 +22,18 @@ from core.config import Config
 from utils.helpers import ValidationHelper, FileHelper
 from utils.i18n import _
 
+import webbrowser
+
+# Try to import Dropbox SDK
+try:
+    import dropbox
+    from dropbox import DropboxOAuth2FlowNoRedirect
+    DROPBOX_AVAILABLE = True
+except ImportError:
+    DROPBOX_AVAILABLE = False
+    print("Aviso: biblioteca 'dropbox' não encontrada. Instale com 'pip install dropbox'")
+
+DROPBOX_APP_KEY = "x3h06acjg6fhbmq"
 
 def get_system_fonts():
     """Get list of system fonts using multiple fallback methods"""
