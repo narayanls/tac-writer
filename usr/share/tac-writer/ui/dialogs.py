@@ -724,13 +724,6 @@ class PreferencesDialog(Adw.PreferencesWindow):
         self.word_wrap_row.connect('notify::active', self._on_word_wrap_changed)
         behavior_group.add(self.word_wrap_row)
 
-        # Show line numbers
-        self.line_numbers_row = Adw.SwitchRow()
-        self.line_numbers_row.set_title(_("Mostrar Números de Linha"))
-        self.line_numbers_row.set_subtitle(_("Exibir números de linha no editor"))
-        self.line_numbers_row.connect('notify::active', self._on_line_numbers_changed)
-        behavior_group.add(self.line_numbers_row)
-
         # AI page assistant
         ai_page = Adw.PreferencesPage()
         ai_page.set_title(_("Assistente de IA"))
@@ -847,7 +840,6 @@ class PreferencesDialog(Adw.PreferencesWindow):
             # Behavior
             self.auto_save_row.set_active(self.config.get('auto_save', True))
             self.word_wrap_row.set_active(self.config.get('word_wrap', True))
-            self.line_numbers_row.set_active(self.config.get('show_line_numbers', True))
             
             # AI Assistant
             self.ai_enabled_row.set_active(self.config.get_ai_assistant_enabled())
@@ -947,13 +939,6 @@ class PreferencesDialog(Adw.PreferencesWindow):
         except Exception as e:
             print(_("Erro ao alterar quebra de linha: {}").format(e))
 
-    def _on_line_numbers_changed(self, switch, pspec):
-        """Handle line numbers toggle"""
-        try:
-            self.config.set('show_line_numbers', switch.get_active())
-            self.config.save()
-        except Exception as e:
-            print(_("Erro ao alterar números de linha: {}").format(e))
 
     def _on_ai_enabled_changed(self, switch, pspec):
         enabled = switch.get_active()
