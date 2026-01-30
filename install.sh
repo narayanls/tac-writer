@@ -28,7 +28,7 @@ else
     PY_PREFIX="python313"
 fi
 
-SUSE_DEPS="$SUSE_BASE ${PY_PREFIX} ${PY_PREFIX}-gobject ${PY_PREFIX}-reportlab ${PY_PREFIX}-pygtkspellcheck ${PY_PREFIX}-pyenchant ${PY_PREFIX}-Pillow ${PY_PREFIX}-requests ${PY_PREFIX}-pypdf ${PY_PREFIX}-PyLaTeX"
+SUSE_DEPS="$SUSE_BASE ${PY_PREFIX} ${PY_PREFIX}-gobject ${PY_PREFIX}-reportlab ${PY_PREFIX}-pygtkspellcheck ${PY_PREFIX}-pyenchant ${PY_PREFIX}-Pillow ${PY_PREFIX}-requests ${PY_PREFIX}-pypdf ${PY_PREFIX}-PyLaTeX ${PY_PREFIX}-dropbox "
 
 # Definição dos Arquivos
 FILE_DEB="${APP_NAME}_${VERSION_FILE}_amd64.deb" 

@@ -2015,7 +2015,13 @@ class FirstRunTour:
             {
                 'target': 'pomodoro_button',
                 'title': _("Temporizador Pomodoro"),
-                'message': _("Mantenha o foco com o Pomodoro integrado. Perfeito para sessões de escrita!"),
+                'message': _("Mantenha o foco com o Pomodoro integrado. Perfeito para sessões de escrita"),
+                'position': Gtk.PositionType.BOTTOM,
+            },
+            {
+                'target': 'cloud_button',
+                'title': _("Sincronização em Nuvem"),
+                'message': _("Sincronize seus projetos com o Dropbox"),
                 'position': Gtk.PositionType.BOTTOM,
             },
             {
