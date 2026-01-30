@@ -22,7 +22,7 @@ SUSE_BASE="typelib-1_0-Gtk-4_0 typelib-1_0-Adw-1 libadwaita-1-0 gettext-runtime 
 
 if [[ "$PRETTY_NAME_LOWER" == *"leap"* ]] || [[ "$DISTRO_ID" == *"regata"* ]]; then
     # Leap e Regata: prefixo python3
-    PY_PREFIX="python3"
+    PY_PREFIX="python311"
 else
     # Tumbleweed: prefixo versionado (ex: python313)
     PY_PREFIX="python313"
