@@ -2151,6 +2151,12 @@ class FirstRunTour:
                 'position': Gtk.PositionType.BOTTOM,
             },
             {
+                'target': 'references_button',
+                'title': _("Catálogo de Referências"),
+                'message': _("Adicione os autores que serão mencionados no projeto para fácil inserção durante uma citação."),
+                'position': Gtk.PositionType.BOTTOM,
+            },
+            {
                 'target': 'ai_button',
                 'title': _("Assistente de IA"),
                 'message': _("Use IA para revisar seu texto. Configure em Preferências. Leia a wiki para ajuda."),
