@@ -1209,6 +1209,23 @@ class ParagraphEditor(Gtk.Box):
         spacer.set_hexpand(True)
         header_box.append(spacer)
 
+        # References Button (Introduction, Argument, Quote, Resumption, Conclusion)
+        citation_types = [
+            ParagraphType.INTRODUCTION, 
+            ParagraphType.ARGUMENT, 
+            ParagraphType.QUOTE, 
+            ParagraphType.ARGUMENT_RESUMPTION, 
+            ParagraphType.CONCLUSION
+        ]
+        
+        if self.paragraph.type in citation_types:
+            citation_btn = Gtk.Button()
+            citation_btn.set_icon_name('tac-user-bookmarks-symbolic')
+            citation_btn.set_tooltip_text(_("Inserir Citação do Catálogo"))
+            citation_btn.add_css_class("flat")
+            citation_btn.connect('clicked', self._on_citation_clicked)
+            header_box.append(citation_btn)
+
         # Footnote button with badge (only for specific types)
         if self.paragraph.type in [ParagraphType.INTRODUCTION, ParagraphType.ARGUMENT, ParagraphType.CONCLUSION, ParagraphType.ARGUMENT_RESUMPTION]:
             # Horizontal container for button + badge
@@ -1693,6 +1710,115 @@ class ParagraphEditor(Gtk.Box):
         dialog = FootnoteDialog(self.get_root(), self.paragraph)
         dialog.connect('footnotes-updated', self._on_footnotes_updated)
         dialog.present()
+
+    def _on_citation_clicked(self, button):
+        """Handle citation insertion click"""
+        # 1. Access references from MainWindow -> CurrentProject
+        root = self.get_root()
+        if not hasattr(root, 'current_project') or not root.current_project:
+            return
+
+        refs = root.current_project.metadata.get('references', [])
+        
+        # 2. Check if list is empty
+        if not refs:
+            popover = Gtk.Popover()
+            box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+            box.set_margin_top(12); box.set_margin_bottom(12)
+            box.set_margin_start(12); box.set_margin_end(12)
+            
+            lbl = Gtk.Label(label=_("Nenhuma referência cadastrada."))
+            box.append(lbl)
+            
+            link_btn = Gtk.Button(label=_("Abrir Catálogo"))
+            link_btn.add_css_class("suggested-action")
+            # Calls the global action defined in MainWindow to open the dialog
+            link_btn.connect("clicked", lambda b: (popover.popdown(), root.activate_action("win.references", None)))
+            box.append(link_btn)
+            
+            popover.set_child(box)
+            popover.set_parent(button)
+            popover.popup()
+            return
+
+        # 3. Create Selection Popover
+        self._create_citation_popover(button, refs)
+
+    def _create_citation_popover(self, parent_button, references):
+        """Create the popover to select author and page"""
+        popover = Gtk.Popover()
+        popover.set_position(Gtk.PositionType.BOTTOM)
+        
+        main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        main_box.set_margin_top(12)
+        main_box.set_margin_bottom(12)
+        main_box.set_margin_start(12)
+        main_box.set_margin_end(12)
+        main_box.set_size_request(250, -1)
+
+        # Title
+        title = Gtk.Label(label=_("Inserir Citação"))
+        title.add_css_class("heading")
+        main_box.append(title)
+
+        # Author Combo
+        combo = Gtk.ComboBoxText()
+        # Sort references
+        sorted_refs = sorted(references, key=lambda x: x.get('author', '').lower())
+        
+        for i, ref in enumerate(sorted_refs):
+            display = f"{ref.get('author', '?')} ({ref.get('year', '?')})"
+            combo.append(str(i), display)
+        
+        combo.set_active(0)
+        main_box.append(combo)
+
+        # Page Entry
+        page_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        page_lbl = Gtk.Label(label=_("Pág:"))
+        page_entry = Gtk.Entry()
+        page_entry.set_placeholder_text("Ex: 42")
+        page_entry.set_width_chars(6)
+        
+        page_box.append(page_lbl)
+        page_box.append(page_entry)
+        main_box.append(page_box)
+
+        # Insert Button
+        insert_btn = Gtk.Button(label=_("Inserir"))
+        insert_btn.add_css_class("suggested-action")
+        
+        def on_insert_clicked(btn):
+            active_id = combo.get_active_id()
+            if active_id is None: 
+                return
+                
+            idx = int(active_id)
+            selected_ref = sorted_refs[idx]
+            
+            author = selected_ref.get('author', '').upper()
+            year = selected_ref.get('year', '')
+            page = page_entry.get_text().strip()
+            
+            # Format: (AUTHOR, Year, p. Page)
+            if page:
+                citation_text = f"({author}, {year}, p. {page})"
+            else:
+                citation_text = f"({author}, {year})"
+            
+            # Insert at cursor
+            if self.text_view and self.text_buffer:
+                self.text_buffer.insert_at_cursor(citation_text + " ")
+                self.text_view.grab_focus()
+            
+            popover.popdown()
+
+        insert_btn.connect("clicked", on_insert_clicked)
+        main_box.append(insert_btn)
+
+        popover.set_child(main_box)
+        popover.set_parent(parent_button)
+        popover.popup()
 
     def _on_footnotes_updated(self, dialog):
         """Handle footnotes update"""

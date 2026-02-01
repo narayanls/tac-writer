@@ -84,7 +84,7 @@ class Paragraph:
                 'font_size': 10,
                 'indent_left': 4.0,
                 'line_spacing': 1.0,
-                'italic': True
+                'italic': False
             })
         elif self.type == ParagraphType.EPIGRAPH:
             self.formatting.update({

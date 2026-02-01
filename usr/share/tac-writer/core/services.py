@@ -1153,7 +1153,7 @@ class ExportService:
                     elif item['type'] == 'quote':
                         f.write(f"        {item['content']}\n\n")
 
-                    elif item['type'] == 'epigraph': # New block
+                    elif item['type'] == 'epigraph':
                         # Indent epigraph significantly to the right
                         f.write(f"                            {item['content']}\n\n")
                     
@@ -1513,7 +1513,7 @@ class ExportService:
                 if paragraph.id in footnote_map:
                     for footnote_num in footnote_map[paragraph.id]:
                         footnote_text = all_footnotes[footnote_num - 1]
-                        content += f'<text:note text:id="ftn{footnote_num}" text:note-class="footnote"><text:note-citation>{footnote_num}</text:note-citation><text:note-body><text:p text:style-name="Footnote">{footnote_text}</text:p></text:note-body></text:note>'
+                        content += f'<text:note text:id="ftn{footnote_num}" text:note-class="footnote"><text:note-citation>{footnote_num}</text:note-citation><text:note-body><text:p text:style-name="Footnote">.{footnote_text}</text:p></text:note-body></text:note>'
                 
                 current_paragraph_content.append(content.strip())
                 
@@ -1689,7 +1689,7 @@ class ExportService:
   </style:style>
   
   <style:style style:name="Quote" style:family="paragraph">
-    <style:text-properties fo:font-size="10pt" fo:font-style="italic"/>
+    <style:text-properties fo:font-size="10pt"/>
     <style:paragraph-properties fo:text-align="justify" fo:margin-left="4cm" fo:margin-bottom="0.3cm" fo:line-height="100%"/>
   </style:style>
   
@@ -1831,7 +1831,7 @@ class ExportService:
                 leftIndent=4*cm,
                 spaceBefore=12,
                 spaceAfter=12,
-                fontName='Times-Italic',
+                fontName='Times-Roman',
                 alignment=TA_JUSTIFY
             )
             
@@ -1905,7 +1905,7 @@ class ExportService:
                     grouped_pdf.append({'type': 'quote', 'content': content})
                     last_was_quote = True
                 
-                elif paragraph.type == ParagraphType.EPIGRAPH: # New block
+                elif paragraph.type == ParagraphType.EPIGRAPH:
                     if current_paragraph_content:
                         combined = " ".join(current_paragraph_content)
                         grouped_pdf.append({'type': 'content', 'content': combined, 'style': current_style})

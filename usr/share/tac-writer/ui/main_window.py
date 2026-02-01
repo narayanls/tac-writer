@@ -19,7 +19,7 @@ from core.ai_assistant import WritingAiAssistant
 from utils.helpers import FormatHelper
 from utils.i18n import _
 from .components import WelcomeView, ParagraphEditor, ProjectListWidget, SpellCheckHelper, PomodoroTimer, FirstRunTour, ReorderableParagraphRow
-from .dialogs import NewProjectDialog, ExportDialog, PreferencesDialog, AboutDialog, WelcomeDialog, BackupManagerDialog, ImageDialog, CloudSyncDialog
+from .dialogs import NewProjectDialog, ExportDialog, PreferencesDialog, AboutDialog, WelcomeDialog, BackupManagerDialog, ImageDialog, CloudSyncDialog, ReferencesDialog
 
 
 
@@ -174,6 +174,15 @@ class MainWindow(Adw.ApplicationWindow):
         self.cloud_button.connect('clicked', self._on_cloud_sync_clicked)
         self.cloud_button.set_sensitive(True) 
         self.header_bar.pack_start(self.cloud_button)
+
+        # Referencies catalogy for quotes
+        self.references_button = Gtk.Button()
+        self.references_button.set_icon_name('tac-accessories-dictionary-symbolic')
+        self.references_button.set_tooltip_text(_("Referências para Citação"))
+        self.references_button.connect('clicked', self._on_references_clicked)
+        self.references_button.set_sensitive(False) 
+        self.header_bar.pack_start(self.references_button)
+
 
         # Right side buttons
         # Menu button
@@ -1028,10 +1037,6 @@ class MainWindow(Adw.ApplicationWindow):
             self.pomodoro_dialog = PomodoroDialog(self, self.timer)
         self.pomodoro_dialog.show_dialog()
 
-    def _on_cloud_sync_clicked(self, button):
-        """Handle cloud sync button click"""
-        # TODO: Implementar lógica do Dropbox (Dialog de Auth ou Trigger de Sync)
-        self._show_toast(_("Configuração de sincronização em breve..."))
 
     # Action handlers
 
@@ -1847,6 +1852,7 @@ class MainWindow(Adw.ApplicationWindow):
             title_widget.set_subtitle(_("Técnica de Argumentação Contínua"))
             self.save_button.set_sensitive(False)
             self.pomodoro_button.set_sensitive(False)
+            self.references_button.set_sensitive(False)
 
         elif view_name == "editor" and self.current_project:
             title_widget.set_title(self.current_project.name)
@@ -1856,6 +1862,8 @@ class MainWindow(Adw.ApplicationWindow):
             title_widget.set_subtitle(subtitle)
             self.save_button.set_sensitive(True)
             self.pomodoro_button.set_sensitive(True)
+            self.references_button.set_sensitive(True)
+
 
     def _show_loading_state(self):
         """Show loading indicator"""
@@ -1953,4 +1961,20 @@ class MainWindow(Adw.ApplicationWindow):
     def _on_cloud_sync_clicked(self, button):
         """Handle cloud sync button click"""
         dialog = CloudSyncDialog(self)
+        dialog.present()
+
+    """def _on_references_clicked(self, button):
+        Handle references to be used for quotes
+        # Verificação de segurança: Só abre se houver projeto carregado
+        if not self.current_project:
+            self._show_toast(_("Nenhum projeto aberto. Abra ou crie um projeto para gerenciar referências."), Adw.ToastPriority.HIGH)
+            return
+
+        dialog = ReferencesDialog(self)
+        dialog.present()"""
+
+    def _on_references_clicked(self, button):
+        """Handle references to be used for quotes"""
+        from ui.dialogs import ReferencesDialog
+        dialog = ReferencesDialog(self)
         dialog.present()

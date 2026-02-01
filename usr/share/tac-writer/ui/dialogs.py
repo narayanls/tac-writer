@@ -15,6 +15,7 @@ import subprocess
 from pathlib import Path
 from datetime import datetime
 from typing import Dict, List, Any
+import uuid
 
 from core.models import Project, DEFAULT_TEMPLATES
 from core.services import ProjectManager, ExportService
@@ -2695,3 +2696,228 @@ class CloudSyncDialog(Adw.Window):
         else:
             self.sync_row.set_subtitle(_("Erro na última sincronização"))
             self._show_toast(_("Erro: {}").format(message))
+
+class ReferencesDialog(Adw.Window):
+    """Dialog for managing bibliographic references"""
+
+    __gtype_name__ = 'TacReferencesDialog'
+
+    def __init__(self, parent, **kwargs):
+        super().__init__(**kwargs)
+        self.set_title(_("Catálogo de Referências"))
+        self.set_transient_for(parent)
+        self.set_modal(True)
+        self.set_default_size(600, 500)
+        self.set_resizable(True)
+
+        self.parent_window = parent
+        self.project = parent.current_project
+        self.project_manager = parent.project_manager
+
+        # Ensure references list exists in metadata
+        if 'references' not in self.project.metadata:
+            self.project.metadata['references'] = []
+
+        self._create_ui()
+        self._refresh_list()
+
+    def _create_ui(self):
+        """Create the dialog UI"""
+        # Toast Overlay for notifications
+        self.toast_overlay = Adw.ToastOverlay()
+        self.set_content(self.toast_overlay)
+
+        # Main content box
+        content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.toast_overlay.set_child(content_box)
+
+        # Header bar
+        header_bar = Adw.HeaderBar()
+        content_box.append(header_bar)
+
+        # Content Scrolled Window
+        scrolled = Gtk.ScrolledWindow()
+        scrolled.set_vexpand(True)
+        scrolled.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        content_box.append(scrolled)
+
+        # Clamp (to center content and limit width)
+        clamp = Adw.Clamp()
+        clamp.set_maximum_size(800)
+        clamp.set_margin_top(24)
+        clamp.set_margin_bottom(24)
+        clamp.set_margin_start(12)
+        clamp.set_margin_end(12)
+        scrolled.set_child(clamp)
+
+        # Main Box inside Clamp
+        main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=24)
+        clamp.set_child(main_box)
+
+        # --- Section 1: Add New Reference ---
+        add_group = Adw.PreferencesGroup()
+        add_group.set_title(_("Adicionar Nova Referência"))
+        add_group.set_description(_("Cadastre autores para citar rapidamente durante a escrita."))
+        main_box.append(add_group)
+
+        # Author Entry
+        self.author_row = Adw.EntryRow()
+        self.author_row.set_title(_("Autor(es)"))
+        self.author_row.set_show_apply_button(False)
+        self.author_row.add_prefix(Gtk.Image.new_from_icon_name("tac-avatar-default-symbolic"))
+        # Using placeholder to teach format
+        try:
+             # GTK 4.10+
+            self.author_row.set_placeholder_text(_("Ex: SOBRENOME"))
+        except AttributeError:
+            pass 
+        add_group.add(self.author_row)
+
+        # Year Entry
+        self.year_row = Adw.EntryRow()
+        self.year_row.set_title(_("Ano"))
+        self.year_row.set_show_apply_button(False)
+        self.year_row.add_prefix(Gtk.Image.new_from_icon_name("tac-x-office-calendar-symbolic"))
+        try:
+            self.year_row.set_placeholder_text("2024")
+        except AttributeError:
+            pass
+        add_group.add(self.year_row)
+
+        # Add Button
+        add_btn = Gtk.Button(label=_("Adicionar ao Catálogo"))
+        add_btn.add_css_class("suggested-action")
+        add_btn.add_css_class("pill")
+        add_btn.set_halign(Gtk.Align.END)
+        add_btn.connect("clicked", self._on_add_clicked)
+        
+        # Helper box for button alignment
+        btn_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        btn_box.set_halign(Gtk.Align.END)
+        btn_box.append(add_btn)
+        main_box.append(btn_box)
+
+        # --- Section 2: List of References ---
+        list_group = Adw.PreferencesGroup()
+        list_group.set_title(_("Referências Cadastradas"))
+        main_box.append(list_group)
+
+        # ListBox to hold rows
+        self.refs_listbox = Gtk.ListBox()
+        self.refs_listbox.add_css_class("boxed-list")
+        self.refs_listbox.set_selection_mode(Gtk.SelectionMode.NONE)
+        
+        # We put the listbox inside the group
+        list_group.add(self.refs_listbox)
+        
+        # Placeholder for empty state
+        self.empty_label = Gtk.Label(label=_("Nenhuma referência cadastrada."))
+        self.empty_label.add_css_class("dim-label")
+        self.empty_label.set_margin_top(12)
+        self.empty_label.set_visible(False)
+        main_box.append(self.empty_label)
+
+    def _refresh_list(self):
+        """Rebuild the list of references"""
+        # Clear list
+        child = self.refs_listbox.get_first_child()
+        while child:
+            next_child = child.get_next_sibling()
+            self.refs_listbox.remove(child)
+            child = next_child
+
+        refs = self.project.metadata.get('references', [])
+        
+        if not refs:
+            self.refs_listbox.set_visible(False)
+            self.empty_label.set_visible(True)
+            return
+
+        self.refs_listbox.set_visible(True)
+        self.empty_label.set_visible(False)
+
+        # Sort alphabetically by author
+        sorted_refs = sorted(refs, key=lambda x: x.get('author', '').lower())
+
+        for ref in sorted_refs:
+            row = Adw.ActionRow()
+            
+            # Format: SOBRENOME, Nome (Year)
+            title_text = f"{ref.get('author', 'Unknown')} ({ref.get('year', 'Nd')})"
+            row.set_title(title_text)
+            
+            # Subtitle: Work title
+            work_title = ref.get('title', '')
+            if work_title:
+                row.set_subtitle(work_title)
+
+            # Delete Button
+            del_btn = Gtk.Button()
+            del_btn.set_icon_name("tac-user-trash-symbolic")
+            del_btn.add_css_class("flat")
+            del_btn.add_css_class("destructive-action")
+            del_btn.set_tooltip_text(_("Remover referência"))
+            del_btn.connect("clicked", lambda b, r=ref: self._on_delete_clicked(r))
+            
+            row.add_suffix(del_btn)
+            self.refs_listbox.append(row)
+
+    def _on_add_clicked(self, btn):
+        """Handle adding a new reference"""
+        author = self.author_row.get_text().strip().upper()
+        year = self.year_row.get_text().strip()
+
+        if not author:
+            self._show_toast(_("O campo Autor é obrigatório."))
+            return
+
+        if not year:
+            self._show_toast(_("O campo Ano é obrigatório."))
+            return
+
+        # Create reference object
+        new_ref = {
+            'id': str(uuid.uuid4()),
+            'author': author,
+            'year': year,
+            'created_at': datetime.now().isoformat()
+        }
+
+        # Add to project metadata
+        if 'references' not in self.project.metadata:
+            self.project.metadata['references'] = []
+            
+        self.project.metadata['references'].append(new_ref)
+        
+        # Save project
+        if self.project_manager.save_project(self.project):
+            # Clear inputs
+            self.author_row.set_text("")
+            self.year_row.set_text("")
+            
+            # Refresh list
+            self._refresh_list()
+            self._show_toast(_("Referência adicionada com sucesso!"))
+            
+            # Focus back on author for rapid entry
+            self.author_row.grab_focus()
+        else:
+            self._show_toast(_("Erro ao salvar projeto."))
+
+    def _on_delete_clicked(self, ref_data):
+        """Handle removing a reference"""
+        refs = self.project.metadata.get('references', [])
+        
+        # Filter out the deleted item
+        self.project.metadata['references'] = [r for r in refs if r['id'] != ref_data['id']]
+        
+        # Save and refresh
+        if self.project_manager.save_project(self.project):
+            self._refresh_list()
+            self._show_toast(_("Referência removida."))
+        else:
+            self._show_toast(_("Erro ao salvar alterações."))
+
+    def _show_toast(self, message):
+        toast = Adw.Toast.new(message)
+        self.toast_overlay.add_toast(toast)
