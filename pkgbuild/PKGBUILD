@@ -23,6 +23,9 @@ depends=(
     'python-pylatex-git'
     'texlive-langportuguese'
     'python-dropbox'
+    'aspell'
+    'aspell-pt'
+    'aspell-en'
 )
 makedepends=('gettext')
 optdepends=(
