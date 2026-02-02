@@ -1717,7 +1717,7 @@ class ImageDialog(Adw.Window):
         # Insert/Update button
         button_label = _("Atualizar") if self.edit_mode else _("Inserir")
         self.insert_button = Gtk.Button(label=button_label)
-        self.insert_button.add_css_class('suggested-action')
+        self.insert_button.add_css_class('tac-insert-image')
         self.insert_button.set_sensitive(self.edit_mode)  # Enabled in edit mode by default
         self.insert_button.connect('clicked', self._on_insert_clicked)
         header_bar.pack_end(self.insert_button)

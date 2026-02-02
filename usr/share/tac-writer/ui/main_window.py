@@ -738,7 +738,7 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Edit button
         edit_btn = Gtk.Button()
-        edit_btn.set_icon_name('tac-document-tac-edit-symbolic')
+        edit_btn.set_icon_name('tac-edit-image-symbolic')
         edit_btn.set_tooltip_text(_("Editar Imagem"))
         edit_btn.connect('clicked', lambda b: self._on_edit_image(paragraph))
         toolbar.append(edit_btn)
