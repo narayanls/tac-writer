@@ -1070,7 +1070,7 @@ class WelcomeDialog(Adw.Window):
 
         # CAT explanation
         cat_label = Gtk.Label()
-        cat_label.set_markup("<b>" + _("Técnica de Argumentação Contínua (TAC):") + "</b>")
+        cat_label.set_markup("<b>" + _("Técnica da Argumentação Contínua (TAC):") + "</b>")
         cat_label.set_halign(Gtk.Align.START)
         content_text_box.append(cat_label)
 

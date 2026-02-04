@@ -86,7 +86,7 @@ class MainWindow(Adw.ApplicationWindow):
 
     def _setup_window(self):
         """Setup basic window properties"""
-        self.set_title(_("TAC - Técnica de Argumentação Contínua"))
+        self.set_title(_("TAC - Técnica da Argumentação Contínua"))
         self.set_icon_name("tac-writer")
 
         # Set default size
@@ -1849,7 +1849,7 @@ class MainWindow(Adw.ApplicationWindow):
         title_widget = self.header_bar.get_title_widget()
         if view_name == "welcome":
             title_widget.set_title("TAC")
-            title_widget.set_subtitle(_("Técnica de Argumentação Contínua"))
+            title_widget.set_subtitle(_("Técnica da Argumentação Contínua"))
             self.save_button.set_sensitive(False)
             self.pomodoro_button.set_sensitive(False)
             self.references_button.set_sensitive(False)
