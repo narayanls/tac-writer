@@ -647,22 +647,23 @@ class MainWindow(Adw.ApplicationWindow):
         from pathlib import Path
         
         metadata = paragraph.get_image_metadata()
-        if not metadata:
-            # Fallback for malformed image paragraph
-            error_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-            error_label = Gtk.Label(label=_("⚠️ Erro: Dados de imagem inválidos"))
-            error_label.add_css_class('error')
-            error_box.append(error_label)
-            error_box.paragraph = paragraph  
-            return error_box
         
-        # Create main container
+        # Container principal
         image_container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
         image_container.set_margin_top(12)
         image_container.set_margin_bottom(12)
         image_container.paragraph = paragraph  
         
-        # Set alignment
+        if not metadata:
+            # Fallback para dados inválidos
+            error_label = Gtk.Label(label=_("⚠️ Erro: Dados de imagem inválidos"))
+            error_label.add_css_class('error')
+            image_container.append(error_label)
+            # Adiciona toolbar mesmo com erro para permitir deletar
+            image_container.append(self._create_image_toolbar(paragraph))
+            return image_container
+        
+        # Configurar alinhamento
         alignment = metadata.get('alignment', 'center')
         if alignment == 'center':
             image_container.set_halign(Gtk.Align.CENTER)
@@ -671,64 +672,103 @@ class MainWindow(Adw.ApplicationWindow):
         else:
             image_container.set_halign(Gtk.Align.START)
         
-        # Try to load and display image
-        try:
-            img_path = Path(metadata['path'])
-            if img_path.exists():
+        img_path_str = metadata.get('path', '')
+        img_filename = metadata.get('filename', 'desconhecido.jpg')
+        img_path = Path(img_path_str)
+
+        # Display image logic
+        if img_path.exists():
+            # If image exist
+            try:
                 texture = Gdk.Texture.new_from_filename(str(img_path))
                 
-                # Create picture widget
                 picture = Gtk.Picture()
                 picture.set_paintable(texture)
                 picture.set_can_shrink(True)
                 picture.set_content_fit(Gtk.ContentFit.CONTAIN)
                 
-                # Set size - Always display as 200px height thumbnail
-                # Calculate width maintaining aspect ratio
+                # Size
                 original_size = metadata.get('original_size', (800, 600))
-                aspect_ratio = original_size[0] / original_size[1]
+                if original_size[1] > 0:
+                    aspect_ratio = original_size[0] / original_size[1]
+                else:
+                    aspect_ratio = 1.33
+                
                 thumbnail_height = 200
                 thumbnail_width = int(thumbnail_height * aspect_ratio)
-                
                 picture.set_size_request(thumbnail_width, thumbnail_height)
                 
-                # Add frame
                 frame = Gtk.Frame()
                 frame.set_child(picture)
                 image_container.append(frame)
                 
-                # Add caption if exists
-                caption = metadata.get('caption', '')
-                if caption:
-                    caption_label = Gtk.Label(label=caption)
-                    caption_label.add_css_class('caption')
-                    caption_label.add_css_class('dim-label')
-                    caption_label.set_wrap(True)
-                    caption_label.set_max_width_chars(60)
-                    caption_label.set_xalign(0.5)
-                    image_container.append(caption_label)
-                
-                # Add toolbar for image actions
-                toolbar = self._create_image_toolbar(paragraph)
-                image_container.append(toolbar)
-            
-            else:
-                # Image file not found
-                placeholder = Gtk.Label(
-                    label=_("⚠️ Imagem não encontrada: {}").format(metadata.get('filename', 'unknown'))
-                )
-                placeholder.add_css_class('warning')
-                image_container.append(placeholder)
+            except Exception as e:
+                # Error load file
+                self._create_error_placeholder(image_container, img_filename, str(e))
+        else:
+            # File not found (Sync from other computer)
+            self._create_missing_placeholder(image_container, img_filename)
+
+        # Subtitles, if it exist
+        caption = metadata.get('caption', '')
+        if caption:
+            caption_label = Gtk.Label(label=caption)
+            caption_label.add_css_class('caption')
+            caption_label.add_css_class('dim-label')
+            caption_label.set_wrap(True)
+            caption_label.set_max_width_chars(60)
+            caption_label.set_xalign(0.5)
+            image_container.append(caption_label)
         
-        except Exception as e:
-            # Error loading image
-            error_label = Gtk.Label(
-                label=_("⚠️ Erro ao carregar imagem: {}").format(str(e))
-            )
-            error_label.add_css_class('error')
-            image_container.append(error_label)
+        # Edit button always visiblçe
+        toolbar = self._create_image_toolbar(paragraph)
+        image_container.append(toolbar)
         
         return image_container
+
+    def _create_missing_placeholder(self, container, filename):
+        """Creates a UI element when image is missing"""
+        frame = Gtk.Frame()
+        frame.add_css_class("view")
+        
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        box.set_margin_top(16)
+        box.set_margin_bottom(16)
+        box.set_margin_start(16)
+        box.set_margin_end(16)
+        
+        # Warning icon
+        icon = Gtk.Image.new_from_icon_name("tac-image-missing-symbolic")
+        icon.set_pixel_size(48)
+        icon.add_css_class("warning")
+        box.append(icon)
+        
+        # Show explanation
+        lbl = Gtk.Label()
+        lbl.set_markup(f"<b>{_('Imagem não encontrada')}</b>")
+        box.append(lbl)
+        
+        lbl_file = Gtk.Label(label=filename)
+        lbl_file.add_css_class("dim-label")
+        lbl_file.set_ellipsize(3)
+        box.append(lbl_file)
+        
+        hint = Gtk.Label(label=_("Clique em editar abaixo para selecionar o arquivo localmente."))
+        hint.add_css_class("caption")
+        hint.set_wrap(True)
+        hint.set_max_width_chars(40)
+        box.append(hint)
+        
+        frame.set_child(box)
+        container.append(frame)
+
+    def _create_error_placeholder(self, container, filename, error_msg):
+        """Creates a UI element when image fails to load"""
+        error_label = Gtk.Label(
+            label=_("⚠️ Erro ao carregar: {}\n{}").format(filename, error_msg)
+        )
+        error_label.add_css_class('error')
+        container.append(error_label)
     
     def _create_image_toolbar(self, paragraph):
         """Create toolbar with actions for image paragraph"""
@@ -736,7 +776,7 @@ class MainWindow(Adw.ApplicationWindow):
         toolbar.set_halign(Gtk.Align.CENTER)
         toolbar.set_margin_top(6)
 
-        # Edit button
+        # Edit Image button
         edit_btn = Gtk.Button()
         edit_btn.set_icon_name('tac-edit-image-symbolic')
         edit_btn.set_tooltip_text(_("Editar Imagem"))

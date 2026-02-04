@@ -2103,36 +2103,46 @@ class ImageDialog(Adw.Window):
 
         try:
             from pathlib import Path
+            
+            # Set alignment
+            alignment = metadata.get('alignment', 'center')
+            alignment_box = self.alignment_group.get_parent()
+            child = alignment_box.get_first_child()
+            while child:
+                if isinstance(child, Gtk.CheckButton) and hasattr(child, 'alignment_value'):
+                    if child.alignment_value == alignment:
+                        child.set_active(True)
+                        break
+                child = child.get_next_sibling()
 
-            # Load the existing image file
+            # Set caption
+            caption = metadata.get('caption', '')
+            if caption:
+                self.caption_entry.set_text(caption)
+
+            # Set alt text
+            alt_text = metadata.get('alt_text', '')
+            if alt_text:
+                self.alt_entry.set_text(alt_text)
+                
+            # Set width percentage
+            width_percent = metadata.get('width_percent', 80)
+            self.width_scale.set_value(width_percent)
+
+            # Try to load image
             img_path = Path(metadata.get('path', ''))
             if img_path.exists():
                 self._load_image(str(img_path))
-
-                # Set width percentage
-                width_percent = metadata.get('width_percent', 80)
-                self.width_scale.set_value(width_percent)
-
-                # Set alignment
-                alignment = metadata.get('alignment', 'center')
-                alignment_box = self.alignment_group.get_parent()
-                child = alignment_box.get_first_child()
-                while child:
-                    if isinstance(child, Gtk.CheckButton) and hasattr(child, 'alignment_value'):
-                        if child.alignment_value == alignment:
-                            child.set_active(True)
-                            break
-                    child = child.get_next_sibling()
-
-                # Set caption
-                caption = metadata.get('caption', '')
-                if caption:
-                    self.caption_entry.set_text(caption)
-
-                # Set alt text
-                alt_text = metadata.get('alt_text', '')
-                if alt_text:
-                    self.alt_entry.set_text(alt_text)
+            else:
+                # If image doesn't exist, shows label image name
+                filename = metadata.get('filename', _('Desconhecido'))
+                self.file_label.set_text(_("Arquivo faltando: {}").format(filename))
+                self.file_label.add_css_class('error')
+                self.info_label.set_text(_("Selecione o arquivo novamente para corrigir."))
+                
+                # Enable edit image
+                self.format_group.set_visible(True)
+                self.position_group.set_visible(True)
 
         except Exception as e:
             print(_("Erro ao carregar imagem existente: {}").format(e))
