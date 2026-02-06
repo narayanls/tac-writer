@@ -3,20 +3,64 @@ runtime: org.gnome.Platform
 runtime-version: "47" # Versão atual estável do GNOME/GTK4
 sdk: org.gnome.Sdk
 command: tac-writer
+
+# Fix textlive
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.texlive
+
+# Adiciona suporte a LaTeX (necessário para o pylatex)
+add-extensions:
+  org.freedesktop.Sdk.Extension.texlive:
+    directory: texlive
+    version: '23.08'
+    versions: 23.08
+    no-autodownload: true
+
+# Permissões do aplicativo (Sandbox)
+finish-args:
+  - --share=ipc
+  - --socket=fallback-x11
+  - --socket=wayland
+  - --share=network           # Necessário para requests e dropbox
+  - --filesystem=host        
+  # Necessário para o PyEnchant encontrar os dicionários do sistema/host se não vierem no bundle
+  - --env=ENCHANT_CONFIG_DIR=/app/share/enchant
+
+cleanup:
+  - /include
+  - /lib/pkgconfig
+  - /share/man
+  - /share/doc
+  - /__pycache__
+
 modules:
-  - name: python-deps
+  - name: texlive
     buildsystem: simple
     build-commands:
-      - pip3 install --prefix=/app requests pylatex ordered-set PyGObject pycairo
-    sources:
-      - type: file
-        path: requirements.txt
+      - /usr/lib/sdk/texlive/install.sh
+    cleanup:
+      - "*"
 
+  - python3-requirements.json
+
+  # 3. Instalação
   - name: tac-writer
     buildsystem: simple
     build-commands:
-      - install -D main.py /app/bin/tac-writer
+      # Cria os diretórios necessários
+      - mkdir -p /app/bin
+      - mkdir -p /app/share/tac-writer
+      
+      # Copia o código fonte para o local de instalação
       - cp -r . /app/share/tac-writer/
+      
+      # Cria um script executável (wrapper) para rodar o app
+      - |
+        echo '#!/bin/sh' > /app/bin/tac-writer
+        echo 'export PYTHONPATH=/app/share/tac-writer:$PYTHONPATH' >> /app/bin/tac-writer
+        echo 'exec python3 /app/share/tac-writer/main.py "$@"' >> /app/bin/tac-writer
+        chmod +x /app/bin/tac-writer
+    
     sources:
       - type: dir
         path: .
