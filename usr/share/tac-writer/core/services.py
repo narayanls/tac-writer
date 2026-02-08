@@ -1570,11 +1570,11 @@ class ExportService:
         # Write grouped content
         for item in grouped_odt:
             if item['type'] == 'title1':
-                content_xml += f'<text:p text:style-name="Title1">{item["content"]}</text:p>\n'
+                content_xml += f'<text:p text:style-name="Heading_20_1">{item["content"]}</text:p>\n'
             elif item['type'] == 'code':
                 content_xml += f'<text:p text:style-name="CodeBlock">{item["content"]}</text:p>\n'
             elif item['type'] == 'title2':
-                content_xml += f'<text:p text:style-name="Title2">{item["content"]}</text:p>\n'
+                content_xml += f'<text:p text:style-name="Heading_20_2">{item["content"]}</text:p>\n'
             elif item['type'] == 'quote':
                 content_xml += f'<text:p text:style-name="Quote">{item["content"]}</text:p>\n'
             elif item['type'] == 'epigraph':
@@ -1657,54 +1657,63 @@ class ExportService:
             f.write(manifest_xml)
 
     def _create_styles(self, file_path: Path):
-        """Create styles.xml for ODT"""
+        """Create styles.xml for ODT with ABNT standards and correct TOC levels"""
         styles_xml = '''<?xml version="1.0" encoding="UTF-8"?>
 <office:document-styles xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0" 
                        xmlns:style="urn:oasis:names:tc:opendocument:xmlns:style:1.0" 
-                       xmlns:fo="urn:oasis:names:tc:opendocument:xmlns:xsl-fo-compatible:1.0">
+                       xmlns:fo="urn:oasis:names:tc:opendocument:xmlns:xsl-fo-compatible:1.0"
+                       xmlns:svg="urn:oasis:names:tc:opendocument:xmlns:svg-compatible:1.0">
+<office:font-face-decls>
+    <style:font-face style:name="Liberation Sans" svg:font-family="&apos;Liberation Sans&apos;" style:font-family-generic="swiss" style:font-pitch="variable"/>
+    <style:font-face style:name="Liberation Serif" svg:font-family="&apos;Liberation Serif&apos;" style:font-family-generic="roman" style:font-pitch="variable"/>
+    <style:font-face style:name="Courier New" svg:font-family="&apos;Courier New&apos;" style:font-family-generic="modern" style:font-pitch="fixed"/>
+</office:font-face-decls>
+
 <office:styles>
-  <style:style style:name="Title" style:family="paragraph">
-    <style:text-properties fo:font-size="18pt" fo:font-weight="bold"/>
+  <style:style style:name="Title" style:family="paragraph" style:class="chapter">
+    <style:text-properties style:font-name="Liberation Sans" fo:font-size="18pt" fo:font-weight="bold"/>
     <style:paragraph-properties fo:text-align="center" fo:margin-bottom="0.5cm"/>
   </style:style>
   
-  <style:style style:name="Title1" style:family="paragraph">
-    <style:text-properties fo:font-size="16pt" fo:font-weight="bold"/>
-    <style:paragraph-properties fo:margin-top="0.5cm" fo:margin-bottom="0.3cm"/>
+  <!-- Heading 1 (Título 1): Mapeado para Heading_20_1 para funcionar no sumário -->
+  <style:style style:name="Heading_20_1" style:display-name="Heading 1" style:family="paragraph" style:default-outline-level="1" style:class="text">
+    <style:text-properties style:font-name="Liberation Sans" fo:font-size="16pt" fo:font-weight="bold"/>
+    <style:paragraph-properties fo:margin-top="0.5cm" fo:margin-bottom="0.3cm" fo:keep-with-next="always"/>
   </style:style>
   
-  <style:style style:name="Title2" style:family="paragraph">
-    <style:text-properties fo:font-size="14pt" fo:font-weight="bold"/>
-    <style:paragraph-properties fo:margin-top="0.4cm" fo:margin-bottom="0.2cm"/>
+  <!-- Heading 2 (Título 2): Mapeado para Heading_20_2 para funcionar no sumário -->
+  <style:style style:name="Heading_20_2" style:display-name="Heading 2" style:family="paragraph" style:default-outline-level="2" style:class="text">
+    <style:text-properties style:font-name="Liberation Sans" fo:font-size="14pt" fo:font-weight="bold"/>
+    <style:paragraph-properties fo:margin-top="0.4cm" fo:margin-bottom="0.2cm" fo:keep-with-next="always"/>
   </style:style>
   
   <style:style style:name="Introduction" style:family="paragraph">
-    <style:text-properties fo:font-size="12pt"/>
+    <style:text-properties style:font-name="Liberation Serif" fo:font-size="12pt"/>
     <style:paragraph-properties fo:text-align="justify" fo:text-indent="1.5cm" fo:margin-bottom="0.0cm" fo:line-height="150%"/>
   </style:style>
   
   <style:style style:name="Normal" style:family="paragraph">
-    <style:text-properties fo:font-size="12pt"/>
+    <style:text-properties style:font-name="Liberation Serif" fo:font-size="12pt"/>
     <style:paragraph-properties fo:text-align="justify" fo:margin-bottom="0.0cm" fo:line-height="150%"/>
   </style:style>
   
   <style:style style:name="Quote" style:family="paragraph">
-    <style:text-properties fo:font-size="10pt"/>
+    <style:text-properties style:font-name="Liberation Serif" fo:font-size="10pt"/>
     <style:paragraph-properties fo:text-align="justify" fo:margin-left="4cm" fo:margin-bottom="0.3cm" fo:line-height="100%"/>
   </style:style>
   
   <style:style style:name="Epigraph" style:family="paragraph">
-    <style:text-properties fo:font-size="12pt" fo:font-style="italic"/>
+    <style:text-properties style:font-name="Liberation Serif" fo:font-size="12pt" fo:font-style="italic"/>
     <style:paragraph-properties fo:text-align="right" fo:margin-left="7.5cm" fo:margin-bottom="0.3cm" fo:line-height="150%"/>
   </style:style>
 
   <style:style style:name="Footnote" style:family="paragraph">
-    <style:text-properties fo:font-size="9pt"/>
+    <style:text-properties style:font-name="Liberation Serif" fo:font-size="10pt"/>
     <style:paragraph-properties fo:text-align="justify" fo:margin-bottom="0.2cm" fo:line-height="100%"/>
   </style:style>
   
   <style:style style:name="ImageCaption" style:family="paragraph">
-    <style:text-properties fo:font-size="10pt" fo:font-style="italic"/>
+    <style:text-properties style:font-name="Liberation Serif" fo:font-size="10pt" fo:font-style="italic"/>
     <style:paragraph-properties fo:text-align="center" fo:margin-top="0.2cm" fo:margin-bottom="0.5cm"/>
   </style:style>
   
