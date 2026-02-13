@@ -321,6 +321,7 @@ class MainWindow(Adw.ApplicationWindow):
         """Setup window-specific actions"""
         actions = [
             ('toggle_sidebar', self._action_toggle_sidebar),
+            ('toggle_fullscreen', self._action_toggle_fullscreen),
             ('add_paragraph', self._action_add_paragraph, 's'),
             ('insert_image', self._action_insert_image),
             ('show_welcome', self._action_show_welcome),
@@ -369,6 +370,13 @@ class MainWindow(Adw.ApplicationWindow):
             Gtk.NamedAction.new("win.toggle_sidebar")
         )
         shortcut_controller.add_shortcut(sidebar_shortcut)
+
+        # Toggle Fullscreen (F11)
+        fullscreen_shortcut = Gtk.Shortcut.new(
+            Gtk.ShortcutTrigger.parse_string("F11"),
+            Gtk.NamedAction.new("win.toggle_fullscreen")
+        )
+        shortcut_controller.add_shortcut(fullscreen_shortcut)
 
         self.add_controller(shortcut_controller)
 
@@ -2082,3 +2090,13 @@ class MainWindow(Adw.ApplicationWindow):
             self.paned.set_position(0)
             button.set_icon_name('tac-sidebar-show-symbolic')
             button.set_tooltip_text(_("Mostrar Projetos (F9)"))
+
+    def _action_toggle_fullscreen(self, action, param):
+        """Toggle fullscreen mode"""
+        if self.is_fullscreen():
+            self.unfullscreen()
+            self.header_bar.set_visible(True)
+        else:
+            self.fullscreen()
+            # Oculta a header bar para máximo espaço de escrita
+            self.header_bar.set_visible(False)
