@@ -73,6 +73,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.welcome_view = None
         self.editor_view = None
         self.sidebar = None
+        self.paned = None
 
         # Setup window
         self._setup_window()
@@ -145,6 +146,14 @@ class MainWindow(Adw.ApplicationWindow):
         title_widget.set_title("TAC")
         self.header_bar.set_title_widget(title_widget)
 
+        # Sidebar toggle button
+        self.sidebar_toggle_button = Gtk.ToggleButton()
+        self.sidebar_toggle_button.set_icon_name('tac-sidebar-show-symbolic')
+        self.sidebar_toggle_button.set_tooltip_text(_("Mostrar/Ocultar Projetos (F9)"))
+        self.sidebar_toggle_button.set_active(True)
+        self.sidebar_toggle_button.connect('toggled', self._on_sidebar_toggle)
+        self.header_bar.pack_start(self.sidebar_toggle_button)
+
         # Left side buttons
         self.new_project_button = Gtk.MenuButton()
         self.new_project_button.set_icon_name('tac-document-new-symbolic')
@@ -192,7 +201,7 @@ class MainWindow(Adw.ApplicationWindow):
         self._setup_menu(menu_button)
         self.header_bar.pack_end(menu_button)
 
-	    # Save button
+        # Save button
         save_button = Gtk.Button()
         save_button.set_icon_name('tac-document-save-symbolic')
         save_button.set_tooltip_text(_("Salvar Projeto (Ctrl+S)"))
@@ -258,12 +267,16 @@ class MainWindow(Adw.ApplicationWindow):
         menu_button.set_menu_model(menu_model)
 
     def _setup_content_area(self, main_box):
-        """Setup the main content area"""
-        # Leaflet for responsive layout
-        self.leaflet = Adw.Leaflet()
-        self.leaflet.set_can_navigate_back(True)
-        self.leaflet.set_can_navigate_forward(True)
-        main_box.append(self.leaflet)
+        """Setup the main content area with resizable sidebar"""
+        # Paned for resizable sidebar
+        self.paned = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
+        self.paned.set_shrink_start_child(False)
+        self.paned.set_shrink_end_child(False)
+        self.paned.set_resize_start_child(False)
+        self.paned.set_resize_end_child(True)
+        self.paned.set_wide_handle(True)
+        self.paned.set_vexpand(True)
+        main_box.append(self.paned)
 
         # Sidebar
         self._setup_sidebar()
@@ -272,12 +285,12 @@ class MainWindow(Adw.ApplicationWindow):
         self.main_stack = Adw.ViewStack()
         self.main_stack.set_vexpand(True)
         self.main_stack.set_hexpand(True)
-        self.leaflet.append(self.main_stack)
+        self.paned.set_end_child(self.main_stack)
 
     def _setup_sidebar(self):
         """Setup the sidebar"""
         sidebar_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        sidebar_box.set_size_request(300, -1)
+        sidebar_box.set_size_request(200, -1)
         sidebar_box.add_css_class("sidebar")
 
         # Sidebar header
@@ -295,7 +308,13 @@ class MainWindow(Adw.ApplicationWindow):
         self.project_list.connect('project-selected', self._on_project_selected)
         sidebar_box.append(self.project_list)
 
-        self.leaflet.append(sidebar_box)
+        # Add to paned as start (left) child
+        self.paned.set_start_child(sidebar_box)
+
+        # Restore saved position or use default
+        saved_pos = self.config.get('sidebar_width', 300)
+        self.paned.set_position(saved_pos)
+
         self.sidebar = sidebar_box
 
     def _setup_actions(self):
@@ -344,6 +363,13 @@ class MainWindow(Adw.ApplicationWindow):
         )
         shortcut_controller.add_shortcut(insert_image_shortcut)
         
+        # Toggle Sidebar (F9)
+        sidebar_shortcut = Gtk.Shortcut.new(
+            Gtk.ShortcutTrigger.parse_string("F9"),
+            Gtk.NamedAction.new("win.toggle_sidebar")
+        )
+        shortcut_controller.add_shortcut(sidebar_shortcut)
+
         self.add_controller(shortcut_controller)
 
     def _show_welcome_view(self):
@@ -531,7 +557,6 @@ class MainWindow(Adw.ApplicationWindow):
         # Save scroll position before any changes
         if hasattr(self, 'editor_scrolled') and self.editor_scrolled:
             vadj = self.editor_scrolled.get_vadjustment()
-            # Só salvamos se não estivermos já no topo (0)
             if vadj.get_value() > 0:
                 self._preserved_scroll_position = vadj.get_value()
             else:
@@ -720,7 +745,7 @@ class MainWindow(Adw.ApplicationWindow):
             caption_label.set_xalign(0.5)
             image_container.append(caption_label)
         
-        # Edit button always visiblçe
+        # Edit button always visible
         toolbar = self._create_image_toolbar(paragraph)
         image_container.append(toolbar)
         
@@ -1087,7 +1112,18 @@ class MainWindow(Adw.ApplicationWindow):
 
     def _action_toggle_sidebar(self, action, param):
         """Toggle sidebar visibility"""
-        pass
+        if hasattr(self, 'sidebar_toggle_button'):
+            self.sidebar_toggle_button.set_active(not self.sidebar_toggle_button.get_active())
+
+        if self.sidebar.get_visible():
+            # Save position before hiding
+            self._sidebar_last_position = self.paned.get_position()
+            self.sidebar.set_visible(False)
+            self.paned.set_position(0)
+        else:
+            self.sidebar.set_visible(True)
+            pos = getattr(self, '_sidebar_last_position', 300)
+            self.paned.set_position(pos)
 
     def _action_add_paragraph(self, action, param):
         """Add paragraph action"""
@@ -1743,15 +1779,15 @@ class MainWindow(Adw.ApplicationWindow):
         ]
         for prefix in prefixes:
             if lowered.startswith(prefix):
-                cleaned = cleaned[len(prefix):].lstrip(" :.-–—\n\"'“”‘’`")
+                cleaned = cleaned[len(prefix):].lstrip(" :.-–—\n\"'""''`")
                 break
 
         quote_pairs = {
             '"': '"',
             "'": "'",
-            "“": "”",
-            "‘": "’",
-            "«": "»",
+            "\u201c": "\u201d",
+            "\u2018": "\u2019",
+            "\u00ab": "\u00bb",
         }
         if cleaned and cleaned[0] in quote_pairs:
             closing = quote_pairs[cleaned[0]]
@@ -1762,9 +1798,9 @@ class MainWindow(Adw.ApplicationWindow):
         patterns = [
             r"'([^']+)'",
             r'"([^"]+)"',
-            r"“([^”]+)”",
-            r"‘([^’]+)’",
-            r"«([^»]+)»",
+            r"\u201c([^\u201d]+)\u201d",
+            r"\u2018([^\u2019]+)\u2019",
+            r"\u00ab([^\u00bb]+)\u00bb",
         ]
         matches = []
         for pattern in patterns:
@@ -1862,10 +1898,29 @@ class MainWindow(Adw.ApplicationWindow):
         self.config.set('window_height', height)
         self.config.set('window_maximized', self.is_maximized())
 
+        # Save sidebar paned position
+        if hasattr(self, 'paned') and self.paned:
+            if hasattr(self, 'sidebar') and self.sidebar.get_visible():
+                self.config.set('sidebar_width', self.paned.get_position())
+
+        # Save sidebar if visible
+        if hasattr(self, 'sidebar_toggle_button'):
+            self.config.set('sidebar_visible', self.sidebar_toggle_button.get_active())
+
     def _restore_window_state(self):
         """Restore window state from config"""
         if self.config.get('window_maximized', False):
             self.maximize()
+
+        # Restore sidebar paned position
+        if hasattr(self, 'paned') and self.paned:
+            saved_pos = self.config.get('sidebar_width', 300)
+            self.paned.set_position(saved_pos)
+
+        # Restaura visibilidade da sidebar
+        if hasattr(self, 'sidebar_toggle_button'):
+            visible = self.config.get('sidebar_visible', True)
+            self.sidebar_toggle_button.set_active(visible)
 
     def _maybe_show_welcome_dialog(self):
         """Show welcome dialog if enabled in config"""
@@ -2003,18 +2058,27 @@ class MainWindow(Adw.ApplicationWindow):
         dialog = CloudSyncDialog(self)
         dialog.present()
 
-    """def _on_references_clicked(self, button):
-        Handle references to be used for quotes
-        # Verificação de segurança: Só abre se houver projeto carregado
-        if not self.current_project:
-            self._show_toast(_("Nenhum projeto aberto. Abra ou crie um projeto para gerenciar referências."), Adw.ToastPriority.HIGH)
-            return
-
-        dialog = ReferencesDialog(self)
-        dialog.present()"""
-
     def _on_references_clicked(self, button):
         """Handle references to be used for quotes"""
         from ui.dialogs import ReferencesDialog
         dialog = ReferencesDialog(self)
         dialog.present()
+
+    def _on_sidebar_toggle(self, button):
+        """Handle sidebar toggle button"""
+        if button.get_active():
+            # Show sidebar
+            self.sidebar.set_visible(True)
+            pos = getattr(self, '_sidebar_last_position', self.config.get('sidebar_width', 300))
+            if pos < 200:
+                pos = 300
+            self.paned.set_position(pos)
+            button.set_icon_name('tac-sidebar-show-symbolic')
+            button.set_tooltip_text(_("Ocultar Projetos (F9)"))
+        else:
+            # Hide sidebar
+            self._sidebar_last_position = self.paned.get_position()
+            self.sidebar.set_visible(False)
+            self.paned.set_position(0)
+            button.set_icon_name('tac-sidebar-show-symbolic')
+            button.set_tooltip_text(_("Mostrar Projetos (F9)"))

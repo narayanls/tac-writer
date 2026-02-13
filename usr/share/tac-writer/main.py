@@ -27,6 +27,10 @@ if os.environ.get('XDG_CURRENT_DESKTOP') == 'KDE':
 if os.environ.get('XDG_CURRENT_DESKTOP') == 'Hyprland':
     os.environ.setdefault('GTK_IM_MODULE', 'gtk-im-context-simple')
 
+# Fix for Niri (dead keys/accents issue)
+if os.environ.get('XDG_CURRENT_DESKTOP') == 'niri':
+    os.environ.setdefault('GTK_IM_MODULE', 'gtk-im-context-simple')
+
 
 # Suppress GTK and enchant warnings via environment variables
 os.environ.setdefault('G_MESSAGES_DEBUG', '')
