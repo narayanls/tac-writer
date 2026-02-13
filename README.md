@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/narayanls/tac-writer/releases"><img src="https://img.shields.io/badge/Version-1.2.8-blue.svg" alt="Versão"/></a>
+  <a href="https://github.com/narayanls/tac-writer/releases"><img src="https://img.shields.io/badge/Version-1.2.9-blue.svg" alt="Versão"/></a>
   <a href="https://github.com/narayanls/tac-writer/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-GPL--3.0-green.svg" alt="Licença"/></a>
   <a href="https://www.gtk.org/"><img src="https://img.shields.io/badge/GTK-4.0+-orange.svg" alt="Versão GTK"/></a>
   <a href="https://gnome.pages.gitlab.gnome.org/libadwaita/"><img src="https://img.shields.io/badge/libadwaita-1.0+-purple.svg" alt="Versão libadwaita"/></a>
