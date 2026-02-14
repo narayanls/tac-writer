@@ -13,7 +13,7 @@ class Config:
     """Application configuration manager"""
 
     # Application version and metadata
-    APP_VERSION = "1.30.0"
+    APP_VERSION = "1.31.0"
     APP_NAME = "TAC"
     APP_FULL_NAME = "TAC - Continuous Argumentation Technique"
     APP_DESCRIPTION = "Academic Writing Assistant"
@@ -105,6 +105,10 @@ class Config:
             'use_dark_theme': False,
             'adaptive_theme': True,
             'enable_animations': True,
+            'color_bg': '#ffffff',
+            'color_font': '#2e2e2e',
+            'color_accent': '#3584e4',
+
 
             # Project defaults
             'database_file': str(self.data_dir / 'projects.db'),
@@ -300,3 +304,28 @@ class Config:
 
     def set_openrouter_site_name(self, name: str) -> None:
         self.set('ai_openrouter_site_name', name)
+
+    # Color scheme helpers
+    def get_color_scheme_enabled(self) -> bool:
+        return self.get('color_scheme_enabled', False)
+
+    def set_color_scheme_enabled(self, enabled: bool) -> None:
+        self.set('color_scheme_enabled', enabled)
+
+    def get_color_bg(self) -> str:
+        return self.get('color_bg', '#ffffff')
+
+    def set_color_bg(self, color: str) -> None:
+        self.set('color_bg', color)
+
+    def get_color_font(self) -> str:
+        return self.get('color_font', '#2e2e2e')
+
+    def set_color_font(self, color: str) -> None:
+        self.set('color_font', color)
+
+    def get_color_accent(self) -> str:
+        return self.get('color_accent', '#3584e4')
+
+    def set_color_accent(self, color: str) -> None:
+        self.set('color_accent', color)

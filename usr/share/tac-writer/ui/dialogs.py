@@ -700,6 +700,52 @@ class PreferencesDialog(Adw.PreferencesWindow):
         self.dark_theme_row.connect('notify::active', self._on_dark_theme_changed)
         appearance_group.add(self.dark_theme_row)
 
+        # Color schemes
+        self.color_scheme_row = Adw.SwitchRow()
+        self.color_scheme_row.set_title(_("Esquema de Cores"))
+        self.color_scheme_row.set_subtitle(_("Sobrescreve o tema com cores personalizadas"))
+        self.color_scheme_row.connect('notify::active', self._on_color_scheme_toggled)
+        appearance_group.add(self.color_scheme_row)
+
+        # Color selector group
+        self.colors_group = Adw.PreferencesGroup()
+        self.colors_group.set_title(_("Cores Personalizadas"))
+        general_page.add(self.colors_group)
+
+        # Background color
+        bg_row = Adw.ActionRow()
+        bg_row.set_title(_("Cor de Fundo"))
+        bg_row.set_subtitle(_("Cor principal da janela e editor"))
+        self.bg_color_btn = self._create_color_picker_button()
+        bg_row.add_suffix(self.bg_color_btn)
+        self.colors_group.add(bg_row)
+
+        # Font color
+        font_row = Adw.ActionRow()
+        font_row.set_title(_("Cor da Fonte"))
+        font_row.set_subtitle(_("Cor do texto em todo o aplicativo"))
+        self.font_color_btn = self._create_color_picker_button()
+        font_row.add_suffix(self.font_color_btn)
+        self.colors_group.add(font_row)
+
+        # Accent Color
+        accent_row = Adw.ActionRow()
+        accent_row.set_title(_("Cor de Destaque"))
+        accent_row.set_subtitle(_("Botões, links e elementos interativos"))
+        self.accent_color_btn = self._create_color_picker_button()
+        accent_row.add_suffix(self.accent_color_btn)
+        self.colors_group.add(accent_row)
+
+        # Restore default
+        reset_color_row = Adw.ActionRow()
+        reset_color_row.set_title(_("Restaurar Cores Padrão"))
+        reset_btn = Gtk.Button(label=_("Restaurar"))
+        reset_btn.add_css_class("flat")
+        reset_btn.set_valign(Gtk.Align.CENTER)
+        reset_btn.connect('clicked', self._on_reset_colors_clicked)
+        reset_color_row.add_suffix(reset_btn)
+        self.colors_group.add(reset_color_row)
+
         # Editor page
         editor_page = Adw.PreferencesPage()
         editor_page.set_title(_("Editor"))
@@ -857,6 +903,13 @@ class PreferencesDialog(Adw.PreferencesWindow):
             
             self._update_ai_controls_sensitive(self.config.get_ai_assistant_enabled())
             self._update_ai_provider_ui(provider)
+
+            # Color scheme - load buttons before switch
+            self._set_color_btn(self.bg_color_btn, self.config.get_color_bg())
+            self._set_color_btn(self.font_color_btn, self.config.get_color_font())
+            self._set_color_btn(self.accent_color_btn, self.config.get_color_accent())
+            self.color_scheme_row.set_active(self.config.get_color_scheme_enabled())
+            self._update_color_controls_sensitive(self.config.get_color_scheme_enabled())
             
         except Exception as e:
             print(_("Erro ao carregar preferências: {}").format(e))
@@ -983,6 +1036,86 @@ class PreferencesDialog(Adw.PreferencesWindow):
                 _("Identificador do modelo exigido pelo provedor.")
             )
             self.ai_api_key_row.set_subtitle(_("Chave de API usada para autenticação."))
+
+    # Color scheme methods
+
+    def _create_color_picker_button(self):
+        """Cria um botão seletor de cor compatível com GTK 4.10+"""
+        try:
+            color_dialog = Gtk.ColorDialog()
+            btn = Gtk.ColorDialogButton(dialog=color_dialog)
+        except (AttributeError, TypeError):
+            # Fallback para versões mais antigas do GTK4
+            btn = Gtk.ColorButton()
+            btn.set_use_alpha(False)
+        btn.set_valign(Gtk.Align.CENTER)
+        btn.connect('notify::rgba', self._on_color_picker_changed)
+        return btn
+
+    def _set_color_btn(self, btn, hex_color):
+        """Define a cor de um botão a partir de string hex"""
+        rgba = Gdk.RGBA()
+        if not rgba.parse(hex_color):
+            rgba.parse('#888888')
+        btn.set_rgba(rgba)
+
+    def _on_color_scheme_toggled(self, switch, pspec):
+        """Ativa/desativa o esquema de cores personalizado"""
+        enabled = switch.get_active()
+        self.config.set_color_scheme_enabled(enabled)
+        self.config.save()
+        self._update_color_controls_sensitive(enabled)
+        self._push_color_scheme_to_window()
+
+    def _on_color_picker_changed(self, btn, pspec):
+        """Chamado quando qualquer cor é alterada pelo usuário"""
+        if not self.color_scheme_row.get_active():
+            return
+        self._save_current_colors()
+        self._push_color_scheme_to_window()
+
+    def _on_reset_colors_clicked(self, btn):
+        """Restaura as cores padrão"""
+        self._set_color_btn(self.bg_color_btn, '#ffffff')
+        self._set_color_btn(self.font_color_btn, '#2e2e2e')
+        self._set_color_btn(self.accent_color_btn, '#3584e4')
+        self._save_current_colors()
+        self._push_color_scheme_to_window()
+
+    def _update_color_controls_sensitive(self, enabled):
+        """Ativa/desativa os controles de cores"""
+        self.colors_group.set_sensitive(enabled)
+
+    def _save_current_colors(self):
+        """Salva as cores atuais dos botões no config"""
+        self.config.set_color_bg(self._rgba_to_hex(self.bg_color_btn.get_rgba()))
+        self.config.set_color_font(self._rgba_to_hex(self.font_color_btn.get_rgba()))
+        self.config.set_color_accent(self._rgba_to_hex(self.accent_color_btn.get_rgba()))
+        self.config.save()
+
+    def _push_color_scheme_to_window(self):
+        """Aplica ou remove o esquema de cores na janela principal em tempo real"""
+        parent = self.get_transient_for()
+        if not parent:
+            return
+        if self.color_scheme_row.get_active():
+            if hasattr(parent, 'apply_color_scheme'):
+                parent.apply_color_scheme(
+                    self.config.get_color_bg(),
+                    self.config.get_color_font(),
+                    self.config.get_color_accent(),
+                )
+        else:
+            if hasattr(parent, 'remove_color_scheme'):
+                parent.remove_color_scheme()
+
+    @staticmethod
+    def _rgba_to_hex(rgba):
+        """Converte Gdk.RGBA para string hex #rrggbb"""
+        r = max(0, min(255, int(rgba.red * 255)))
+        g = max(0, min(255, int(rgba.green * 255)))
+        b = max(0, min(255, int(rgba.blue * 255)))
+        return f'#{r:02x}{g:02x}{b:02x}'
 
 
 class WelcomeDialog(Adw.Window):
