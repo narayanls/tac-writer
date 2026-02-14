@@ -51,6 +51,9 @@ class MainWindow(Adw.ApplicationWindow):
         self.ai_assistant = WritingAiAssistant(self, self.config)
         self._ai_context_target: Optional[dict] = None
 
+        # Color scheme CSS provider
+        self._color_scheme_provider = None
+
         # Search state
         self.search_entry: Optional[Gtk.SearchEntry] = None
         self.search_next_button: Optional[Gtk.Button] = None
@@ -133,6 +136,9 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Show welcome view initially
         self._show_welcome_view()
+
+        # Apply color scheme saved when initialize
+        self._apply_saved_color_scheme()
 
     def _setup_header_bar(self):
         """Setup the header bar"""
@@ -2091,6 +2097,119 @@ class MainWindow(Adw.ApplicationWindow):
             button.set_icon_name('tac-sidebar-show-symbolic')
             button.set_tooltip_text(_("Mostrar Projetos (F9)"))
 
+    # Color Scheme
+
+    def apply_color_scheme(self, bg, font, accent):
+        """Aplica esquema de cores mantendo hierarquia visual entre superfícies"""
+        display = Gdk.Display.get_default()
+        if not display:
+            return
+
+        if self._color_scheme_provider:
+            Gtk.StyleContext.remove_provider_for_display(
+                display, self._color_scheme_provider
+            )
+
+        self._color_scheme_provider = Gtk.CssProvider()
+
+        is_dark = self._is_dark_color(bg)
+        accent_fg = self._contrast_foreground(accent)
+
+        if is_dark:
+            # Fundo escuro: superfícies elevadas ficam MAIS CLARAS
+            headerbar_bg = self._derive_color(bg, 0.08)
+            sidebar_bg   = self._derive_color(bg, 0.04)
+            card_bg      = self._derive_color(bg, 0.10)
+            popover_bg   = self._derive_color(bg, 0.12)
+            dialog_bg    = self._derive_color(bg, 0.10)
+            view_bg      = self._derive_color(bg, -0.03)
+        else:
+            # Fundo claro: superfícies elevadas ficam MAIS ESCURAS
+            headerbar_bg = self._derive_color(bg, -0.04)
+            sidebar_bg   = self._derive_color(bg, -0.02)
+            card_bg      = self._derive_color(bg, -0.03)
+            popover_bg   = self._derive_color(bg, -0.05)
+            dialog_bg    = self._derive_color(bg, -0.03)
+            view_bg      = self._derive_color(bg, 0.02)
+
+        css = f"""
+            @define-color window_bg_color {bg};
+            @define-color window_fg_color {font};
+            @define-color view_bg_color {view_bg};
+            @define-color view_fg_color {font};
+            @define-color headerbar_bg_color {headerbar_bg};
+            @define-color headerbar_fg_color {font};
+            @define-color card_bg_color {card_bg};
+            @define-color card_fg_color {font};
+            @define-color dialog_bg_color {dialog_bg};
+            @define-color dialog_fg_color {font};
+            @define-color popover_bg_color {popover_bg};
+            @define-color popover_fg_color {font};
+            @define-color sidebar_bg_color {sidebar_bg};
+            @define-color sidebar_fg_color {font};
+            @define-color accent_color {accent};
+            @define-color accent_bg_color {accent};
+            @define-color accent_fg_color {accent_fg};
+        """
+
+        self._color_scheme_provider.load_from_data(css.encode())
+        Gtk.StyleContext.add_provider_for_display(
+            display,
+            self._color_scheme_provider,
+            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION + 1,
+        )
+
+    @staticmethod
+    def _is_dark_color(hex_color):
+        """Retorna True se a cor for escura (luminância < 0.5)"""
+        h = hex_color.lstrip('#')
+        r, g, b = (int(h[i:i + 2], 16) for i in (0, 2, 4))
+        luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255.0
+        return luminance < 0.5
+
+    def remove_color_scheme(self):
+        """Remove o esquema de cores e volta ao tema padrão"""
+        if self._color_scheme_provider:
+            display = Gdk.Display.get_default()
+            if display:
+                Gtk.StyleContext.remove_provider_for_display(
+                    display, self._color_scheme_provider
+                )
+            self._color_scheme_provider = None
+
+    def _apply_saved_color_scheme(self):
+        """Carrega e aplica o esquema de cores salvo no config"""
+        if self.config.get_color_scheme_enabled():
+            self.apply_color_scheme(
+                self.config.get_color_bg(),
+                self.config.get_color_font(),
+                self.config.get_color_accent(),
+            )
+
+    @staticmethod
+    def _derive_color(hex_color, amount):
+        """Clareia (amount > 0) ou escurece (amount < 0) uma cor hex"""
+        h = hex_color.lstrip('#')
+        r, g, b = (int(h[i:i + 2], 16) for i in (0, 2, 4))
+        if amount >= 0:
+            r = min(255, int(r + (255 - r) * amount))
+            g = min(255, int(g + (255 - g) * amount))
+            b = min(255, int(b + (255 - b) * amount))
+        else:
+            factor = 1.0 + amount
+            r = max(0, int(r * factor))
+            g = max(0, int(g * factor))
+            b = max(0, int(b * factor))
+        return f'#{r:02x}{g:02x}{b:02x}'
+
+    @staticmethod
+    def _contrast_foreground(hex_color):
+        """Retorna #ffffff ou #000000 baseado na luminância da cor"""
+        h = hex_color.lstrip('#')
+        r, g, b = (int(h[i:i + 2], 16) for i in (0, 2, 4))
+        luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255.0
+        return '#ffffff' if luminance < 0.5 else '#000000'
+
     def _action_toggle_fullscreen(self, action, param):
         """Toggle fullscreen mode"""
         if self.is_fullscreen():
@@ -2098,5 +2217,5 @@ class MainWindow(Adw.ApplicationWindow):
             self.header_bar.set_visible(True)
         else:
             self.fullscreen()
-            # Oculta a header bar para máximo espaço de escrita
+            # hide headbar
             self.header_bar.set_visible(False)
