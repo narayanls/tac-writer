@@ -266,7 +266,7 @@ class MainWindow(Adw.ApplicationWindow):
         # Help section
         help_section = Gio.Menu()
         help_section.append(_("Guia de Boas-vindas"), "win.show_welcome")
-        help_section.append(_("Revisão de texto por IA"), "app.ai_assistant")
+        help_section.append(_("Faça uma Doação ❤"), "win.donate")
         help_section.append(_("Sobre o TAC"), "app.about")
         menu_model.append_section(None, help_section)
 
@@ -335,6 +335,7 @@ class MainWindow(Adw.ApplicationWindow):
             ('redo', self._action_redo),
             ('backup_manager', self._action_backup_manager),
             ('new_project', self._action_new_project, 's'),
+            ('donate', self._on_donate),
         ]
 
         for action_data in actions:
@@ -2219,3 +2220,18 @@ class MainWindow(Adw.ApplicationWindow):
             self.fullscreen()
             # hide headbar
             self.header_bar.set_visible(False)
+
+    def _on_donate(self, action, param):
+        """Abre a página de doação no navegador padrão"""
+        launcher = Gtk.UriLauncher.new("https://ko-fi.com/narayanls")
+        launcher.launch(self, None, self._on_donate_launch_done)
+
+    def _on_donate_launch_done(self, launcher, result):
+        """Callback após tentativa de abrir o navegador"""
+        try:
+            launcher.launch_finish(result)
+        except GLib.Error as e:
+            self._show_toast(
+                _("Não foi possível abrir o navegador: {}").format(e.message),
+                Adw.ToastPriority.HIGH,
+            )
