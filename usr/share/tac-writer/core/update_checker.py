@@ -337,6 +337,8 @@ class UpdateChecker:
             ("kitty", "-e"),
             ("xterm", "-e"),
             ("tilix", "-e"),
+            ("ashyterm", "-e"),
+            ("zashterminal", "-e"),
             ("terminator", "-x"),
         ]
         for cmd, arg in terminals:
