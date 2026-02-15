@@ -2246,25 +2246,33 @@ class MainWindow(Adw.ApplicationWindow):
 
     def _maybe_check_for_updates(self):
         """Trigger an update check if enabled and enough time has elapsed."""
+        print("[MainWindow] _maybe_check_for_updates called")
+
         if not self.config.get('check_for_updates', True):
+            print("[MainWindow] Update check is DISABLED in config. Skipping.")
             return False
 
-        # Respect interval to avoid spamming GitHub
+        # Respect interval to avoid spamming APIs
         last_check = self.config.get('last_update_check', '')
         if last_check:
             from datetime import datetime, timedelta
             try:
                 last_dt = datetime.fromisoformat(last_check)
                 interval_h = self.config.get('update_check_interval_hours', 24)
-                if datetime.now() - last_dt < timedelta(hours=interval_h):
+                elapsed = datetime.now() - last_dt
+                if elapsed < timedelta(hours=interval_h):
+                    print(f"[MainWindow] Last check was {elapsed} ago "
+                          f"(interval: {interval_h}h). Skipping.")
                     return False
-            except (ValueError, TypeError):
-                pass
+            except (ValueError, TypeError) as e:
+                print(f"[MainWindow] Could not parse last_update_check: {e}. "
+                      f"Proceeding with check.")
 
+        print("[MainWindow] Launching update checker thread...")
         from core.update_checker import UpdateChecker
         checker = UpdateChecker(self.config.APP_VERSION)
         checker.check_async(self._on_update_check_result)
-        return False  # do not repeat the timeout
+        return False
 
     def _on_update_check_result(self, result):
         """Callback (main thread) when the update check finishes."""
