@@ -117,27 +117,38 @@ class UpdateChecker:
 
     def _check_via_github(self, install_method, distro):
         """Check for updates via GitHub releases (for deb/rpm/unknown)."""
+
+        # For deb/rpm, read the version from the file the installer creates
+        local_version = self._read_version_txt()
+        if local_version:
+            print(f"[UpdateChecker] Current (version.txt): {local_version}")
+        else:
+            # Fallback: use APP_VERSION (may not match tag scheme)
+            local_version = self.current_version
+            print(f"[UpdateChecker] version.txt not found, "
+                  f"using APP_VERSION: {local_version}")
+
         release = self._fetch_latest_release()
         if release is None:
             print("[UpdateChecker] Could not fetch GitHub release.")
             return None
 
         latest = release.get("tag_name", "").lstrip("v")
-        print(f"[UpdateChecker] Current (APP_VERSION): {self.current_version}")
-        print(f"[UpdateChecker] Latest (GitHub): {latest}")
+        print(f"[UpdateChecker] Latest (GitHub tag): {latest}")
 
         if not latest:
             return None
 
-        cmp = self._compare_versions(self.current_version, latest)
-        print(f"[UpdateChecker] compare_versions = {cmp}")
+        cmp = self._compare_versions(local_version, latest)
+        print(f"[UpdateChecker] compare_versions('{local_version}', "
+              f"'{latest}') = {cmp}")
 
         if cmp >= 0:
             print("[UpdateChecker] Already up-to-date (GitHub).")
             return None
 
         return {
-            "current_version": self.current_version,
+            "current_version": local_version,
             "latest_version": latest,
             "release_notes": release.get("body", ""),
             "published_at": release.get("published_at", ""),
@@ -145,6 +156,26 @@ class UpdateChecker:
             "install_method": install_method,
             "distro": distro,
         }
+
+    @staticmethod
+    def _read_version_txt() -> Optional[str]:
+        """
+        Read the version from the file created by the deb/rpm installer.
+        Located at ~/.local/share/tac-writer/version.txt
+        """
+        import os
+        path = os.path.expanduser("~/.local/share/tac-writer/version.txt")
+        try:
+            with open(path, "r") as f:
+                version = f.read().strip().lstrip("v")
+                if version:
+                    print(f"[UpdateChecker] Read version.txt: '{version}'")
+                    return version
+        except FileNotFoundError:
+            pass
+        except Exception as e:
+            print(f"[UpdateChecker] Error reading version.txt: {e}")
+        return None
 
     # ── Network helpers ───────────────────────────────────────
 
