@@ -21,6 +21,10 @@ from utils.i18n import _
 from .components import WelcomeView, ParagraphEditor, ProjectListWidget, SpellCheckHelper, PomodoroTimer, FirstRunTour, ReorderableParagraphRow
 from .dialogs import NewProjectDialog, ExportDialog, PreferencesDialog, AboutDialog, WelcomeDialog, BackupManagerDialog, ImageDialog, CloudSyncDialog, ReferencesDialog
 
+import os
+import threading
+import subprocess
+import tempfile
 
 
 class MainWindow(Adw.ApplicationWindow):
@@ -87,6 +91,8 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Show welcome dialog if enabled
         GLib.timeout_add(500, self._maybe_show_welcome_dialog)
+        # Schedule update check (5 s after startup for smooth UX)
+        GLib.timeout_add(5000, self._maybe_check_for_updates)
 
     def _setup_window(self):
         """Setup basic window properties"""
@@ -2235,3 +2241,335 @@ class MainWindow(Adw.ApplicationWindow):
                 _("Não foi possível abrir o navegador: {}").format(e.message),
                 Adw.ToastPriority.HIGH,
             )
+
+    # ── Update checking ────────────────────────────────────────
+
+    def _maybe_check_for_updates(self):
+        """Trigger an update check if enabled and enough time has elapsed."""
+        if not self.config.get('check_for_updates', True):
+            return False
+
+        # Respect interval to avoid spamming GitHub
+        last_check = self.config.get('last_update_check', '')
+        if last_check:
+            from datetime import datetime, timedelta
+            try:
+                last_dt = datetime.fromisoformat(last_check)
+                interval_h = self.config.get('update_check_interval_hours', 24)
+                if datetime.now() - last_dt < timedelta(hours=interval_h):
+                    return False
+            except (ValueError, TypeError):
+                pass
+
+        from core.update_checker import UpdateChecker
+        checker = UpdateChecker(self.config.APP_VERSION)
+        checker.check_async(self._on_update_check_result)
+        return False  # do not repeat the timeout
+
+    def _on_update_check_result(self, result):
+        """Callback (main thread) when the update check finishes."""
+        # Always record the check timestamp
+        from datetime import datetime
+        self.config.set('last_update_check', datetime.now().isoformat())
+        self.config.save()
+
+        if result is None:
+            return  # up-to-date or check failed
+
+        # Skip if user already dismissed this version
+        skipped = self.config.get('skipped_version', '')
+        if skipped == result['latest_version']:
+            return
+
+        self._show_update_available_dialog(result)
+
+    def _show_update_available_dialog(self, update_info):
+        """Present an informative dialog about the available update."""
+        latest = update_info['latest_version']
+        current = update_info['current_version']
+        method = update_info['install_method']
+
+        method_labels = {
+            'aur': 'AUR (pacman)',
+            'deb': 'DEB (apt)',
+            'rpm': 'RPM (dnf/zypper)',
+            'unknown': _('Desconhecido'),
+        }
+        method_label = method_labels.get(method, method)
+
+        body = _(
+            "Uma nova versão do TAC Writer está disponível!\n\n"
+            "Versão instalada: {current}\n"
+            "Nova versão: {latest}\n"
+            "Método de instalação: {method}"
+        ).format(current=current, latest=latest, method=method_label)
+
+        dialog = Adw.MessageDialog.new(self, _("Atualização Disponível"), body)
+
+        # Release notes as extra child
+        notes = (update_info.get('release_notes') or '').strip()
+        if notes:
+            if len(notes) > 600:
+                notes = notes[:600] + "\n\n…"
+
+            notes_frame = Gtk.Frame()
+            notes_frame.add_css_class("card")
+
+            notes_box = Gtk.Box(
+                orientation=Gtk.Orientation.VERTICAL, spacing=6,
+                margin_top=8, margin_bottom=8, margin_start=12, margin_end=12,
+            )
+            notes_heading = Gtk.Label(label=_("Novidades:"), halign=Gtk.Align.START)
+            notes_heading.add_css_class("heading")
+            notes_box.append(notes_heading)
+
+            notes_scrolled = Gtk.ScrolledWindow()
+            notes_scrolled.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+            notes_scrolled.set_min_content_height(120)
+            notes_scrolled.set_max_content_height(200)
+
+            notes_label = Gtk.Label(
+                label=notes, wrap=True, halign=Gtk.Align.START,
+                selectable=True, max_width_chars=70,
+            )
+            notes_scrolled.set_child(notes_label)
+            notes_box.append(notes_scrolled)
+
+            notes_frame.set_child(notes_box)
+            dialog.set_extra_child(notes_frame)
+
+        # Responses
+        dialog.add_response("skip", _("Ignorar Versão"))
+        dialog.add_response("later", _("Depois"))
+        dialog.add_response("update", _("Atualizar Agora"))
+
+        dialog.set_response_appearance("update", Adw.ResponseAppearance.SUGGESTED)
+        dialog.set_response_appearance("skip", Adw.ResponseAppearance.DESTRUCTIVE)
+        dialog.set_default_response("update")
+        dialog.set_close_response("later")
+
+        def on_response(dlg, response):
+            dlg.destroy()
+            if response == "skip":
+                self.config.set('skipped_version', latest)
+                self.config.save()
+            elif response == "update":
+                self._perform_update(update_info)
+
+        dialog.connect('response', on_response)
+        dialog.present()
+
+    # ── Perform update (dispatcher) ────────────────────────────
+
+    def _perform_update(self, update_info):
+        """Route to the correct update strategy."""
+        method = update_info['install_method']
+
+        if method == 'aur':
+            self._perform_update_aur()
+        elif method in ('deb', 'rpm'):
+            self._perform_update_package(update_info)
+        else:
+            self._perform_update_unknown()
+
+    # ── AUR update ─────────────────────────────────────────────
+
+    def _perform_update_aur(self):
+        """Open a terminal to update via AUR helper or makepkg."""
+        from core.update_checker import UpdateChecker
+
+        terminal = UpdateChecker.find_terminal()
+        if not terminal:
+            self._show_toast(
+                _("Nenhum terminal encontrado. Atualize manualmente com: yay -S tac-writer"),
+                Adw.ToastPriority.HIGH,
+            )
+            return
+
+        aur_helper = UpdateChecker.find_aur_helper()
+
+        # Build a self-contained shell script
+        if aur_helper:
+            update_cmd = f"{aur_helper} -S --noconfirm tac-writer"
+        else:
+            update_cmd = (
+                'echo "Nenhum helper AUR (yay/paru) encontrado. Instalando manualmente..."\n'
+                'sudo pacman -S --needed --noconfirm base-devel git\n'
+                'BUILD_DIR="/tmp/tac-writer-aur-update"\n'
+                'rm -rf "$BUILD_DIR" && mkdir -p "$BUILD_DIR" && cd "$BUILD_DIR"\n'
+                'git clone https://aur.archlinux.org/tac-writer.git && cd tac-writer\n'
+                'makepkg -si --noconfirm'
+            )
+
+        script_content = f"""#!/bin/bash
+echo "==========================================="
+echo "  Atualizando TAC Writer via AUR"
+echo "==========================================="
+echo ""
+{update_cmd}
+echo ""
+echo "Atualização concluída. Reinicie o TAC Writer."
+echo "Pressione ENTER para fechar este terminal."
+read
+"""
+        script_path = os.path.join(tempfile.gettempdir(), 'tac_update_aur.sh')
+        with open(script_path, 'w') as f:
+            f.write(script_content)
+        os.chmod(script_path, 0o755)
+
+        term_cmd, term_arg = terminal
+        try:
+            subprocess.Popen([term_cmd, term_arg, script_path])
+            self._show_toast(
+                _("Terminal de atualização aberto. Reinicie o app após concluir."),
+            )
+        except Exception as e:
+            self._show_toast(
+                _("Erro ao abrir terminal: {}").format(e), Adw.ToastPriority.HIGH,
+            )
+
+    # ── DEB / RPM update ──────────────────────────────────────
+
+    def _perform_update_package(self, update_info):
+        """Download the .deb or .rpm and install with pkexec."""
+        from core.update_checker import UpdateChecker
+
+        method = update_info['install_method']
+        assets = update_info['assets']
+        distro = update_info.get('distro', {})
+
+        suffix = '.deb' if method == 'deb' else '.rpm'
+        asset = UpdateChecker.find_asset_url(assets, suffix)
+
+        if not asset or not asset.get('url'):
+            self._show_toast(
+                _("Pacote {} não encontrado no release do GitHub.").format(suffix),
+                Adw.ToastPriority.HIGH,
+            )
+            return
+
+        # Determine install command
+        if method == 'deb':
+            install_cmd = 'apt install -y'
+        elif 'suse' in distro.get('id', '') or 'suse' in distro.get('id_like', ''):
+            install_cmd = 'zypper --non-interactive install -y --allow-unsigned-rpm'
+        else:
+            install_cmd = 'dnf install -y'
+
+        # ── Progress dialog ──
+        progress_win = Adw.Window()
+        progress_win.set_title(_("Atualizando TAC Writer"))
+        progress_win.set_transient_for(self)
+        progress_win.set_modal(True)
+        progress_win.set_default_size(420, 200)
+        progress_win.set_deletable(False)
+
+        vbox = Gtk.Box(
+            orientation=Gtk.Orientation.VERTICAL, spacing=16,
+            valign=Gtk.Align.CENTER, halign=Gtk.Align.CENTER,
+            margin_top=40, margin_bottom=40, margin_start=40, margin_end=40,
+        )
+        spinner = Gtk.Spinner()
+        spinner.start()
+        spinner.set_size_request(48, 48)
+        vbox.append(spinner)
+
+        status_label = Gtk.Label(label=_("Baixando {}...").format(asset['name']))
+        status_label.set_wrap(True)
+        status_label.set_max_width_chars(45)
+        vbox.append(status_label)
+
+        progress_win.set_content(vbox)
+        progress_win.present()
+
+        # ── Background download + install ──
+        tmp_path = os.path.join(tempfile.gettempdir(), asset['name'])
+
+        def worker():
+            try:
+                import urllib.request
+                urllib.request.urlretrieve(asset['url'], tmp_path)
+
+                GLib.idle_add(
+                    status_label.set_text,
+                    _("Instalando... (autorize com sua senha)")
+                )
+
+                full_cmd = f"pkexec {install_cmd} '{tmp_path}'"
+                result = subprocess.run(
+                    ['bash', '-c', full_cmd], timeout=300,
+                )
+                success = result.returncode == 0
+                GLib.idle_add(
+                    self._on_package_update_finished,
+                    progress_win, success,
+                    update_info['latest_version'], tmp_path, None,
+                )
+            except Exception as exc:
+                GLib.idle_add(
+                    self._on_package_update_finished,
+                    progress_win, False,
+                    update_info['latest_version'], tmp_path, str(exc),
+                )
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _on_package_update_finished(self, progress_win, success, version, tmp_path, error):
+        """Handle the result of a deb/rpm update attempt."""
+        progress_win.destroy()
+
+        # Clean up temp file
+        try:
+            if os.path.exists(tmp_path):
+                os.remove(tmp_path)
+        except OSError:
+            pass
+
+        if success:
+            self.config.set('skipped_version', '')
+            self.config.save()
+
+            dialog = Adw.MessageDialog.new(
+                self,
+                _("Atualização Concluída!"),
+                _("TAC Writer foi atualizado para a versão {}.\n"
+                  "Reinicie o aplicativo para aplicar as mudanças.").format(version),
+            )
+            dialog.add_response("later", _("Depois"))
+            dialog.add_response("quit", _("Fechar Aplicativo"))
+            dialog.set_response_appearance("quit", Adw.ResponseAppearance.SUGGESTED)
+            dialog.set_default_response("quit")
+            dialog.set_close_response("later")
+
+            def on_resp(dlg, resp):
+                dlg.destroy()
+                if resp == "quit":
+                    self.get_application().quit()
+
+            dialog.connect('response', on_resp)
+            dialog.present()
+        else:
+            msg = _("A instalação foi cancelada ou falhou.")
+            if error:
+                msg += f"\n{error}"
+            self._show_toast(msg, Adw.ToastPriority.HIGH)
+
+        return False
+
+    # ── Unknown install method ─────────────────────────────────
+
+    def _perform_update_unknown(self):
+        """Fallback: open the GitHub releases page."""
+        url = "https://github.com/narayanls/tac-writer/releases/latest"
+        try:
+            launcher = Gtk.UriLauncher.new(url)
+            launcher.launch(self, None, lambda _l, _r: None)
+        except Exception:
+            try:
+                import webbrowser
+                webbrowser.open(url)
+            except Exception:
+                pass
+        self._show_toast(
+            _("Página de downloads aberta no navegador."),
+        )

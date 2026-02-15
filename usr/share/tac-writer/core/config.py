@@ -13,7 +13,7 @@ class Config:
     """Application configuration manager"""
 
     # Application version and metadata
-    APP_VERSION = "1.31.2"
+    APP_VERSION = "1.32.0"
     APP_NAME = "TAC"
     APP_FULL_NAME = "TAC - Continuous Argumentation Technique"
     APP_DESCRIPTION = "Academic Writing Assistant"
@@ -100,6 +100,12 @@ class Config:
             'show_welcome_dialog': True,
             'show_first_run_tutorial': True,
             'show_post_creation_tip': True,
+
+            # Update checking
+            'check_for_updates': True,
+            'update_check_interval_hours': 24,
+            'last_update_check': '',
+            'skipped_version': '',
 
             # Theme and appearance
             'use_dark_theme': False,

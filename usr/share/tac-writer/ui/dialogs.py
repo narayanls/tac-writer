@@ -746,6 +746,19 @@ class PreferencesDialog(Adw.PreferencesWindow):
         reset_color_row.add_suffix(reset_btn)
         self.colors_group.add(reset_color_row)
 
+        # Updates group
+        updates_group = Adw.PreferencesGroup()
+        updates_group.set_title(_("Atualizações"))
+        general_page.add(updates_group)
+
+        self.check_updates_row = Adw.SwitchRow()
+        self.check_updates_row.set_title(_("Verificar Atualizações Automaticamente"))
+        self.check_updates_row.set_subtitle(
+            _("Consultar o GitHub ao iniciar para verificar se há novas versões")
+        )
+        self.check_updates_row.connect('notify::active', self._on_check_updates_changed)
+        updates_group.add(self.check_updates_row)
+
         # Editor page
         editor_page = Adw.PreferencesPage()
         editor_page.set_title(_("Editor"))
@@ -911,6 +924,9 @@ class PreferencesDialog(Adw.PreferencesWindow):
             self.color_scheme_row.set_active(self.config.get_color_scheme_enabled())
             self._update_color_controls_sensitive(self.config.get_color_scheme_enabled())
             
+            # Updates
+            self.check_updates_row.set_active(self.config.get('check_for_updates', True))
+
         except Exception as e:
             print(_("Erro ao carregar preferências: {}").format(e))
 
@@ -1117,6 +1133,13 @@ class PreferencesDialog(Adw.PreferencesWindow):
         b = max(0, min(255, int(rgba.blue * 255)))
         return f'#{r:02x}{g:02x}{b:02x}'
 
+    def _on_check_updates_changed(self, switch, pspec):
+        """Handle update checking toggle"""
+        try:
+            self.config.set('check_for_updates', switch.get_active())
+            self.config.save()
+        except Exception as e:
+            print(_("Erro ao alterar verificação de atualizações: {}").format(e))
 
 class WelcomeDialog(Adw.Window):
     """Welcome dialog explaining TAC Writer and CAT technique"""
