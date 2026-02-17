@@ -1419,7 +1419,7 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Message
         message_label = Gtk.Label()
-        message_label.set_text(_("Click here to start writing!\n\nAdd paragraphs to build your text."))
+        message_label.set_text(_("Clique aqui para começar a escrever!\n\nAdicione parágrafos para construir seu texto."))
         message_label.set_wrap(True)
         message_label.set_max_width_chars(30)
         message_label.set_justify(Gtk.Justification.CENTER)

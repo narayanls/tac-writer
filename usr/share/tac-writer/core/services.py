@@ -392,7 +392,7 @@ class ProjectManager:
             print(_("Aviso: Limpeza de backups antigos falhou: {}").format(e))
             
     def _get_documents_directory(self) -> Path:
-        """Get user's Documents directory - cross-platform"""
+        """Get user's Documents directory - cross-platform, priorizando português"""
         home = Path.home()
 
         # ── Windows ──
@@ -415,19 +415,27 @@ class ProjectManager:
             except Exception:
                 pass
 
-            # Method 2: USERPROFILE environment variable
+            # Method 2: USERPROFILE - prioriza "Documentos" (pt-BR)
             userprofile = os.environ.get('USERPROFILE', '')
             if userprofile:
-                docs = Path(userprofile) / 'Documents'
-                if docs.exists():
-                    return docs
+                # Tenta português primeiro
+                docs_pt = Path(userprofile) / 'Documentos'
+                if docs_pt.exists():
+                    return docs_pt
+                # Depois inglês
+                docs_en = Path(userprofile) / 'Documents'
+                if docs_en.exists():
+                    return docs_en
 
             # Method 3: OneDrive Documents
             onedrive = os.environ.get('OneDrive', '')
             if onedrive:
-                docs = Path(onedrive) / 'Documents'
-                if docs.exists():
-                    return docs
+                docs_pt = Path(onedrive) / 'Documentos'
+                if docs_pt.exists():
+                    return docs_pt
+                docs_en = Path(onedrive) / 'Documents'
+                if docs_en.exists():
+                    return docs_en
 
             # Fallback to home
             return home
@@ -445,9 +453,9 @@ class ProjectManager:
         except (subprocess.TimeoutExpired, subprocess.SubprocessError, FileNotFoundError):
             pass
         
-        # Try common localized directory names
+        # Try common localized directory names — português primeiro
         possible_names = [
-            'Documents', 'Documentos', 'Dokumente', 'Documenti',
+            'Documentos', 'Documents', 'Dokumente', 'Documenti',
             'Документы', 'Документи', 'Dokumenty', 'Dokumenter',
             'Έγγραφα', 'Dokumendid', 'Asiakirjat', 'מסמכים',
             'Dokumenti', 'Dokumentumok', 'Skjöl', 'ドキュメント',
@@ -990,6 +998,9 @@ class ExportService:
         self.odt_available = ODT_AVAILABLE
         self.pdf_available = PDF_AVAILABLE
         self.pylatex_available = PYLATEX_AVAILABLE
+
+        # Configure font acoording to platform
+        self._setup_fonts()
         
         if not self.odt_available:
             print(_("Aviso: Exportação ODT indisponível (faltando dependências xml)"))
@@ -997,6 +1008,92 @@ class ExportService:
             print(_("Aviso: Exportação PDF indisponível (faltando reportlab)"))
         if not self.pylatex_available:
             print(_("Aviso: Exportação LaTeX indisponível (faltando biblioteca pylatex)"))
+
+    def _setup_fonts(self):
+        """Configure fonts based on platform — Liberation for Linux, MS fonts for Windows"""
+        if IS_WINDOWS:
+            # ODT font names
+            self.font_serif = "Times New Roman"
+            self.font_sans = "Arial"
+            self.font_mono = "Courier New"
+            # PDF (ReportLab built-in PostScript fonts)
+            self.pdf_font_roman = "Times-Roman"
+            self.pdf_font_bold = "Times-Bold"
+            self.pdf_font_italic = "Times-Italic"
+        else:
+            # ODT font names
+            self.font_serif = "Liberation Serif"
+            self.font_sans = "Liberation Sans"
+            self.font_mono = "Liberation Mono"
+            # PDF — tentar registrar Liberation, fallback para built-in
+            self._register_liberation_fonts()
+
+    def _register_liberation_fonts(self):
+        """Register Liberation fonts for PDF export on Linux"""
+        if not self.pdf_available:
+            self.pdf_font_roman = "Times-Roman"
+            self.pdf_font_bold = "Times-Bold"
+            self.pdf_font_italic = "Times-Italic"
+            return
+
+        try:
+            from reportlab.pdfbase import pdfmetrics
+            from reportlab.pdfbase.ttfonts import TTFont
+
+            # Diretórios comuns de fontes no Linux
+            font_dirs = [
+                Path('/usr/share/fonts/truetype/liberation'),
+                Path('/usr/share/fonts/truetype/liberation2'),
+                Path('/usr/share/fonts/liberation-serif'),
+                Path('/usr/share/fonts/liberation-sans'),
+                Path('/usr/share/fonts/liberation-mono'),
+                Path('/usr/share/fonts/liberation'),
+                Path('/usr/share/fonts/TTF'),
+                Path.home() / '.local' / 'share' / 'fonts',
+            ]
+
+            fonts = {
+                'LiberationSerif': 'LiberationSerif-Regular.ttf',
+                'LiberationSerif-Bold': 'LiberationSerif-Bold.ttf',
+                'LiberationSerif-Italic': 'LiberationSerif-Italic.ttf',
+                'LiberationSerif-BoldItalic': 'LiberationSerif-BoldItalic.ttf',
+            }
+
+            registered = {}
+            for font_name, font_file in fonts.items():
+                for font_dir in font_dirs:
+                    font_path = font_dir / font_file
+                    if font_path.exists():
+                        pdfmetrics.registerFont(TTFont(font_name, str(font_path)))
+                        registered[font_name] = True
+                        break
+
+            if 'LiberationSerif' in registered:
+                self.pdf_font_roman = 'LiberationSerif'
+                self.pdf_font_bold = 'LiberationSerif-Bold' if 'LiberationSerif-Bold' in registered else 'LiberationSerif'
+                self.pdf_font_italic = 'LiberationSerif-Italic' if 'LiberationSerif-Italic' in registered else 'LiberationSerif'
+
+                # Registrar família para suporte a tags <b>/<i> no ReportLab
+                from reportlab.pdfbase.pdfmetrics import registerFontFamily
+                registerFontFamily(
+                    'LiberationSerif',
+                    normal='LiberationSerif',
+                    bold=self.pdf_font_bold,
+                    italic=self.pdf_font_italic,
+                    boldItalic='LiberationSerif-BoldItalic' if 'LiberationSerif-BoldItalic' in registered else self.pdf_font_bold
+                )
+                print(_("Fontes Liberation registradas para exportação PDF"))
+            else:
+                print(_("Fontes Liberation não encontradas, usando fontes padrão PDF"))
+                self.pdf_font_roman = "Times-Roman"
+                self.pdf_font_bold = "Times-Bold"
+                self.pdf_font_italic = "Times-Italic"
+
+        except Exception as e:
+            print(_("Aviso: Erro ao registrar fontes Liberation: {}").format(e))
+            self.pdf_font_roman = "Times-Roman"
+            self.pdf_font_bold = "Times-Bold"
+            self.pdf_font_italic = "Times-Italic"
     
     def _collect_footnotes(self, project: Project) -> tuple:
         """
@@ -1312,6 +1409,7 @@ class ExportService:
                 
                 self._create_manifest(temp_dir / "META-INF" / "manifest.xml", image_files)
                 self._create_styles(temp_dir / "styles.xml")
+                self._create_settings(temp_dir / "settings.xml")
                 
                 content_xml = self._generate_odt_content(project)
                 with open(temp_dir / "content.xml", 'w', encoding='utf-8') as f:
@@ -1588,25 +1686,47 @@ class ExportService:
             style = "Introduction" if paragraph_starts_with_introduction else "Normal"
             grouped_odt.append({'type': 'content', 'content': combined, 'style': style})
         
-        content_xml = '''<?xml version="1.0" encoding="UTF-8"?>
-<office:document-content xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0" 
-                        xmlns:style="urn:oasis:names:tc:opendocument:xmlns:style:1.0" 
-                        xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0" 
-                        xmlns:draw="urn:oasis:names:tc:opendocument:xmlns:drawing:1.0"
-                        xmlns:xlink="http://www.w3.org/1999/xlink"
-                        xmlns:svg="urn:oasis:names:tc:opendocument:xmlns:svg-compatible:1.0"
-                        xmlns:fo="urn:oasis:names:tc:opendocument:xmlns:xsl-fo-compatible:1.0">
+        serif = self.font_serif
+        sans = self.font_sans
+        mono = self.font_mono
+
+        content_xml = f'''<?xml version="1.0" encoding="UTF-8"?>
+<office:document-content
+    xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0"
+    xmlns:style="urn:oasis:names:tc:opendocument:xmlns:style:1.0"
+    xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0"
+    xmlns:draw="urn:oasis:names:tc:opendocument:xmlns:drawing:1.0"
+    xmlns:xlink="http://www.w3.org/1999/xlink"
+    xmlns:svg="urn:oasis:names:tc:opendocument:xmlns:svg-compatible:1.0"
+    xmlns:fo="urn:oasis:names:tc:opendocument:xmlns:xsl-fo-compatible:1.0">
+
+<office:font-face-decls>
+    <style:font-face style:name="{serif}"
+        svg:font-family="&apos;{serif}&apos;"
+        style:font-family-generic="roman" style:font-pitch="variable"/>
+    <style:font-face style:name="{sans}"
+        svg:font-family="&apos;{sans}&apos;"
+        style:font-family-generic="swiss" style:font-pitch="variable"/>
+    <style:font-face style:name="{mono}"
+        svg:font-family="&apos;{mono}&apos;"
+        style:font-family-generic="modern" style:font-pitch="fixed"/>
+</office:font-face-decls>
+
 <office:automatic-styles>
     <style:style style:name="T_Bold" style:family="text">
-      <style:text-properties fo:font-weight="bold" style:font-weight-asian="bold" style:font-weight-complex="bold"/>
+      <style:text-properties fo:font-weight="bold"
+          style:font-weight-asian="bold" style:font-weight-complex="bold"/>
     </style:style>
     <style:style style:name="T_Italic" style:family="text">
-      <style:text-properties fo:font-style="italic" style:font-style-asian="italic" style:font-style-complex="italic"/>
+      <style:text-properties fo:font-style="italic"
+          style:font-style-asian="italic" style:font-style-complex="italic"/>
     </style:style>
     <style:style style:name="T_Underline" style:family="text">
-      <style:text-properties style:text-underline-style="solid" style:text-underline-width="auto" style:text-underline-color="font-color"/>
+      <style:text-properties style:text-underline-style="solid"
+          style:text-underline-width="auto" style:text-underline-color="font-color"/>
     </style:style>
 </office:automatic-styles>
+
 <office:body>
 <office:text>'''
 
@@ -1667,12 +1787,14 @@ class ExportService:
     def _create_manifest(self, file_path: Path, image_files: list = None):
         """Create manifest.xml for ODT"""
         manifest_xml = '''<?xml version="1.0" encoding="UTF-8"?>
-<manifest:manifest xmlns:manifest="urn:oasis:names:tc:opendocument:xmlns:manifest:1.0">
-  <manifest:file-entry manifest:full-path="/" manifest:media-type="application/vnd.oasis.opendocument.text"/>
+<manifest:manifest xmlns:manifest="urn:oasis:names:tc:opendocument:xmlns:manifest:1.0"
+    manifest:version="1.3">
+  <manifest:file-entry manifest:full-path="/" manifest:version="1.3" manifest:media-type="application/vnd.oasis.opendocument.text"/>
   <manifest:file-entry manifest:full-path="content.xml" manifest:media-type="text/xml"/>
   <manifest:file-entry manifest:full-path="styles.xml" manifest:media-type="text/xml"/>
-  <manifest:file-entry manifest:full-path="meta.xml" manifest:media-type="text/xml"/>'''
-        
+  <manifest:file-entry manifest:full-path="meta.xml" manifest:media-type="text/xml"/>
+  <manifest:file-entry manifest:full-path="settings.xml" manifest:media-type="text/xml"/>'''
+
         if image_files:
             for img_file in image_files:
                 ext = Path(img_file).suffix.lower()
@@ -1683,95 +1805,262 @@ class ExportService:
                     '.webp': 'image/webp'
                 }
                 mime_type = mime_types.get(ext, 'image/png')
-                
                 manifest_xml += f'\n  <manifest:file-entry manifest:full-path="Pictures/{img_file}" manifest:media-type="{mime_type}"/>'
-        
+
         manifest_xml += '\n</manifest:manifest>'
-        
+
         with open(file_path, 'w', encoding='utf-8') as f:
             f.write(manifest_xml)
 
     def _create_styles(self, file_path: Path):
-        """Create styles.xml for ODT with ABNT standards and correct TOC levels"""
-        styles_xml = '''<?xml version="1.0" encoding="UTF-8"?>
-<office:document-styles xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0" 
-                       xmlns:style="urn:oasis:names:tc:opendocument:xmlns:style:1.0" 
-                       xmlns:fo="urn:oasis:names:tc:opendocument:xmlns:xsl-fo-compatible:1.0"
-                       xmlns:svg="urn:oasis:names:tc:opendocument:xmlns:svg-compatible:1.0">
+        """Create styles.xml for ODT — MS Office compatible"""
+        serif = self.font_serif
+        sans = self.font_sans
+        mono = self.font_mono
+
+        styles_xml = f'''<?xml version="1.0" encoding="UTF-8"?>
+<office:document-styles
+    xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0"
+    xmlns:style="urn:oasis:names:tc:opendocument:xmlns:style:1.0"
+    xmlns:fo="urn:oasis:names:tc:opendocument:xmlns:xsl-fo-compatible:1.0"
+    xmlns:svg="urn:oasis:names:tc:opendocument:xmlns:svg-compatible:1.0"
+    xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0">
+
 <office:font-face-decls>
-    <style:font-face style:name="Liberation Sans" svg:font-family="&apos;Liberation Sans&apos;" style:font-family-generic="swiss" style:font-pitch="variable"/>
-    <style:font-face style:name="Liberation Serif" svg:font-family="&apos;Liberation Serif&apos;" style:font-family-generic="roman" style:font-pitch="variable"/>
-    <style:font-face style:name="Courier New" svg:font-family="&apos;Courier New&apos;" style:font-family-generic="modern" style:font-pitch="fixed"/>
+    <style:font-face style:name="{serif}"
+        svg:font-family="&apos;{serif}&apos;"
+        style:font-family-generic="roman" style:font-pitch="variable"/>
+    <style:font-face style:name="{sans}"
+        svg:font-family="&apos;{sans}&apos;"
+        style:font-family-generic="swiss" style:font-pitch="variable"/>
+    <style:font-face style:name="{mono}"
+        svg:font-family="&apos;{mono}&apos;"
+        style:font-family-generic="modern" style:font-pitch="fixed"/>
 </office:font-face-decls>
 
 <office:styles>
+
+  <!-- Default paragraph style -->
+  <style:default-style style:family="paragraph">
+    <style:paragraph-properties
+        fo:text-align="justify"
+        fo:margin-top="0cm" fo:margin-bottom="0cm"
+        fo:line-height="150%"
+        fo:orphans="2" fo:widows="2"
+        fo:hyphenation-ladder-count="no-limit"
+        style:text-autospace="ideograph-alpha"
+        style:punctuation-wrap="hanging"
+        style:writing-mode="page"/>
+    <style:text-properties
+        style:font-name="{serif}"
+        fo:font-size="12pt"
+        fo:language="pt" fo:country="BR"
+        style:font-name-asian="{serif}"
+        style:font-size-asian="12pt"
+        style:font-name-complex="{serif}"
+        style:font-size-complex="12pt"/>
+  </style:default-style>
+
+  <!-- Default text (character) style -->
+  <style:default-style style:family="text">
+    <style:text-properties
+        style:font-name="{serif}"
+        fo:font-size="12pt"
+        style:font-name-asian="{serif}"
+        style:font-size-asian="12pt"
+        style:font-name-complex="{serif}"
+        style:font-size-complex="12pt"/>
+  </style:default-style>
+
+  <!-- Title -->
   <style:style style:name="Title" style:family="paragraph" style:class="chapter">
-    <style:text-properties style:font-name="Liberation Sans" fo:font-size="18pt" fo:font-weight="bold"/>
-    <style:paragraph-properties fo:text-align="center" fo:margin-bottom="0.5cm"/>
+    <style:paragraph-properties
+        fo:text-align="center"
+        fo:margin-top="0cm" fo:margin-bottom="0.5cm"
+        fo:line-height="150%"/>
+    <style:text-properties
+        style:font-name="{sans}" fo:font-size="18pt" fo:font-weight="bold"
+        style:font-name-asian="{sans}" style:font-size-asian="18pt" style:font-weight-asian="bold"
+        style:font-name-complex="{sans}" style:font-size-complex="18pt" style:font-weight-complex="bold"/>
   </style:style>
-  
-  <style:style style:name="Heading_20_1" style:display-name="Heading 1" style:family="paragraph" style:default-outline-level="1" style:class="text">
-    <style:text-properties style:font-name="Liberation Sans" fo:font-size="16pt" fo:font-weight="bold"/>
-    <style:paragraph-properties fo:margin-top="0.5cm" fo:margin-bottom="0.3cm" fo:keep-with-next="always"/>
+
+  <!-- Heading 1 -->
+  <style:style style:name="Heading_20_1" style:display-name="Heading 1"
+      style:family="paragraph" style:default-outline-level="1" style:class="text">
+    <style:paragraph-properties
+        fo:text-align="start"
+        fo:margin-top="0.5cm" fo:margin-bottom="0.3cm"
+        fo:line-height="150%"
+        fo:keep-with-next="always"/>
+    <style:text-properties
+        style:font-name="{sans}" fo:font-size="16pt" fo:font-weight="bold"
+        style:font-name-asian="{sans}" style:font-size-asian="16pt" style:font-weight-asian="bold"
+        style:font-name-complex="{sans}" style:font-size-complex="16pt" style:font-weight-complex="bold"/>
   </style:style>
-  
-  <style:style style:name="Heading_20_2" style:display-name="Heading 2" style:family="paragraph" style:default-outline-level="2" style:class="text">
-    <style:text-properties style:font-name="Liberation Sans" fo:font-size="14pt" fo:font-weight="bold"/>
-    <style:paragraph-properties fo:margin-top="0.4cm" fo:margin-bottom="0.2cm" fo:keep-with-next="always"/>
+
+  <!-- Heading 2 -->
+  <style:style style:name="Heading_20_2" style:display-name="Heading 2"
+      style:family="paragraph" style:default-outline-level="2" style:class="text">
+    <style:paragraph-properties
+        fo:text-align="start"
+        fo:margin-top="0.4cm" fo:margin-bottom="0.2cm"
+        fo:line-height="150%"
+        fo:keep-with-next="always"/>
+    <style:text-properties
+        style:font-name="{sans}" fo:font-size="14pt" fo:font-weight="bold"
+        style:font-name-asian="{sans}" style:font-size-asian="14pt" style:font-weight-asian="bold"
+        style:font-name-complex="{sans}" style:font-size-complex="14pt" style:font-weight-complex="bold"/>
   </style:style>
-  
+
+  <!-- Introduction (with first-line indent) -->
   <style:style style:name="Introduction" style:family="paragraph">
-    <style:text-properties style:font-name="Liberation Serif" fo:font-size="12pt"/>
-    <style:paragraph-properties fo:text-align="justify" fo:text-indent="1.5cm" fo:margin-bottom="0.0cm" fo:line-height="150%"/>
+    <style:paragraph-properties
+        fo:text-align="justify"
+        fo:text-indent="1.5cm"
+        fo:margin-top="0cm" fo:margin-bottom="0cm"
+        fo:line-height="150%"/>
+    <style:text-properties
+        style:font-name="{serif}" fo:font-size="12pt"
+        style:font-name-asian="{serif}" style:font-size-asian="12pt"
+        style:font-name-complex="{serif}" style:font-size-complex="12pt"/>
   </style:style>
-  
+
+  <!-- Normal body text -->
   <style:style style:name="Normal" style:family="paragraph">
-    <style:text-properties style:font-name="Liberation Serif" fo:font-size="12pt"/>
-    <style:paragraph-properties fo:text-align="justify" fo:margin-bottom="0.0cm" fo:line-height="150%"/>
+    <style:paragraph-properties
+        fo:text-align="justify"
+        fo:margin-top="0cm" fo:margin-bottom="0cm"
+        fo:line-height="150%"/>
+    <style:text-properties
+        style:font-name="{serif}" fo:font-size="12pt"
+        style:font-name-asian="{serif}" style:font-size-asian="12pt"
+        style:font-name-complex="{serif}" style:font-size-complex="12pt"/>
   </style:style>
-  
+
+  <!-- Quote (ABNT: 10pt, 4cm left, single-spaced) -->
   <style:style style:name="Quote" style:family="paragraph">
-    <style:text-properties style:font-name="Liberation Serif" fo:font-size="10pt"/>
-    <style:paragraph-properties fo:text-align="justify" fo:margin-left="4cm" fo:margin-bottom="0.3cm" fo:line-height="100%"/>
+    <style:paragraph-properties
+        fo:text-align="justify"
+        fo:margin-left="4cm"
+        fo:margin-top="0.3cm" fo:margin-bottom="0.3cm"
+        fo:line-height="100%"/>
+    <style:text-properties
+        style:font-name="{serif}" fo:font-size="10pt"
+        style:font-name-asian="{serif}" style:font-size-asian="10pt"
+        style:font-name-complex="{serif}" style:font-size-complex="10pt"/>
   </style:style>
-  
+
+  <!-- Epigraph -->
   <style:style style:name="Epigraph" style:family="paragraph">
-    <style:text-properties style:font-name="Liberation Serif" fo:font-size="12pt" fo:font-style="italic"/>
-    <style:paragraph-properties fo:text-align="right" fo:margin-left="7.5cm" fo:margin-bottom="0.3cm" fo:line-height="150%"/>
+    <style:paragraph-properties
+        fo:text-align="end"
+        fo:margin-left="7.5cm"
+        fo:margin-top="0cm" fo:margin-bottom="0.3cm"
+        fo:line-height="150%"/>
+    <style:text-properties
+        style:font-name="{serif}" fo:font-size="12pt" fo:font-style="italic"
+        style:font-name-asian="{serif}" style:font-size-asian="12pt" style:font-style-asian="italic"
+        style:font-name-complex="{serif}" style:font-size-complex="12pt" style:font-style-complex="italic"/>
   </style:style>
 
+  <!-- Footnote -->
   <style:style style:name="Footnote" style:family="paragraph">
-    <style:text-properties style:font-name="Liberation Serif" fo:font-size="10pt"/>
-    <style:paragraph-properties fo:text-align="justify" fo:margin-bottom="0.2cm" fo:line-height="100%"/>
-  </style:style>
-  
-  <style:style style:name="ImageCaption" style:family="paragraph">
-    <style:text-properties style:font-name="Liberation Serif" fo:font-size="10pt" fo:font-style="italic"/>
-    <style:paragraph-properties fo:text-align="center" fo:margin-top="0.2cm" fo:margin-bottom="0.5cm"/>
-  </style:style>
-  
-  <style:style style:name="GraphicsLeft" style:family="graphic">
-    <style:graphic-properties style:run-through="foreground" style:wrap="none" style:horizontal-pos="left" style:horizontal-rel="paragraph" style:vertical-pos="top" style:vertical-rel="paragraph"/>
-  </style:style>
-  
-  <style:style style:name="GraphicsCenter" style:family="graphic">
-    <style:graphic-properties style:run-through="foreground" style:wrap="none" style:horizontal-pos="center" style:horizontal-rel="paragraph" style:vertical-pos="top" style:vertical-rel="paragraph"/>
-  </style:style>
-  
-  <style:style style:name="GraphicsRight" style:family="graphic">
-    <style:graphic-properties style:run-through="foreground" style:wrap="none" style:horizontal-pos="right" style:horizontal-rel="paragraph" style:vertical-pos="top" style:vertical-rel="paragraph"/>
+    <style:paragraph-properties
+        fo:text-align="justify"
+        fo:margin-top="0cm" fo:margin-bottom="0.2cm"
+        fo:line-height="100%"/>
+    <style:text-properties
+        style:font-name="{serif}" fo:font-size="10pt"
+        style:font-name-asian="{serif}" style:font-size-asian="10pt"
+        style:font-name-complex="{serif}" style:font-size-complex="10pt"/>
   </style:style>
 
+  <!-- Image Caption -->
+  <style:style style:name="ImageCaption" style:family="paragraph">
+    <style:paragraph-properties
+        fo:text-align="center"
+        fo:margin-top="0.2cm" fo:margin-bottom="0.5cm"/>
+    <style:text-properties
+        style:font-name="{serif}" fo:font-size="10pt" fo:font-style="italic"
+        style:font-name-asian="{serif}" style:font-size-asian="10pt"
+        style:font-name-complex="{serif}" style:font-size-complex="10pt"/>
+  </style:style>
+
+  <!-- Code Block -->
   <style:style style:name="CodeBlock" style:family="paragraph">
-    <style:text-properties style:font-name="Courier New" fo:font-size="10pt" fo:language="zxx" fo:country="none"/>
-    <style:paragraph-properties fo:background-color="#f5f5f5" fo:border="0.06pt solid #cccccc" fo:padding="0.2cm" fo:margin-bottom="0.3cm"/>
+    <style:paragraph-properties
+        fo:text-align="start"
+        fo:background-color="#f5f5f5"
+        fo:border="0.06pt solid #cccccc"
+        fo:padding="0.2cm"
+        fo:margin-top="0.2cm" fo:margin-bottom="0.3cm"
+        fo:line-height="100%"/>
+    <style:text-properties
+        style:font-name="{mono}" fo:font-size="10pt"
+        style:font-name-asian="{mono}" style:font-size-asian="10pt"
+        style:font-name-complex="{mono}" style:font-size-complex="10pt"/>
+  </style:style>
+
+  <!-- Graphics styles -->
+  <style:style style:name="GraphicsLeft" style:family="graphic">
+    <style:graphic-properties style:run-through="foreground" style:wrap="none"
+        style:horizontal-pos="left" style:horizontal-rel="paragraph"
+        style:vertical-pos="top" style:vertical-rel="paragraph"/>
+  </style:style>
+
+  <style:style style:name="GraphicsCenter" style:family="graphic">
+    <style:graphic-properties style:run-through="foreground" style:wrap="none"
+        style:horizontal-pos="center" style:horizontal-rel="paragraph"
+        style:vertical-pos="top" style:vertical-rel="paragraph"/>
+  </style:style>
+
+  <style:style style:name="GraphicsRight" style:family="graphic">
+    <style:graphic-properties style:run-through="foreground" style:wrap="none"
+        style:horizontal-pos="right" style:horizontal-rel="paragraph"
+        style:vertical-pos="top" style:vertical-rel="paragraph"/>
   </style:style>
 
 </office:styles>
+
+<!-- Page layout -->
+<office:automatic-styles>
+  <style:page-layout style:name="pm1">
+    <style:page-layout-properties
+        fo:page-width="21cm" fo:page-height="29.7cm"
+        fo:margin-top="3cm" fo:margin-bottom="2cm"
+        fo:margin-left="3cm" fo:margin-right="2cm"
+        style:print-orientation="portrait"/>
+  </style:page-layout>
+</office:automatic-styles>
+
+<office:master-styles>
+  <style:master-page style:name="Standard" style:page-layout-name="pm1"/>
+</office:master-styles>
+
 </office:document-styles>'''
-        
+
         with open(file_path, 'w', encoding='utf-8') as f:
             f.write(styles_xml)
+
+    def _create_settings(self, file_path: Path):
+        """Create settings.xml — required by MS Office for proper rendering"""
+        settings_xml = '''<?xml version="1.0" encoding="UTF-8"?>
+<office:document-settings
+    xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0"
+    xmlns:config="urn:oasis:names:tc:opendocument:xmlns:config:1.0"
+    office:version="1.3">
+<office:settings>
+  <config:config-item-set config:name="ooo:configuration-settings">
+    <config:config-item config:name="UseFormerLineSpacing" config:type="boolean">false</config:config-item>
+    <config:config-item config:name="TabsRelativeToIndent" config:type="boolean">true</config:config-item>
+    <config:config-item config:name="AddParaTableSpacingAtStart" config:type="boolean">true</config:config-item>
+    <config:config-item config:name="UseFormerObjectPositioning" config:type="boolean">false</config:config-item>
+  </config:config-item-set>
+</office:settings>
+</office:document-settings>'''
+
+        with open(file_path, 'w', encoding='utf-8') as f:
+            f.write(settings_xml)
 
     def _create_meta(self, file_path: Path, project: Project):
         """Create meta.xml for ODT"""
@@ -1808,6 +2097,11 @@ class ExportService:
             )
             
             styles = getSampleStyleSheet()
+
+            # Fontes configuradas por plataforma
+            font_roman = self.pdf_font_roman
+            font_bold = self.pdf_font_bold
+            font_italic = self.pdf_font_italic
             
             title_style = ParagraphStyle(
                 'CustomTitle',
@@ -1815,7 +2109,7 @@ class ExportService:
                 fontSize=18,
                 spaceAfter=30,
                 alignment=TA_CENTER,
-                fontName='Times-Bold'
+                fontName=font_bold
             )
 
             title1_style = ParagraphStyle(
@@ -1825,7 +2119,7 @@ class ExportService:
                 spaceBefore=24,
                 spaceAfter=12,
                 leftIndent=0,
-                fontName='Times-Bold'
+                fontName=font_bold
             )
 
             title2_style = ParagraphStyle(
@@ -1835,7 +2129,7 @@ class ExportService:
                 spaceBefore=18,
                 spaceAfter=9,
                 leftIndent=0,
-                fontName='Times-Bold'
+                fontName=font_bold
             )
 
             introduction_style = ParagraphStyle(
@@ -1847,18 +2141,18 @@ class ExportService:
                 spaceBefore=12,
                 spaceAfter=12,
                 alignment=TA_JUSTIFY,
-                fontName='Times-Roman'
+                fontName=font_roman
             )
 
             normal_style = ParagraphStyle(
-                'Normal',
+                'CustomNormal',
                 parent=styles['Normal'],
                 fontSize=12,
                 leading=18,
                 spaceBefore=12,
                 spaceAfter=12,
                 alignment=TA_JUSTIFY,
-                fontName='Times-Roman'
+                fontName=font_roman
             )
 
             quote_style = ParagraphStyle(
@@ -1869,7 +2163,7 @@ class ExportService:
                 leftIndent=4*cm,
                 spaceBefore=12,
                 spaceAfter=12,
-                fontName='Times-Roman',
+                fontName=font_roman,
                 alignment=TA_JUSTIFY
             )
             
@@ -1881,7 +2175,7 @@ class ExportService:
                 leftIndent=7.5*cm,
                 spaceBefore=12,
                 spaceAfter=12,
-                fontName='Times-Italic',
+                fontName=font_italic,
                 alignment=TA_RIGHT
             )
             
@@ -1892,7 +2186,7 @@ class ExportService:
                 leading=11,
                 spaceBefore=6,
                 spaceAfter=6,
-                fontName='Times-Roman',
+                fontName=font_roman,
                 alignment=TA_JUSTIFY
             )
             
@@ -2073,7 +2367,7 @@ class ExportService:
                                     parent=normal_style,
                                     fontSize=10,
                                     alignment=caption_alignment,
-                                    fontName='Times-Italic'
+                                    fontName=font_italic
                                 )
                                 story.append(RLParagraph(caption, caption_style))
                                 story.append(Spacer(1, 12))
