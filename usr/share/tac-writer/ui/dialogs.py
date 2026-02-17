@@ -1175,7 +1175,7 @@ class WelcomeDialog(Adw.Window):
         # Apply custom CSS to reduce header padding
         try:
             css_provider = Gtk.CssProvider()
-            css_provider.load_from_data(b"""
+            css_provider.load_from_data(""", -1)
             headerbar {
                 min-height: 24px;
                 padding: 2px 6px;

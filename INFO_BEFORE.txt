@@ -1,0 +1,15 @@
+TAC Writer - Editor de texto para escritores
+
+Obrigado por escolher o TAC Writer!
+
+O que será instalado
+- TAC Writer (editor principal)
+- Atalho no Menu Iniciar
+- Atalho na Área de Trabalho (opcional)
+
+Requisitos
+- Windows 10 ou superior (64 bits)
+- 300 MB de espaço em disco
+
+Novidades desta versão
+- Esquema de cores para temas personalizados

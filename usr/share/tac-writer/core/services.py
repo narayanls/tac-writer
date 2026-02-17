@@ -4,6 +4,8 @@ Business logic and data services for the TAC application
 """
 
 import json
+import os
+import platform
 import shutil
 import zipfile
 import sqlite3
@@ -17,6 +19,8 @@ from .config import Config
 from .models import Project, Paragraph, ParagraphType
 from utils.helpers import FileHelper
 from utils.i18n import _
+
+IS_WINDOWS = platform.system() == 'Windows'
 
 # PyLaTeX dependencies
 try:
@@ -388,9 +392,47 @@ class ProjectManager:
             print(_("Aviso: Limpeza de backups antigos falhou: {}").format(e))
             
     def _get_documents_directory(self) -> Path:
-        """Get user's Documents directory in a language-aware way"""
+        """Get user's Documents directory - cross-platform"""
         home = Path.home()
-        
+
+        # ── Windows ──
+        if IS_WINDOWS:
+            # Method 1: Windows Known Folder via ctypes (most reliable)
+            try:
+                import ctypes
+                from ctypes import wintypes
+
+                CSIDL_PERSONAL = 0x0005  # "My Documents"
+                SHGFP_TYPE_CURRENT = 0
+                buf = ctypes.create_unicode_buffer(wintypes.MAX_PATH)
+                ctypes.windll.shell32.SHGetFolderPathW(
+                    None, CSIDL_PERSONAL, None, SHGFP_TYPE_CURRENT, buf
+                )
+                if buf.value:
+                    documents_path = Path(buf.value)
+                    if documents_path.exists():
+                        return documents_path
+            except Exception:
+                pass
+
+            # Method 2: USERPROFILE environment variable
+            userprofile = os.environ.get('USERPROFILE', '')
+            if userprofile:
+                docs = Path(userprofile) / 'Documents'
+                if docs.exists():
+                    return docs
+
+            # Method 3: OneDrive Documents
+            onedrive = os.environ.get('OneDrive', '')
+            if onedrive:
+                docs = Path(onedrive) / 'Documents'
+                if docs.exists():
+                    return docs
+
+            # Fallback to home
+            return home
+
+        # ── Linux / macOS ──
         # Try XDG user dirs first (Linux)
         try:
             import subprocess
@@ -838,7 +880,6 @@ class ProjectManager:
         """Get projects directory for compatibility"""
         return self.config.data_dir / 'projects'
 
-
     def merge_database(self, external_db_path: str) -> dict:
         """
         Mescla um banco de dados externo com o atual.
@@ -855,6 +896,92 @@ class ProjectManager:
         except Exception as e:
             print(f"Erro no merge: {e}")
             raise e
+
+
+    def _run_migration_if_needed(self):
+        """Check for old JSON files and migrate them to SQLite with full transaction support"""
+        with self._migration_lock:
+            old_projects_dir = self.config.data_dir / 'projects'
+            if not old_projects_dir.exists():
+                return
+
+            json_files = list(old_projects_dir.glob("*.json"))
+            if not json_files:
+                return
+
+            print(_("Encontrados {} projetos JSON antigos. Iniciando migração...").format(len(json_files)))
+            
+            backup_file = self._create_migration_backup(json_files)
+            if not backup_file:
+                print(_("Migração abortada: Não foi possível criar backup"))
+                return
+            
+            projects_to_migrate = []
+            invalid_files = []
+            
+            for project_file in json_files:
+                try:
+                    with open(project_file, 'r', encoding='utf-8') as f:
+                        project_data = json.load(f)
+                    
+                    if not self._validate_json_data(project_data):
+                        invalid_files.append(project_file)
+                        continue
+                        
+                    project = Project.from_dict(project_data)
+                    projects_to_migrate.append((project, project_file))
+                    
+                except (json.JSONDecodeError, OSError) as e:
+                    print(_("Erro ao carregar {}: {}").format(project_file.name, e))
+                    invalid_files.append(project_file)
+            
+            if invalid_files:
+                print(_("Aviso: {} arquivos têm erros de validação e serão pulados").format(len(invalid_files)))
+            
+            if not projects_to_migrate:
+                print(_("Sem projetos válidos para migrar"))
+                return
+            
+            migrated_count = 0
+            failed_projects = []
+            
+            try:
+                with self._get_db_connection() as conn:
+                    cursor = conn.cursor()
+                    cursor.execute("BEGIN IMMEDIATE;")
+                    
+                    try:
+                        for project, project_file in projects_to_migrate:
+                            if self._save_project_to_db(cursor, project):
+                                migrated_count += 1
+                            else:
+                                failed_projects.append(project_file)
+                        
+                        if failed_projects:
+                            raise RuntimeError(_("Falha ao migrar {} projetos").format(len(failed_projects)))
+                        
+                        conn.commit()
+                        print(_("Transação de migração efetivada com sucesso"))
+                        
+                        for project, project_file in projects_to_migrate:
+                            try:
+                                migrated_file = project_file.with_suffix('.json.migrated')
+                                project_file.rename(migrated_file)
+                            except OSError as e:
+                                print(_("Aviso: Não foi possível renomear {}: {}").format(project_file.name, e))
+                        
+                    except Exception as e:
+                        conn.rollback()
+                        print(_("Migração falhou, transação revertida: {}").format(e))
+                        return
+                        
+            except sqlite3.Error as e:
+                print(_("Migração falhou com erro de banco de dados: {}").format(e))
+                return
+            
+            print(_("Migração completa. {} projetos migrados com sucesso.").format(migrated_count))
+            self._vacuum_database()
+
 
 class ExportService:
     """Handles document export operations"""
@@ -908,14 +1035,6 @@ class ExportService:
     def _group_paragraphs(self, project: Project, footnote_map: dict) -> list:
         """
         Group paragraphs following TAC methodology.
-        
-        Returns:
-            list: List of grouped paragraph dictionaries with structure:
-                {
-                    'type': 'title1' | 'title2' | 'quote' | 'content',
-                    'content': str,
-                    'indent': bool (for content type only)
-                }
         """
         grouped = []
         current_paragraph_content = []
@@ -926,7 +1045,6 @@ class ExportService:
             content = paragraph.content.strip()
             
             if paragraph.type == ParagraphType.TITLE_1:
-                # Write accumulated content first
                 if current_paragraph_content:
                     combined = " ".join(current_paragraph_content)
                     grouped.append({
@@ -941,7 +1059,6 @@ class ExportService:
                 last_was_quote = False
             
             elif paragraph.type == ParagraphType.TITLE_2:
-                # Write accumulated content first
                 if current_paragraph_content:
                     combined = " ".join(current_paragraph_content)
                     grouped.append({
@@ -956,7 +1073,6 @@ class ExportService:
                 last_was_quote = False
             
             elif paragraph.type == ParagraphType.QUOTE:
-                # Write accumulated content first
                 if current_paragraph_content:
                     combined = " ".join(current_paragraph_content)
                     grouped.append({
@@ -971,7 +1087,6 @@ class ExportService:
                 last_was_quote = True
             
             elif paragraph.type == ParagraphType.EPIGRAPH:
-                # Write accumulated content first
                 if current_paragraph_content:
                     combined = " ".join(current_paragraph_content)
                     grouped.append({
@@ -982,12 +1097,10 @@ class ExportService:
                     current_paragraph_content = []
                     paragraph_starts_with_introduction = False
                 
-                # Add epigraph with its own type for special formatting
                 grouped.append({'type': 'epigraph', 'content': content})
-                last_was_quote = True # Treat it like a quote to start a new paragraph after
+                last_was_quote = True
             
             elif paragraph.type == ParagraphType.IMAGE:
-                # Write accumulated content first
                 if current_paragraph_content:
                     combined = " ".join(current_paragraph_content)
                     grouped.append({
@@ -998,14 +1111,12 @@ class ExportService:
                     current_paragraph_content = []
                     paragraph_starts_with_introduction = False
                 
-                # Add image to grouped list
                 img_metadata = paragraph.get_image_metadata()
                 if img_metadata:
                     grouped.append({'type': 'image', 'metadata': img_metadata})
                 last_was_quote = False
             
             elif paragraph.type == ParagraphType.CODE:
-                # Write accumulated content first
                 if current_paragraph_content:
                     combined = " ".join(current_paragraph_content)
                     grouped.append({
@@ -1020,7 +1131,6 @@ class ExportService:
                 last_was_quote = False
 
             elif paragraph.type in [ParagraphType.INTRODUCTION, ParagraphType.ARGUMENT, ParagraphType.CONCLUSION, ParagraphType.ARGUMENT_RESUMPTION]:
-                # Determine if should start new paragraph
                 should_start_new = (
                     paragraph.type == ParagraphType.INTRODUCTION or
                     paragraph.type == ParagraphType.ARGUMENT_RESUMPTION or
@@ -1038,21 +1148,18 @@ class ExportService:
                     current_paragraph_content = []
                     paragraph_starts_with_introduction = False
                 
-                # Determine paragraph style
                 if not current_paragraph_content:
                     if paragraph.type == ParagraphType.INTRODUCTION or paragraph.type == ParagraphType.ARGUMENT_RESUMPTION:
                         paragraph_starts_with_introduction = True
                     elif last_was_quote:
                         paragraph_starts_with_introduction = False
                 
-                # Add footnote references
                 if paragraph.id in footnote_map:
                     for footnote_num in footnote_map[paragraph.id]:
                         content += f"^{footnote_num}"
                 
                 current_paragraph_content.append(content)
                 
-                # Check if next paragraph starts new group
                 next_is_new = False
                 if i + 1 < len(project.paragraphs):
                     next_p = project.paragraphs[i + 1]
@@ -1074,7 +1181,6 @@ class ExportService:
                 
                 last_was_quote = False
         
-        # Write any remaining content
         if current_paragraph_content:
             combined = " ".join(current_paragraph_content)
             grouped.append({
@@ -1098,8 +1204,6 @@ class ExportService:
             
         return formats
 
-
-
     def export_project(self, project: Project, file_path: str, format_type: str) -> bool:
         """Export project to specified format"""
         try:
@@ -1116,8 +1220,6 @@ class ExportService:
             else:
                 print(_("Formato de exportação '{}' não disponível").format(format_type))
                 return False
-
-            
                 
         except Exception as e:
             print(_("Erro ao exportar projeto: {}: {}").format(type(e).__name__, e))
@@ -1128,20 +1230,16 @@ class ExportService:
     def _export_txt(self, project: Project, file_path: str) -> bool:
         """Export to plain text format"""
         try:
-            # Ensure parent directory exists
             file_path_obj = Path(file_path)
             file_path_obj.parent.mkdir(parents=True, exist_ok=True)
             
-            # Collect footnotes and group paragraphs
             all_footnotes, footnote_map = self._collect_footnotes(project)
             grouped = self._group_paragraphs(project, footnote_map)
             
             with open(file_path, 'w', encoding='utf-8') as f:
-                # Project title
                 f.write(f"{project.name}\n")
                 f.write("=" * len(project.name) + "\n\n")
                 
-                # Write grouped content
                 for item in grouped:
                     if item['type'] == 'title1':
                         f.write(f"\n{item['content']}\n")
@@ -1154,11 +1252,9 @@ class ExportService:
                         f.write(f"        {item['content']}\n\n")
 
                     elif item['type'] == 'epigraph':
-                        # Indent epigraph significantly to the right
                         f.write(f"                            {item['content']}\n\n")
                     
                     elif item['type'] == 'image':
-                        # Add image placeholder in TXT
                         metadata = item['metadata']
                         caption = metadata.get('caption', '')
                         if caption:
@@ -1172,7 +1268,6 @@ class ExportService:
                         else:
                             f.write(f"{item['content']}\n\n")
                 
-                # Write footnotes
                 if all_footnotes:
                     f.write("\n" + "=" * 20 + "\n")
                     f.write(_("Notas de rodapé:") + "\n\n")
@@ -1193,20 +1288,16 @@ class ExportService:
     def _export_odt(self, project: Project, file_path: str) -> bool:
         """Export to OpenDocument Text format"""
         try:
-            # Ensure parent directory exists
             odt_path = Path(file_path)
             odt_path.parent.mkdir(parents=True, exist_ok=True)
             
-            # Create temporary directory
             temp_dir = odt_path.parent / f"temp_odt_{project.id}"
             temp_dir.mkdir(exist_ok=True)
             
             try:
-                # Create ODT directory structure
                 (temp_dir / "META-INF").mkdir(exist_ok=True)
                 (temp_dir / "Pictures").mkdir(exist_ok=True)
                 
-                # Collect image files and copy them to Pictures directory
                 image_files = []
                 for paragraph in project.paragraphs:
                     if paragraph.type == ParagraphType.IMAGE:
@@ -1214,43 +1305,34 @@ class ExportService:
                         if img_metadata:
                             img_path = Path(img_metadata['path'])
                             if img_path.exists():
-                                # Copy image to Pictures directory
                                 dest_name = img_metadata['filename']
                                 dest_path = temp_dir / "Pictures" / dest_name
                                 shutil.copy2(img_path, dest_path)
                                 image_files.append(dest_name)
                 
-                # Create manifest.xml (with images)
                 self._create_manifest(temp_dir / "META-INF" / "manifest.xml", image_files)
-                
-                # Create styles.xml
                 self._create_styles(temp_dir / "styles.xml")
                 
-                # Create content.xml
                 content_xml = self._generate_odt_content(project)
                 with open(temp_dir / "content.xml", 'w', encoding='utf-8') as f:
                     f.write(content_xml)
                 
-                # Create meta.xml
                 self._create_meta(temp_dir / "meta.xml", project)
                 
-                # Create ZIP archive
+                # ── FIX: os.walk() instead of Path.walk() for Python < 3.12 ──
                 with zipfile.ZipFile(file_path, 'w', zipfile.ZIP_DEFLATED) as zf:
-                    # Add mimetype first (uncompressed)
                     zf.writestr("mimetype", "application/vnd.oasis.opendocument.text", 
                             compress_type=zipfile.ZIP_STORED)
                     
-                    # Add other files
-                    for root, dirs, files in temp_dir.walk():
+                    for root, dirs, files in os.walk(temp_dir):
                         for file in files:
-                            file_path_obj = root / file
+                            file_path_obj = Path(root) / file
                             arc_name = file_path_obj.relative_to(temp_dir)
                             zf.write(file_path_obj, arc_name)
                 
                 return True
                 
             finally:
-                # Clean up temp directory
                 shutil.rmtree(temp_dir, ignore_errors=True)
                 
         except (OSError, zipfile.BadZipFile) as e:
@@ -1265,26 +1347,19 @@ class ExportService:
     def _format_text_for_odt(self, text: str) -> str:
         """
         Converts internal HTML-like tags (<b>, <i>, <u>) to ODT XML tags.
-        Also handles XML escaping for the content.
         """
         if not text:
             return ""
 
-        # 1. Escape XML special characters first
         text = text.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
 
-        # 2. Replace escaped tags with ODT spans
-        # Bold
         text = text.replace('&lt;b&gt;', '<text:span text:style-name="T_Bold">')
         text = text.replace('&lt;/b&gt;', '</text:span>')
-        # Italic
         text = text.replace('&lt;i&gt;', '<text:span text:style-name="T_Italic">')
         text = text.replace('&lt;/i&gt;', '</text:span>')
-        # Underline
         text = text.replace('&lt;u&gt;', '<text:span text:style-name="T_Underline">')
         text = text.replace('&lt;/u&gt;', '</text:span>')
         
-        # Handle line breaks
         text = text.replace('\n', '<text:line-break/>')
 
         return text
@@ -1292,22 +1367,17 @@ class ExportService:
     def _format_text_for_pdf(self, text: str) -> str:
         """
         Prepares text for ReportLab PDF.
-        Escapes XML characters but preserves <b>, <i>, <u> tags.
         """
         if not text:
             return ""
 
-        # 1. Escape everything first to ensure safety
         text = text.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
 
-        # 2. Restore the specific formatting tags we support
-        # ReportLab uses <b>, <i>, <u> natively
         tags = ['b', 'i', 'u']
         for tag in tags:
             text = text.replace(f'&lt;{tag}&gt;', f'<{tag}>')
             text = text.replace(f'&lt;/{tag}&gt;', f'</{tag}>')
         
-        # Handle line breaks for PDF
         text = text.replace('\n', '<br/>')
 
         return text
@@ -1315,25 +1385,20 @@ class ExportService:
     def _format_text_for_latex(self, text: str) -> Any:
         """
         Converte tags internas (HTML-like) para comandos LaTeX usando utilitários do PyLaTeX.
-        Retorna um objeto NoEscape pronto para ser inserido no documento.
         """
         if not text:
             return ""
 
-        # 1. Use placeholders for tags 
         text = text.replace("<b>", "@@BOLD_START@@").replace("</b>", "@@BOLD_END@@")
         text = text.replace("<i>", "@@ITALIC_START@@").replace("</i>", "@@ITALIC_END@@")
         text = text.replace("<u>", "@@UNDER_START@@").replace("</u>", "@@UNDER_END@@")
 
-        # 2. Escape the whole text for LaTeX (treat %, $, _, {, }, etc.)
         text = escape_latex(text)
 
-        # 3. Rrestore tags converting to LaTex commands
         text = text.replace("@@BOLD_START@@", "\\textbf{").replace("@@BOLD_END@@", "}")
         text = text.replace("@@ITALIC_START@@", "\\textit{").replace("@@ITALIC_END@@", "}")
         text = text.replace("@@UNDER_START@@", "\\underline{").replace("@@UNDER_END@@", "}")
         
-        # Treat line break
         text = text.replace("\n", "\n\n")
 
         return NoEscape(text)
@@ -1345,21 +1410,15 @@ class ExportService:
             file_path_obj.parent.mkdir(parents=True, exist_ok=True)
             
             with open(file_path, 'w', encoding='utf-8') as f:
-                # Header
                 f.write(f"# {project.name}\n\n")
                 if project.metadata.get('author'):
                     f.write(f"**Autor:** {project.metadata['author']}\n\n")
                 
-                # Content
                 for paragraph in project.paragraphs:
                     content = paragraph.content.strip()
                     
-                    # Convert internal tags to Markdown
-                    # Replace <b> with **
                     content = content.replace("<b>", "**").replace("</b>", "**")
-                    # Replace <i> with *
                     content = content.replace("<i>", "*").replace("</i>", "*")
-                    # Replace <u> (Markdown doesn't support underline natively, usually ignored or HTML)
                     content = content.replace("<u>", "").replace("</u>", "")
 
                     if paragraph.type == ParagraphType.TITLE_1:
@@ -1369,9 +1428,8 @@ class ExportService:
                         f.write(f"## {content}\n\n")
                     
                     elif paragraph.type == ParagraphType.CODE:
-                        # Fenced code block
                         f.write("```\n")
-                        f.write(paragraph.content) # Raw content for code (no tag replacement)
+                        f.write(paragraph.content)
                         f.write("\n```\n\n")
                     
                     elif paragraph.type == ParagraphType.QUOTE:
@@ -1385,7 +1443,6 @@ class ExportService:
                             f.write(f"![{caption}]({path})\n\n")
                     
                     else:
-                        # Normal text
                         f.write(f"{content}\n\n")
             
             return True
@@ -1396,20 +1453,16 @@ class ExportService:
     def _generate_odt_content(self, project: Project) -> str:
         """Generate content.xml for ODT with proper formatting"""
         
-        # Collect footnotes and group paragraphs
         all_footnotes, footnote_map = self._collect_footnotes(project)
         
-        # Build grouped structure with footnote references for ODT
         grouped_odt = []
         current_paragraph_content = []
         paragraph_starts_with_introduction = False
         last_was_quote = False
         
         for i, paragraph in enumerate(project.paragraphs):
-            # Using the new helper method
             content = self._format_text_for_odt(paragraph.content)
             
-            # Handle Code Block for ODT
             if paragraph.type == ParagraphType.CODE:
                 if current_paragraph_content:
                     combined = " ".join(current_paragraph_content)
@@ -1418,11 +1471,9 @@ class ExportService:
                     current_paragraph_content = []
                     paragraph_starts_with_introduction = False
                 
-                # Preserve spaces/tabs for code
                 code_content = paragraph.content
                 code_content = code_content.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
                 code_content = code_content.replace("\n", "<text:line-break/>")
-                # ODT collapses spaces, use text:s for multiple spaces
                 code_content = code_content.replace("  ", "<text:s text:c=\"2\"/>")
                 code_content = code_content.replace("\t", "<text:tab/>")
                 
@@ -1474,7 +1525,6 @@ class ExportService:
                 last_was_quote = True
             
             elif paragraph.type == ParagraphType.IMAGE:
-                # Write accumulated content first
                 if current_paragraph_content:
                     combined = " ".join(current_paragraph_content)
                     style = "Introduction" if paragraph_starts_with_introduction else "Normal"
@@ -1482,7 +1532,6 @@ class ExportService:
                     current_paragraph_content = []
                     paragraph_starts_with_introduction = False
                 
-                # Add image to grouped list
                 img_metadata = paragraph.get_image_metadata()
                 if img_metadata:
                     grouped_odt.append({'type': 'image', 'metadata': img_metadata})
@@ -1509,7 +1558,6 @@ class ExportService:
                     elif last_was_quote:
                         paragraph_starts_with_introduction = False
                 
-                # Add ODT footnote references
                 if paragraph.id in footnote_map:
                     for footnote_num in footnote_map[paragraph.id]:
                         footnote_text = all_footnotes[footnote_num - 1]
@@ -1535,13 +1583,11 @@ class ExportService:
                 
                 last_was_quote = False
         
-        # Write remaining
         if current_paragraph_content:
             combined = " ".join(current_paragraph_content)
             style = "Introduction" if paragraph_starts_with_introduction else "Normal"
             grouped_odt.append({'type': 'content', 'content': combined, 'style': style})
         
-        # Generate XML
         content_xml = '''<?xml version="1.0" encoding="UTF-8"?>
 <office:document-content xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0" 
                         xmlns:style="urn:oasis:names:tc:opendocument:xmlns:style:1.0" 
@@ -1564,10 +1610,8 @@ class ExportService:
 <office:body>
 <office:text>'''
 
-        # Project title
         content_xml += f'<text:p text:style-name="Title">{project.name}</text:p>\n'
         
-        # Write grouped content
         for item in grouped_odt:
             if item['type'] == 'title1':
                 content_xml += f'<text:p text:style-name="Heading_20_1">{item["content"]}</text:p>\n'
@@ -1580,7 +1624,6 @@ class ExportService:
             elif item['type'] == 'epigraph':
                 content_xml += f'<text:p text:style-name="Epigraph">{item["content"]}</text:p>\n'
             elif item['type'] == 'image':
-                # Add actual image to ODT
                 metadata = item['metadata']
                 filename = metadata.get('filename', 'image')
                 original_size = metadata.get('original_size', (800, 600))
@@ -1588,24 +1631,19 @@ class ExportService:
                 alignment = metadata.get('alignment', 'center')
                 caption = metadata.get('caption', '')
                 
-                # Calculate image size for ODT
-                # A4 page width is 21cm, minus 6cm margins (3cm each side) = 15cm usable
                 usable_page_width_cm = 15.0
                 img_width_cm = usable_page_width_cm * (width_percent / 100.0)
                 
-                # Calculate height maintaining aspect ratio
                 aspect_ratio = original_size[1] / original_size[0]
                 img_height_cm = img_width_cm * aspect_ratio
                 
-                # Determine alignment style name
                 if alignment == 'center':
                     style_name = 'GraphicsCenter'
                 elif alignment == 'right':
                     style_name = 'GraphicsRight'
-                else:  # left
+                else:
                     style_name = 'GraphicsLeft'
                 
-                # Create draw:frame with image
                 content_xml += f'''<text:p text:style-name="Normal">
   <draw:frame draw:style-name="{style_name}" draw:name="{filename}" text:anchor-type="paragraph" 
               svg:width="{img_width_cm:.2f}cm" svg:height="{img_height_cm:.2f}cm" 
@@ -1614,7 +1652,6 @@ class ExportService:
   </draw:frame>
 </text:p>\n'''
                 
-                # Add caption if exists
                 if caption:
                     content_xml += f'<text:p text:style-name="ImageCaption">{caption}</text:p>\n'
                     
@@ -1636,10 +1673,8 @@ class ExportService:
   <manifest:file-entry manifest:full-path="styles.xml" manifest:media-type="text/xml"/>
   <manifest:file-entry manifest:full-path="meta.xml" manifest:media-type="text/xml"/>'''
         
-        # Add image file entries
         if image_files:
             for img_file in image_files:
-                # Determine MIME type based on extension
                 ext = Path(img_file).suffix.lower()
                 mime_types = {
                     '.png': 'image/png',
@@ -1675,13 +1710,11 @@ class ExportService:
     <style:paragraph-properties fo:text-align="center" fo:margin-bottom="0.5cm"/>
   </style:style>
   
-  <!-- Heading 1 (Título 1): Mapeado para Heading_20_1 para funcionar no sumário -->
   <style:style style:name="Heading_20_1" style:display-name="Heading 1" style:family="paragraph" style:default-outline-level="1" style:class="text">
     <style:text-properties style:font-name="Liberation Sans" fo:font-size="16pt" fo:font-weight="bold"/>
     <style:paragraph-properties fo:margin-top="0.5cm" fo:margin-bottom="0.3cm" fo:keep-with-next="always"/>
   </style:style>
   
-  <!-- Heading 2 (Título 2): Mapeado para Heading_20_2 para funcionar no sumário -->
   <style:style style:name="Heading_20_2" style:display-name="Heading 2" style:family="paragraph" style:default-outline-level="2" style:class="text">
     <style:text-properties style:font-name="Liberation Sans" fo:font-size="14pt" fo:font-weight="bold"/>
     <style:paragraph-properties fo:margin-top="0.4cm" fo:margin-bottom="0.2cm" fo:keep-with-next="always"/>
@@ -1762,11 +1795,9 @@ class ExportService:
     def _export_pdf(self, project: Project, file_path: str) -> bool:
         """Export to PDF format"""
         try:
-            # Ensure parent directory exists
             file_path_obj = Path(file_path)
             file_path_obj.parent.mkdir(parents=True, exist_ok=True)
             
-            # Create document
             doc = SimpleDocTemplate(
                 file_path,
                 pagesize=A4,
@@ -1776,10 +1807,8 @@ class ExportService:
                 bottomMargin=2.5*cm
             )
             
-            # Get styles
             styles = getSampleStyleSheet()
             
-            # Create custom styles
             title_style = ParagraphStyle(
                 'CustomTitle',
                 parent=styles['Title'],
@@ -1848,7 +1877,7 @@ class ExportService:
                 'Epigraph',
                 parent=styles['Normal'],
                 fontSize=12,
-                leading=18, # 12 * 1.5
+                leading=18,
                 leftIndent=7.5*cm,
                 spaceBefore=12,
                 spaceAfter=12,
@@ -1867,10 +1896,8 @@ class ExportService:
                 alignment=TA_JUSTIFY
             )
             
-            # Collect footnotes and group paragraphs (with PDF-specific footnote formatting)
             all_footnotes, footnote_map = self._collect_footnotes(project)
             
-            # Build PDF-specific grouped structure
             grouped_pdf = []
             current_paragraph_content = []
             current_style = None
@@ -1878,7 +1905,6 @@ class ExportService:
             last_was_quote = False
             
             for i, paragraph in enumerate(project.paragraphs):
-                # Using new method for PDF
                 content = self._format_text_for_pdf(paragraph.content)
                 
                 if paragraph.type == ParagraphType.TITLE_1:
@@ -1933,7 +1959,6 @@ class ExportService:
                         current_style = None
                         paragraph_starts_with_introduction = False
                     
-                    # Add image to grouped list
                     img_metadata = paragraph.get_image_metadata()
                     if img_metadata:
                         grouped_pdf.append({'type': 'image', 'metadata': img_metadata})
@@ -1965,7 +1990,6 @@ class ExportService:
                             if current_style is None:
                                 current_style = normal_style
                     
-                    # Add PDF footnote references
                     if paragraph.id in footnote_map:
                         for footnote_num in footnote_map[paragraph.id]:
                             content += f"<sup>{footnote_num}</sup>"
@@ -1990,17 +2014,14 @@ class ExportService:
                     
                     last_was_quote = False
             
-            # Write remaining
             if current_paragraph_content:
                 combined = " ".join(current_paragraph_content)
                 grouped_pdf.append({'type': 'content', 'content': combined, 'style': current_style})
             
-            # Build story
             story = []
             story.append(RLParagraph(project.name, title_style))
             story.append(Spacer(1, 20))
             
-            # Write grouped content
             for item in grouped_pdf:
                 if item['type'] == 'title1':
                     story.append(RLParagraph(item['content'], title1_style))
@@ -2011,30 +2032,23 @@ class ExportService:
                 elif item['type'] == 'epigraph':
                     story.append(RLParagraph(item['content'], epigraph_style))
                 elif item['type'] == 'image':
-                    # Add image to PDF
                     try:
                         metadata = item['metadata']
                         img_path = Path(metadata['path'])
                         
                         if img_path.exists():
-                            # Get metadata
                             original_size = metadata.get('original_size', (800, 600))
                             width_percent = metadata.get('width_percent', 80.0)
                             alignment = metadata.get('alignment', 'center')
                             
-                            # Calculate image size for PDF based on page width percentage
-                            # A4 width is 21cm, minus 6cm margins (3cm each side) = 15cm usable
-                            usable_page_width = 15.0  # cm
+                            usable_page_width = 15.0
                             img_width_cm = usable_page_width * (width_percent / 100.0)
                             
-                            # Calculate height maintaining aspect ratio
                             aspect_ratio = original_size[1] / original_size[0]
                             img_height_cm = img_width_cm * aspect_ratio
                             
-                            # Create image with correct size
                             pdf_img = RLImage(str(img_path), width=img_width_cm*cm, height=img_height_cm*cm)
                             
-                            # Set alignment
                             if alignment == 'center':
                                 pdf_img.hAlign = 'CENTER'
                             elif alignment == 'right':
@@ -2045,10 +2059,8 @@ class ExportService:
                             story.append(pdf_img)
                             story.append(Spacer(1, 12))
                             
-                            # Add caption if exists
                             caption = metadata.get('caption', '')
                             if caption:
-                                # Caption alignment should match image alignment
                                 if alignment == 'left':
                                     caption_alignment = TA_LEFT
                                 elif alignment == 'right':
@@ -2067,23 +2079,19 @@ class ExportService:
                                 story.append(Spacer(1, 12))
                     except Exception as e:
                         print(_("Erro ao adicionar imagem ao PDF: {}").format(e))
-                        # Add placeholder text if image fails
                         story.append(RLParagraph(f"[Image: {metadata.get('filename', 'image')}]", normal_style))
                 
                 elif item['type'] == 'content':
                     story.append(RLParagraph(item['content'], item['style']))
             
-            # Add footnotes
             if all_footnotes:
                 story.append(Spacer(1, 20))
                 story.append(RLParagraph(_("Notas de rodapé:"), title2_style))
                 for i, footnote_text in enumerate(all_footnotes):
-                    # Format footnote text too
                     formatted_footnote = self._format_text_for_pdf(footnote_text)
                     footnote_content = f"{i + 1}. {formatted_footnote}"
                     story.append(RLParagraph(footnote_content, footnote_style))
             
-            # Build PDF
             doc.build(story)
             return True
             
@@ -2097,13 +2105,11 @@ class ExportService:
             return False
 
     def _export_latex(self, project: Project, file_path: str) -> bool:
-        """Export for LaTeX format (.tex) com regras ABNT e tamanhos de fonte corrigidos"""
+        """Export for LaTeX format (.tex)"""
         try:
             file_path_obj = Path(file_path)
             file_path_obj.parent.mkdir(parents=True, exist_ok=True)
 
-            # 1. Configuração do Documento
-            # IMPORTANTE: Adicionado '12pt' e 'a4paper' para base correta ABNT
             geometry_options = {"tmargin": "3cm", "lmargin": "3cm", "rmargin": "2cm", "bmargin": "2cm"}
             doc = Document(
                 documentclass='article',
@@ -2111,38 +2117,30 @@ class ExportService:
                 geometry_options=geometry_options
             )
 
-            # Pacotes Essenciais
             doc.packages.append(Package('babel', options=['brazilian'])) 
             doc.packages.append(Package('inputenc', options=['utf8']))
             doc.packages.append(Package('fontenc', options=['T1']))
             doc.packages.append(Package('graphicx'))
             doc.packages.append(Package('amsmath'))
             
-            # Pacotes para formatação ABNT
             doc.packages.append(Package('indentfirst'))
             doc.packages.append(Package('setspace'))
             doc.packages.append(Package('listings'))
             
-            # Configuração de Code Block
             doc.preamble.append(NoEscape(r'\lstset{basicstyle=\ttfamily\footnotesize, breaklines=true, frame=single}'))
 
-            # Configurações de Parágrafo
-            doc.preamble.append(NoEscape(r'\setlength{\parindent}{1.25cm}')) # Recuo 1.25
-            doc.preamble.append(Command('onehalfspacing')) # Espaçamento 1.5
+            doc.preamble.append(NoEscape(r'\setlength{\parindent}{1.25cm}'))
+            doc.preamble.append(Command('onehalfspacing'))
 
-            # Definição do Ambiente de Citação ABNT no Preamble
-            # Alterado para \footnotesize (10pt) para garantir diferença visual do texto base (12pt)
             doc.preamble.append(NoEscape(r'''
 \newenvironment{citacao}
   {\begin{list}{}{\setlength{\leftmargin}{4cm}}\item[]\footnotesize\singlespacing}
   {\end{list}}
 '''))
             
-            # Classe Helper para o PyLaTeX entender o ambiente 'citacao'
             class CitacaoABNT(Environment):
                 _latex_name = 'citacao'
 
-            # Metadata
             doc.preamble.append(Command('title', project.name))
             if project.metadata.get('author'):
                 doc.preamble.append(Command('author', project.metadata.get('author')))
@@ -2150,11 +2148,9 @@ class ExportService:
             
             doc.append(NoEscape(r'\maketitle'))
 
-            # --- BUFFER DE TEXTO ---
             text_buffer = []
 
             def flush_buffer():
-                """Escreve o texto acumulado no documento"""
                 if text_buffer:
                     full_text = " ".join([str(t) for t in text_buffer])
                     doc.append(NoEscape(full_text))
@@ -2163,7 +2159,6 @@ class ExportService:
 
             for paragraph in project.paragraphs:
                 
-                # Agrupa textos corridos
                 if paragraph.type in [ParagraphType.INTRODUCTION, ParagraphType.ARGUMENT, 
                                      ParagraphType.CONCLUSION, ParagraphType.ARGUMENT_RESUMPTION]:
                     
@@ -2177,7 +2172,6 @@ class ExportService:
                     text_buffer.append(chunk)
                     continue
 
-                # --- Elementos de Quebra ---
                 flush_buffer()
 
                 if paragraph.type == ParagraphType.TITLE_1:
@@ -2187,7 +2181,6 @@ class ExportService:
                     doc.append(Subsection(self._format_text_for_latex(paragraph.content)))
                 
                 elif paragraph.type == ParagraphType.QUOTE:
-                    # Instancia a classe CitacaoABNT
                     citacao = CitacaoABNT()
                     citacao.append(self._format_text_for_latex(paragraph.content))
                     doc.append(citacao)

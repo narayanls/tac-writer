@@ -2,13 +2,18 @@
 TAC Update Checker
 Checks for application updates via GitHub API (deb/rpm)
 or AUR RPC API (Arch Linux), depending on install method.
+Cross-platform: Linux and Windows.
 """
 
 import json
+import os
+import platform
 import subprocess
 from typing import Dict, List, Optional, Callable
 
 from gi.repository import GLib
+
+IS_WINDOWS = platform.system() == 'Windows'
 
 
 class UpdateChecker:
@@ -46,7 +51,7 @@ class UpdateChecker:
             install_method = self._detect_install_method()
             distro = self._detect_distro()
             print(f"[UpdateChecker] Install method: {install_method}")
-            print(f"[UpdateChecker] Distro ID: {distro.get('id', 'unknown')}")
+            print(f"[UpdateChecker] Distro/OS: {distro.get('id', 'unknown')}")
 
             if install_method == "aur":
                 result = self._check_via_aur(install_method, distro)
@@ -116,7 +121,7 @@ class UpdateChecker:
     # ── GitHub strategy ───────────────────────────────────────
 
     def _check_via_github(self, install_method, distro):
-        """Check for updates via GitHub releases (for deb/rpm/unknown)."""
+        """Check for updates via GitHub releases (for deb/rpm/windows/unknown)."""
 
         # For deb/rpm, read the version from the file the installer creates
         local_version = self._read_version_txt()
@@ -160,11 +165,19 @@ class UpdateChecker:
     @staticmethod
     def _read_version_txt() -> Optional[str]:
         """
-        Read the version from the file created by the deb/rpm installer.
-        Located at ~/.local/share/tac-writer/version.txt
+        Read the version from the file created by the installer.
+        Linux: ~/.local/share/tac-writer/version.txt
+        Windows: %LOCALAPPDATA%/tac/version.txt
         """
-        import os
-        path = os.path.expanduser("~/.local/share/tac-writer/version.txt")
+        if IS_WINDOWS:
+            localappdata = os.environ.get('LOCALAPPDATA', '')
+            if localappdata:
+                path = os.path.join(localappdata, 'tac', 'version.txt')
+            else:
+                path = os.path.join(os.path.expanduser('~'), 'AppData', 'Local', 'tac', 'version.txt')
+        else:
+            path = os.path.expanduser("~/.local/share/tac-writer/version.txt")
+
         try:
             with open(path, "r") as f:
                 version = f.read().strip().lstrip("v")
@@ -199,6 +212,9 @@ class UpdateChecker:
 
     def _fetch_aur_version(self) -> Optional[str]:
         """Fetch latest version from AUR RPC API."""
+        if IS_WINDOWS:
+            return None
+
         import urllib.request
 
         url = self.AUR_RPC_URL.format(pkg=self.APP_PACKAGE_NAME)
@@ -228,6 +244,9 @@ class UpdateChecker:
 
     def _get_pacman_version(self) -> Optional[str]:
         """Get installed version from pacman -Q."""
+        if IS_WINDOWS:
+            return None
+
         try:
             r = subprocess.run(
                 ["pacman", "-Q", self.APP_PACKAGE_NAME],
@@ -251,16 +270,17 @@ class UpdateChecker:
         Returns -1, 0, or 1.
         Falls back to simple comparison if vercmp is unavailable.
         """
-        try:
-            r = subprocess.run(
-                ["vercmp", a, b],
-                capture_output=True, text=True, timeout=5,
-            )
-            if r.returncode == 0:
-                val = int(r.stdout.strip())
-                return val
-        except (FileNotFoundError, subprocess.TimeoutExpired, ValueError) as e:
-            print(f"[UpdateChecker] vercmp unavailable: {e}, using fallback")
+        if not IS_WINDOWS:
+            try:
+                r = subprocess.run(
+                    ["vercmp", a, b],
+                    capture_output=True, text=True, timeout=5,
+                )
+                if r.returncode == 0:
+                    val = int(r.stdout.strip())
+                    return val
+            except (FileNotFoundError, subprocess.TimeoutExpired, ValueError) as e:
+                print(f"[UpdateChecker] vercmp unavailable: {e}, using fallback")
 
         return UpdateChecker._compare_versions(a, b)
 
@@ -286,7 +306,10 @@ class UpdateChecker:
 
     @staticmethod
     def _detect_install_method() -> str:
-        """Return 'aur', 'deb', 'rpm', or 'unknown'."""
+        """Return 'aur', 'deb', 'rpm', 'windows', or 'unknown'."""
+        if IS_WINDOWS:
+            return "windows"
+
         checks = [
             ("pacman", ["-Q", "tac-writer"], "aur"),
             ("dpkg",   ["-s", "tac-writer"], "deb"),
@@ -308,7 +331,14 @@ class UpdateChecker:
 
     @staticmethod
     def _detect_distro() -> Dict[str, str]:
+        """Detect OS/distro information."""
         info: Dict[str, str] = {"id": "", "id_like": "", "pretty": ""}
+
+        if IS_WINDOWS:
+            info["id"] = "windows"
+            info["pretty"] = f"Windows {platform.version()}"
+            return info
+
         try:
             with open("/etc/os-release") as fh:
                 for line in fh:
@@ -323,11 +353,15 @@ class UpdateChecker:
             pass
         return info
 
-    # ── Terminal / AUR helper detection ───────────────────────
+    # ── Terminal / AUR helper detection (Linux only) ──────────
 
     @staticmethod
     def find_terminal() -> Optional[tuple]:
         """Return (command, exec_flag) for the first terminal found."""
+        if IS_WINDOWS:
+            return None
+
+        import shutil
         terminals = [
             ("gnome-terminal", "--"),
             ("konsole", "-e"),
@@ -342,26 +376,20 @@ class UpdateChecker:
             ("terminator", "-x"),
         ]
         for cmd, arg in terminals:
-            try:
-                if subprocess.run(
-                    ["which", cmd], capture_output=True, timeout=3
-                ).returncode == 0:
-                    return (cmd, arg)
-            except (FileNotFoundError, subprocess.TimeoutExpired):
-                pass
+            if shutil.which(cmd):
+                return (cmd, arg)
         return None
 
     @staticmethod
     def find_aur_helper() -> Optional[str]:
         """Return 'yay', 'paru', or None."""
+        if IS_WINDOWS:
+            return None
+
+        import shutil
         for helper in ("yay", "paru"):
-            try:
-                if subprocess.run(
-                    ["which", helper], capture_output=True, timeout=3
-                ).returncode == 0:
-                    return helper
-            except (FileNotFoundError, subprocess.TimeoutExpired):
-                pass
+            if shutil.which(helper):
+                return helper
         return None
 
     @staticmethod

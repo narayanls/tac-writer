@@ -2159,7 +2159,7 @@ class MainWindow(Adw.ApplicationWindow):
             @define-color accent_fg_color {accent_fg};
         """
 
-        self._color_scheme_provider.load_from_data(css.encode())
+        self._color_scheme_provider.load_from_data(css, -1)
         Gtk.StyleContext.add_provider_for_display(
             display,
             self._color_scheme_provider,
@@ -2301,6 +2301,7 @@ class MainWindow(Adw.ApplicationWindow):
             'aur': 'AUR (pacman)',
             'deb': 'DEB (apt)',
             'rpm': 'RPM (dnf/zypper)',
+            'windows': 'Windows (Instalador)',
             'unknown': _('Desconhecido'),
         }
         method_label = method_labels.get(method, method)
@@ -2371,6 +2372,13 @@ class MainWindow(Adw.ApplicationWindow):
 
     def _perform_update(self, update_info):
         """Route to the correct update strategy."""
+        import platform
+    
+        if platform.system() == 'Windows':
+            # Windows: always open GitHub releases page
+            self._perform_update_unknown()
+            return
+    
         method = update_info['install_method']
 
         if method == 'aur':

@@ -19,18 +19,33 @@ from utils.i18n import _
 
 _CURRENT_DRAG_ID = None
 
-# Try to load PyGTKSpellcheck
+# Try to load enchant for spell checking (GTK4-native)
+import os, sys
+
+# Help pyenchant find the enchant C library on MSYS2/MINGW
+if 'PYENCHANT_LIBRARY_PATH' not in os.environ:
+    _mingw_prefix = os.environ.get('MINGW_PREFIX', '/mingw64')
+    for _dll_name in ['libenchant-2-2.dll', 'libenchant-2.dll', 'libenchant.dll']:
+        _dll_path = os.path.join(_mingw_prefix, 'bin', _dll_name)
+        if os.path.exists(_dll_path):
+            os.environ['PYENCHANT_LIBRARY_PATH'] = _dll_path
+            print(f"Enchant DLL found: {_dll_path}", flush=True)
+            break
+
 try:
-    import gtkspellcheck
+    import enchant
     SPELL_CHECK_AVAILABLE = True
-    print("PyGTKSpellcheck available - spell checking enabled", flush=True)
-except ImportError:
+    _enchant_broker = enchant.Broker()
+    _enchant_dicts = [d[0] for d in _enchant_broker.list_dicts()]
+    print(f"Enchant available - dictionaries: {_enchant_dicts}", flush=True)
+    if not _enchant_dicts:
+        print("WARNING: No dictionaries found! Install hunspell dictionaries.", flush=True)
+except ImportError as e:
     SPELL_CHECK_AVAILABLE = False
-    print("PyGTKSpellcheck not available - spell checking disabled", flush=True)
-
-# Global CSS provider cache
+    print(f"Enchant not available - spell checking disabled: {e}", flush=True)
+    
+    
 _css_cache = {}
-
 
 def get_cached_css_provider(font_family: str, font_size: int) -> dict:
     """Get or create cached CSS provider"""
@@ -45,13 +60,247 @@ def get_cached_css_provider(font_family: str, font_size: int) -> dict:
             font-size: {font_size}pt;
         }}
         """
-        css_provider.load_from_data(css.encode())
+        css_provider.load_from_data(css, -1)
         _css_cache[key] = {
             'provider': css_provider,
             'class_name': class_name
         }
     
     return _css_cache[key]
+
+class Gtk4SpellChecker:
+    """
+    GTK4-native spell checker using pyenchant directly.
+    Replaces pygtkspellcheck (which is GTK3-only).
+    """
+
+    WORD_RE = re.compile(r'[a-zA-ZÀ-öø-ÿĀ-ž]+')
+
+    def __init__(self, text_view, language='pt_BR'):
+        self.text_view = text_view
+        self.buffer = text_view.get_buffer()
+        self.language = language
+        self._enabled = True
+        self._dict = None
+        self._tag = None
+        self._check_timeout_id = None
+        self._current_popover = None
+
+        self._init_dictionary(language)
+        self._create_tag()
+        self._connect_signals()
+
+        # Initial check after widget settles
+        GLib.idle_add(self._check_spelling)
+
+    # --- enabled property (compatible with old API) ---
+    @property
+    def enabled(self):
+        return self._enabled
+
+    @enabled.setter
+    def enabled(self, value):
+        self._enabled = value
+        if not value:
+            self._clear_tags()
+        else:
+            GLib.idle_add(self._check_spelling)
+
+    # --- Initialization ---
+    def _init_dictionary(self, language):
+        """Try to load dictionary with fallbacks"""
+        try:
+            self._dict = enchant.Dict(language)
+            print(f"Spell check: using '{language}' dictionary", flush=True)
+            return
+        except enchant.errors.DictNotFoundError:
+            pass
+
+        # Build fallback list
+        alternatives = []
+        if '_' in language:
+            alternatives.append(language.replace('_', '-'))
+        elif '-' in language:
+            alternatives.append(language.replace('-', '_'))
+        base = language.split('_')[0].split('-')[0]
+        if base != language:
+            alternatives.append(base)
+
+        for alt in alternatives:
+            try:
+                self._dict = enchant.Dict(alt)
+                self.language = alt
+                print(f"Spell check: using fallback '{alt}' dictionary", flush=True)
+                return
+            except enchant.errors.DictNotFoundError:
+                continue
+
+        print(f"Spell check: no dictionary found for '{language}'", flush=True)
+
+    def _create_tag(self):
+        """Create the red wavy underline tag for misspelled words"""
+        tag_table = self.buffer.get_tag_table()
+        self._tag = tag_table.lookup('misspelled')
+        if not self._tag:
+            self._tag = self.buffer.create_tag(
+                'misspelled',
+                underline=Pango.Underline.ERROR
+            )
+
+    def _connect_signals(self):
+        """Connect buffer change and right-click signals"""
+        self.buffer.connect('changed', self._on_buffer_changed)
+
+        # Right-click for suggestions
+        click = Gtk.GestureClick()
+        click.set_button(3)
+        click.connect('pressed', self._on_right_click)
+        self.text_view.add_controller(click)
+
+    # --- Core spell checking ---
+    def _on_buffer_changed(self, buffer):
+        """Debounced spell check on text change"""
+        if not self._enabled:
+            return
+        if self._check_timeout_id:
+            GLib.source_remove(self._check_timeout_id)
+        self._check_timeout_id = GLib.timeout_add(500, self._check_spelling)
+
+    def _clear_tags(self):
+        """Remove all misspelled tags"""
+        start = self.buffer.get_start_iter()
+        end = self.buffer.get_end_iter()
+        self.buffer.remove_tag(self._tag, start, end)
+
+    def _check_spelling(self):
+        """Check spelling of entire buffer and apply misspelled tags"""
+        self._check_timeout_id = None
+
+        if not self._enabled or not self._dict:
+            return False
+
+        start = self.buffer.get_start_iter()
+        end = self.buffer.get_end_iter()
+        self.buffer.remove_tag(self._tag, start, end)
+
+        text = self.buffer.get_text(start, end, False)
+        if not text:
+            return False
+
+        for match in self.WORD_RE.finditer(text):
+            word = match.group()
+            if len(word) <= 1:
+                continue
+            if not self._dict.check(word):
+                ws = self.buffer.get_iter_at_offset(match.start())
+                we = self.buffer.get_iter_at_offset(match.end())
+                self.buffer.apply_tag(self._tag, ws, we)
+
+        return False  # Don't repeat
+
+    # --- Right-click suggestions ---
+    def _on_right_click(self, gesture, n_press, x, y):
+        """Show correction suggestions on right-click"""
+        if not self._enabled or not self._dict:
+            return
+
+        try:
+            # Cleanup old popover
+            if self._current_popover:
+                self._current_popover.popdown()
+                self._current_popover.unparent()
+                self._current_popover = None
+
+            # Convert widget coords → buffer coords
+            bx, by = self.text_view.window_to_buffer_coords(
+                Gtk.TextWindowType.WIDGET, int(x), int(y)
+            )
+
+            # Get TextIter at click position
+            result = self.text_view.get_iter_at_location(bx, by)
+            if isinstance(result, tuple):
+                success, text_iter = result
+                if not success:
+                    return
+            else:
+                text_iter = result
+
+            # Only act on misspelled words
+            if not text_iter.has_tag(self._tag):
+                return
+
+            # Find word boundaries
+            word_start = text_iter.copy()
+            word_end = text_iter.copy()
+            if not word_start.starts_word():
+                word_start.backward_word_start()
+            if not word_end.ends_word():
+                word_end.forward_word_end()
+
+            misspelled = self.buffer.get_text(word_start, word_end, False)
+            if not misspelled:
+                return
+
+            suggestions = self._dict.suggest(misspelled)[:7]
+
+            # Build popover
+            popover = Gtk.Popover()
+            popover.set_parent(self.text_view)
+
+            rect = Gdk.Rectangle()
+            rect.x, rect.y, rect.width, rect.height = int(x), int(y), 1, 1
+            popover.set_pointing_to(rect)
+
+            box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+            box.set_margin_top(6)
+            box.set_margin_bottom(6)
+            box.set_margin_start(6)
+            box.set_margin_end(6)
+
+            if suggestions:
+                for s in suggestions:
+                    btn = Gtk.Button(label=s)
+                    btn.add_css_class("flat")
+                    btn.connect('clicked', self._replace_word,
+                               word_start.get_offset(), word_end.get_offset(),
+                               s, popover)
+                    box.append(btn)
+            else:
+                lbl = Gtk.Label(label=_("Sem sugestões"))
+                lbl.add_css_class("dim-label")
+                box.append(lbl)
+
+            box.append(Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL))
+
+            add_btn = Gtk.Button(label=_("Adicionar ao dicionário"))
+            add_btn.add_css_class("flat")
+            add_btn.connect('clicked', self._add_to_dict, misspelled, popover)
+            box.append(add_btn)
+
+            popover.set_child(box)
+            self._current_popover = popover
+            popover.popup()
+
+        except Exception as e:
+            print(f"Spell check right-click error: {e}", flush=True)
+
+    def _replace_word(self, btn, start_off, end_off, replacement, popover):
+        """Replace misspelled word with selected suggestion"""
+        s = self.buffer.get_iter_at_offset(start_off)
+        e = self.buffer.get_iter_at_offset(end_off)
+        self.buffer.begin_user_action()
+        self.buffer.delete(s, e)
+        s = self.buffer.get_iter_at_offset(start_off)
+        self.buffer.insert(s, replacement)
+        self.buffer.end_user_action()
+        popover.popdown()
+
+    def _add_to_dict(self, btn, word, popover):
+        """Add word to personal dictionary"""
+        if self._dict:
+            self._dict.add(word)
+            GLib.idle_add(self._check_spelling)
+        popover.popdown()
 
 
 class PomodoroTimer(GObject.Object):
@@ -356,7 +605,7 @@ class PomodoroDialog(Adw.Window):
             }
             """
             
-            css_provider.load_from_data(css_data.encode())
+            css_provider.load_from_data(css_data, -1)
             Gtk.StyleContext.add_provider_for_display(
                 Gdk.Display.get_default(),
                 css_provider,
@@ -476,7 +725,7 @@ class PomodoroDialog(Adw.Window):
 
 
 class SpellCheckHelper:
-    """Helper class for spell checking functionality using PyGTKSpellcheck"""
+    """Helper class for spell checking using Gtk4SpellChecker + enchant"""
 
     def __init__(self, config=None):
         self.config = config
@@ -488,39 +737,23 @@ class SpellCheckHelper:
         """Load available spell check languages"""
         if not SPELL_CHECK_AVAILABLE:
             return
-
         try:
-            import enchant
-            # Try to list the sayings that the enchant actually sees
-            try:
-                broker = enchant.Broker()
-                dicts = broker.list_dicts()
-                print(f"DEBUG: Dicionários brutos encontrados pelo Enchant: {[d[0] for d in dicts]}", flush=True)
-            except:
-                pass
-
-            self.available_languages = []
-            # Expanded list to try to catch variations
             candidates = ['pt_BR', 'pt-BR', 'pt', 'en_US', 'en-US', 'en', 'es_ES', 'es']
-            
             for lang in candidates:
                 try:
                     if enchant.dict_exists(lang):
                         self.available_languages.append(lang)
-                except Exception as e:
-                    print(f"Error checking dictionary {lang}: {e}", flush=True)
-
-        except ImportError as e:
-            print(f"Enchant not available for spell checking: {e}", flush=True)
+                except Exception:
+                    pass
+            print(f"Spell check languages available: {self.available_languages}", flush=True)
+        except Exception as e:
+            print(f"Error loading spell check languages: {e}", flush=True)
 
     def setup_spell_check(self, text_view, language=None):
-        """Setup spell checking for a TextView using PyGTKSpellcheck"""
+        """Setup spell checking for a GTK4 TextView"""
         if not SPELL_CHECK_AVAILABLE:
-            print("DEBUG: Spell check not available (module import failed)", flush=True)
             return None
-
         try:
-            # Determine the language
             if language:
                 target_lang = language
             elif self.config:
@@ -528,71 +761,24 @@ class SpellCheckHelper:
             else:
                 target_lang = 'pt_BR'
 
-            print(f"DEBUG: Configurando SpellChecker para TextView {id(text_view)} com idioma '{target_lang}'", flush=True)
+            checker = Gtk4SpellChecker(text_view, language=target_lang)
 
-            spell_checker = None
-            
-            # Tenta criar com o idioma exato (SEM O ARGUMENTO enable=True)
-            try:
-                spell_checker = gtkspellcheck.SpellChecker(text_view, language=target_lang)
-            except Exception as e1:
-                print(f"DEBUG: Falha inicial com '{target_lang}': {e1}", flush=True)
-                
-                # Try common variations on Linux/Arch
-                alternatives = []
-                if '_' in target_lang:
-                    alternatives.append(target_lang.replace('_', '-')) # pt_BR -> pt-BR
-                elif '-' in target_lang:
-                    alternatives.append(target_lang.replace('-', '_')) # pt-BR -> pt_BR
-                
-                # Tenta só o código do idioma (ex: pt)
-                base_lang = target_lang.split('_')[0].split('-')[0]
-                if base_lang != target_lang:
-                    alternatives.append(base_lang)
-
-                for alt in alternatives:
-                    try:
-                        print(f"DEBUG: Tentando alternativa '{alt}'...", flush=True)
-                        # WITHOUT THE enable=True ARGUMENT HERE TOO
-                        spell_checker = gtkspellcheck.SpellChecker(text_view, language=alt)
-                        print(f"DEBUG: Sucesso com '{alt}'!", flush=True)
-                        break
-                    except Exception as e_alt:
-                        print(f"DEBUG: Falha com alternativa '{alt}': {e_alt}", flush=True)
-                        continue
-
-            if spell_checker:
-                # Force enable NOW, after creation
-                spell_checker.enabled = True
-                
-                checker_id = id(text_view)
-                self.spell_checkers[checker_id] = spell_checker
-                print(f"DEBUG: SpellChecker ANEXADO com sucesso. Idioma: {spell_checker.language}. Ativado: {spell_checker.enabled}", flush=True)
-                return spell_checker
+            if checker._dict:
+                self.spell_checkers[id(text_view)] = checker
+                print(f"Spell checker attached to widget {id(text_view)}, lang: {checker.language}", flush=True)
+                return checker
             else:
-                print("DEBUG: Não foi possível inicializar o SpellChecker com nenhum idioma compatível.", flush=True)
+                print("Spell checker: no dictionary loaded, skipping.", flush=True)
                 return None
-
         except Exception as e:
-            print(f"DEBUG: Erro fatal no setup_spell_check: {e}", flush=True)
-            import traceback
-            traceback.print_exc()
+            print(f"Spell check setup failed: {e}", flush=True)
             return None
 
     def enable_spell_check(self, text_view, enabled=True):
         """Enable or disable spell checking for a TextView"""
-        if not SPELL_CHECK_AVAILABLE:
-            return
-
-        try:
-            checker_id = id(text_view)
-            spell_checker = self.spell_checkers.get(checker_id)
-
-            if spell_checker:
-                spell_checker.enabled = enabled
-                print(f"DEBUG: Spell check alternado para {enabled} no widget {checker_id}", flush=True)
-        except Exception as e:
-            print(f"Error toggling spell check: {e}", flush=True)
+        checker = self.spell_checkers.get(id(text_view))
+        if checker:
+            checker.enabled = enabled
 
 
 class WelcomeView(Gtk.Box):
@@ -1077,7 +1263,7 @@ class ParagraphEditor(Gtk.Box):
                     padding: 6px;
                 }
                 """
-                css_provider.load_from_data(css.encode())
+                css_provider.load_from_data(css, -1)
                 self.text_view.get_style_context().add_provider(
                     css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
                 )
@@ -1101,7 +1287,7 @@ class ParagraphEditor(Gtk.Box):
                 }
                 """
 
-                css_provider.load_from_data(css.encode())
+                css_provider.load_from_data(css, -1)
                 self.text_view.get_style_context().add_provider(
                     css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
                 )
@@ -1147,8 +1333,13 @@ class ParagraphEditor(Gtk.Box):
         if self._spell_check_setup or not self.text_view:
             return False # Retorna False para parar o timeout
         
+        print(f"DEBUG: self.config = {self.config}", flush=True)
+        print(f"DEBUG: self.config type = {type(self.config)}", flush=True)
+        if self.config:
+            print(f"DEBUG: spell_check_enabled = {self.config.get_spell_check_enabled()}", flush=True)
         if not self.config or not self.config.get_spell_check_enabled():
             print("DEBUG: Spell check desabilitado na config ou config ausente.", flush=True)
+        
             return False
         
         try:
@@ -1324,9 +1515,13 @@ class ParagraphEditor(Gtk.Box):
         """Handle spell check toggle"""
         if not self.spell_helper or not self.text_view:
             return
-        
+
         enabled = button.get_active()
-        
+
+        # Save config BEFORE setup
+        if self.config:
+            self.config.set_spell_check_enabled(enabled)
+
         if enabled and not self._spell_check_setup:
             self._setup_spell_check()
         elif self.spell_checker:
@@ -1334,9 +1529,6 @@ class ParagraphEditor(Gtk.Box):
                 self.spell_helper.enable_spell_check(self.text_view, enabled)
             except Exception as e:
                 print(_("Erro ao alternar verificação ortográfica: {}").format(e))
-        
-        if self.config:
-            self.config.set_spell_check_enabled(enabled)
 
     def _create_text_editor(self):
         """Create the text editing area"""
@@ -1541,7 +1733,7 @@ class ParagraphEditor(Gtk.Box):
         }
         """
         try:
-            css_provider.load_from_data(css.encode())
+            css_provider.load_from_data(css, -1)
             self.get_style_context().add_provider(
                 css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
             )
@@ -2171,7 +2363,7 @@ class FirstRunTour:
     def _setup_css(self):
         """Setup CSS for tour overlay"""
         css_provider = Gtk.CssProvider()
-        css_provider.load_from_data(b"""
+        css_provider.load_from_data(""", -1)
             /* Dark overlay that covers everything - 50% opacity to see interface */
             .dark-overlay {
                 background-color: rgba(0, 0, 0, 0.5);
@@ -2406,7 +2598,7 @@ class ReorderableParagraphRow(Gtk.Box):
         }
         """
         try:
-            css_provider.load_from_data(css.encode())
+            css_provider.load_from_data(css, -1)
             display = Gdk.Display.get_default()
             Gtk.StyleContext.add_provider_for_display(display, css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
         except:

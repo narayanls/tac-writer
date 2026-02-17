@@ -1,19 +1,22 @@
 """
 TAC Configuration Module
-Application configuration management following XDG standards
+Application configuration management - cross-platform (Linux/Windows)
 """
 
 import os
 import json
+import platform
 from pathlib import Path
 from typing import Dict, Any, Optional, List
+
+IS_WINDOWS = platform.system() == 'Windows'
 
 
 class Config:
     """Application configuration manager"""
 
     # Application version and metadata
-    APP_VERSION = "1.32.4"
+    APP_VERSION = "1.33.0"
     APP_NAME = "TAC"
     APP_FULL_NAME = "TAC - Continuous Argumentation Technique"
     APP_DESCRIPTION = "Academic Writing Assistant"
@@ -28,29 +31,36 @@ class Config:
         self.load()
 
     def _setup_directories(self):
-        """Setup application directories following XDG standards"""
+        """Setup application directories - cross-platform"""
         home = Path.home()
 
-        # Data directory
-        xdg_data_home = os.environ.get('XDG_DATA_HOME')
-        if xdg_data_home:
-            self.data_dir = Path(xdg_data_home) / 'tac'
-        else:
-            self.data_dir = home / '.local' / 'share' / 'tac'
+        if IS_WINDOWS:
+            # Windows: use APPDATA / LOCALAPPDATA
+            appdata = Path(os.environ.get('APPDATA', home / 'AppData' / 'Roaming'))
+            localappdata = Path(os.environ.get('LOCALAPPDATA', home / 'AppData' / 'Local'))
 
-        # Config directory
-        xdg_config_home = os.environ.get('XDG_CONFIG_HOME')
-        if xdg_config_home:
-            self.config_dir = Path(xdg_config_home) / 'tac'
+            self.data_dir = localappdata / 'tac'
+            self.config_dir = appdata / 'tac'
+            self.cache_dir = localappdata / 'tac' / 'cache'
         else:
-            self.config_dir = home / '.config' / 'tac'
+            # Linux/macOS: follow XDG standards
+            xdg_data_home = os.environ.get('XDG_DATA_HOME')
+            if xdg_data_home:
+                self.data_dir = Path(xdg_data_home) / 'tac'
+            else:
+                self.data_dir = home / '.local' / 'share' / 'tac'
 
-        # Cache directory
-        xdg_cache_home = os.environ.get('XDG_CACHE_HOME')
-        if xdg_cache_home:
-            self.cache_dir = Path(xdg_cache_home) / 'tac'
-        else:
-            self.cache_dir = home / '.cache' / 'tac'
+            xdg_config_home = os.environ.get('XDG_CONFIG_HOME')
+            if xdg_config_home:
+                self.config_dir = Path(xdg_config_home) / 'tac'
+            else:
+                self.config_dir = home / '.config' / 'tac'
+
+            xdg_cache_home = os.environ.get('XDG_CACHE_HOME')
+            if xdg_cache_home:
+                self.cache_dir = Path(xdg_cache_home) / 'tac'
+            else:
+                self.cache_dir = home / '.cache' / 'tac'
 
         # Create directories if they don't exist
         for directory in [self.data_dir, self.config_dir, self.cache_dir]:
@@ -58,6 +68,16 @@ class Config:
 
     def _load_defaults(self):
         """Load default configuration values"""
+
+        # Platform-aware defaults
+        if IS_WINDOWS:
+            default_font = 'Times New Roman'
+        else:
+            default_font = 'Liberation Serif'
+
+        # Documents folder (works on both platforms)
+        documents_dir = str(Path.home() / 'Documents')
+
         self._config = {
             # Window settings
             'window_width': 1200,
@@ -66,7 +86,7 @@ class Config:
             'window_position': None,
 
             # Editor settings
-            'font_family': 'Liberation Serif',
+            'font_family': default_font,
             'font_size': 12,
             'line_spacing': 1.5,
             'show_line_numbers': True,
@@ -115,13 +135,12 @@ class Config:
             'color_font': '#2e2e2e',
             'color_accent': '#3584e4',
 
-
             # Project defaults
             'database_file': str(self.data_dir / 'projects.db'),
             'project_template': 'academic_essay',
 
             # Export settings
-            'export_location': str(Path.home() / 'Documents'),
+            'export_location': documents_dir,
             'default_export_format': 'odt',
             'include_metadata': True,
 
@@ -234,44 +253,34 @@ class Config:
 
     # Spell checking methods
     def get_spell_check_enabled(self) -> bool:
-        """Get spell check enabled status"""
         return self.get('spell_check_enabled', True)
 
     def set_spell_check_enabled(self, enabled: bool) -> None:
-        """Set spell check enabled status"""
         self.set('spell_check_enabled', enabled)
 
     def get_spell_check_language(self) -> str:
-        """Get current spell check language"""
         return self.get('spell_check_language', 'pt_BR')
 
     def set_spell_check_language(self, language: str) -> None:
-        """Set spell check language with validation"""
         if self.is_spell_language_available(language):
             self.set('spell_check_language', language)
 
     def get_available_spell_languages(self) -> List[str]:
-        """Get list of available spell check languages"""
         return self.get('spell_check_available_languages', ['pt_BR', 'en_US', 'es_ES', 'fr_FR', 'de_DE', 'it_IT'])
 
     def is_spell_language_available(self, language: str) -> bool:
-        """Check if a spell check language is available"""
         return language in self.get_available_spell_languages()
 
     def get_spell_check_show_language_menu(self) -> bool:
-        """Get whether to show language menu in spell check context"""
         return self.get('spell_check_show_language_menu', True)
 
     def set_spell_check_show_language_menu(self, show: bool) -> None:
-        """Set whether to show language menu in spell check context"""
         self.set('spell_check_show_language_menu', show)
 
     def get_personal_dictionary_path(self) -> str:
-        """Get path to personal dictionary file"""
         return self.get('spell_check_personal_dictionary', str(self.config_dir / 'personal_dict.txt'))
 
     def set_available_spell_languages(self, languages: List[str]) -> None:
-        """Set list of available spell check languages"""
         self.set('spell_check_available_languages', languages)
 
     # AI assistant helpers
