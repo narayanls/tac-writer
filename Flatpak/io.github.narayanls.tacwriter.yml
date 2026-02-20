@@ -31,6 +31,12 @@ modules:
       
       # Copia tudo que está em usr/share (seu app, o .desktop e os ícones) 
       - cp -r share/* /app/share/
+
+      # Instala .desktop
+      - install -Dm644 share/applications/io.github.narayanls.tacwriter.desktop /app/share/applications/io.github.narayanls.tacwriter.desktop
+
+      # Instala ícone do app
+      - install -Dm644 share/icons/hicolor/scalable/apps/io.github.narayanls.tacwriter.svg /app/share/icons/hicolor/apps/io.github.narayanls.tacwriter.svg
       
       # Cria o executável
       - |
