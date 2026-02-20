@@ -661,6 +661,123 @@ class ExportDialog(Adw.Window):
         
         return False
 
+class TacColorChooserWindow(Adw.Window):
+    """Janela customizada para seleção de cores que permite redimensionamento livre"""
+    __gtype_name__ = 'TacColorChooserWindow'
+
+    def __init__(self, parent_window, initial_rgba, on_color_selected, **kwargs):
+        super().__init__(**kwargs)
+        self.set_title(_("Selecionar Cor"))
+        self.set_transient_for(parent_window)
+        self.set_modal(True)
+        
+        # Garante que a janela nasça grande e redimensionável
+        self.set_default_size(650, 500)
+        self.set_resizable(True)
+        
+        self.on_color_selected = on_color_selected
+        self._create_ui(initial_rgba)
+        
+    def _create_ui(self, initial_rgba):
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.set_content(box)
+        
+        # Header Bar no estilo Adwaita
+        header = Adw.HeaderBar()
+        
+        cancel_btn = Gtk.Button(label=_("Cancelar"))
+        cancel_btn.connect("clicked", lambda b: self.destroy())
+        header.pack_start(cancel_btn)
+        
+        select_btn = Gtk.Button(label=_("Selecionar"))
+        select_btn.add_css_class("suggested-action")
+        select_btn.connect("clicked", self._on_select_clicked)
+        header.pack_end(select_btn)
+        
+        box.append(header)
+        
+        # O segredo: usar apenas o Widget (o miolo) do seletor de cor
+        self.color_chooser = Gtk.ColorChooserWidget()
+        self.color_chooser.set_use_alpha(False)
+        self.color_chooser.set_rgba(initial_rgba)
+        
+        # Força o widget a expandir conforme a janela é redimensionada
+        self.color_chooser.set_vexpand(True)
+        self.color_chooser.set_hexpand(True)
+        self.color_chooser.set_margin_top(16)
+        self.color_chooser.set_margin_bottom(16)
+        self.color_chooser.set_margin_start(16)
+        self.color_chooser.set_margin_end(16)
+        
+        box.append(self.color_chooser)
+        
+    def _on_select_clicked(self, btn):
+        # Envia a cor escolhida de volta para o botão antes de fechar
+        self.on_color_selected(self.color_chooser.get_rgba())
+        self.destroy()
+
+class TacColorPickerButton(Gtk.Button):
+    """Botão customizado que abre um seletor de cores redimensionável"""
+    __gtype_name__ = 'TacColorPickerButton'
+    
+    # Propriedade GObject para manter compatibilidade com o sinal 'notify::rgba'
+    rgba = GObject.Property(type=Gdk.RGBA)
+
+    def __init__(self, parent_window=None, **kwargs):
+        super().__init__(**kwargs)
+        self.parent_window = parent_window
+        self.add_css_class("flat")
+        
+        # Área de desenho (DrawingArea) para exibir a cor com performance
+        self.color_area = Gtk.DrawingArea()
+        self.color_area.set_size_request(32, 16)
+        self.color_area.set_draw_func(self._draw_color)
+        
+        # Moldura suave nativa do GTK em volta da cor
+        frame = Gtk.Frame()
+        frame.set_child(self.color_area)
+        self.set_child(frame)
+        
+        # Inicialização
+        default_rgba = Gdk.RGBA()
+        default_rgba.parse("#ffffff")
+        self.set_property("rgba", default_rgba)
+        
+        self.connect("clicked", self._on_clicked)
+        self.connect("notify::rgba", self._on_rgba_changed)
+
+    def set_rgba(self, rgba):
+        self.set_property("rgba", rgba)
+
+    def get_rgba(self):
+        return self.get_property("rgba")
+
+    def _on_rgba_changed(self, obj, pspec):
+        # Redesenha a cor quando a propriedade muda
+        self.color_area.queue_draw()
+
+    def _draw_color(self, area, cr, width, height):
+        # Desenha o retângulo preenchido com a cor selecionada
+        rgba = self.get_rgba()
+        if rgba:
+            cr.set_source_rgba(rgba.red, rgba.green, rgba.blue, rgba.alpha)
+        else:
+            cr.set_source_rgb(1, 1, 1)
+        cr.rectangle(0, 0, width, height)
+        cr.fill()
+
+    def _on_clicked(self, btn):
+        # Função de callback para quando o usuário clicar em "Selecionar"
+        def on_selected(rgba):
+            self.set_rgba(rgba)
+            
+        # AGORA SIM: Chama a nossa nova janela customizada!
+        dialog = TacColorChooserWindow(
+            parent_window=self.parent_window, 
+            initial_rgba=self.get_rgba(),
+            on_color_selected=on_selected
+        )
+        dialog.present()
 
 class PreferencesDialog(Adw.PreferencesWindow):
     """Preferences dialog"""
@@ -1056,15 +1173,12 @@ class PreferencesDialog(Adw.PreferencesWindow):
     # Color scheme methods
 
     def _create_color_picker_button(self):
-        """Cria um botão seletor de cor compatível com GTK 4.10+"""
-        try:
-            color_dialog = Gtk.ColorDialog()
-            btn = Gtk.ColorDialogButton(dialog=color_dialog)
-        except (AttributeError, TypeError):
-            # Fallback para versões mais antigas do GTK4
-            btn = Gtk.ColorButton()
-            btn.set_use_alpha(False)
+        """Cria um botão seletor de cor customizado e redimensionável"""
+        # Utiliza nossa classe recém-criada
+        btn = TacColorPickerButton(parent_window=self)
         btn.set_valign(Gtk.Align.CENTER)
+        
+        # Conecta o sinal mantendo a mesma lógica que você já tinha construído
         btn.connect('notify::rgba', self._on_color_picker_changed)
         return btn
 

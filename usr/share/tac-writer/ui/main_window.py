@@ -2123,21 +2123,29 @@ class MainWindow(Adw.ApplicationWindow):
         accent_fg = self._contrast_foreground(accent)
 
         if is_dark:
-            # Fundo escuro: superfícies elevadas ficam MAIS CLARAS
             headerbar_bg = self._derive_color(bg, 0.08)
             sidebar_bg   = self._derive_color(bg, 0.04)
             card_bg      = self._derive_color(bg, 0.10)
             popover_bg   = self._derive_color(bg, 0.12)
             dialog_bg    = self._derive_color(bg, 0.10)
             view_bg      = self._derive_color(bg, -0.03)
+            # Tons base para temas escuros
+            base_red = "#c01c28"
+            base_yellow = "#f5c211"
         else:
-            # Fundo claro: superfícies elevadas ficam MAIS ESCURAS
             headerbar_bg = self._derive_color(bg, -0.04)
             sidebar_bg   = self._derive_color(bg, -0.02)
             card_bg      = self._derive_color(bg, -0.03)
             popover_bg   = self._derive_color(bg, -0.05)
             dialog_bg    = self._derive_color(bg, -0.03)
             view_bg      = self._derive_color(bg, 0.02)
+            # Tons base para temas claros
+            base_red = "#e01b24"
+            base_yellow = "#e5a50a"
+
+        # Mistura o vermelho e amarelo com a cor de fundo (mistura 30%)
+        harmonic_red = self._mix_colors(base_red, bg, 0.3)
+        harmonic_yellow = self._mix_colors(base_yellow, bg, 0.3)
 
         css = f"""
             @define-color window_bg_color {bg};
@@ -2157,6 +2165,12 @@ class MainWindow(Adw.ApplicationWindow):
             @define-color accent_color {accent};
             @define-color accent_bg_color {accent};
             @define-color accent_fg_color {accent_fg};
+            
+            /* Novas cores semânticas harmonizadas */
+            @define-color destructive_color {harmonic_red};
+            @define-color destructive_bg_color {harmonic_red};
+            @define-color warning_color {harmonic_yellow};
+            @define-color warning_bg_color {harmonic_yellow};
         """
 
         self._color_scheme_provider.load_from_data(css, -1)
@@ -2216,6 +2230,19 @@ class MainWindow(Adw.ApplicationWindow):
         r, g, b = (int(h[i:i + 2], 16) for i in (0, 2, 4))
         luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255.0
         return '#ffffff' if luminance < 0.5 else '#000000'
+
+    @staticmethod
+    def _mix_colors(hex1, hex2, factor):
+        """Mistura hex1 com hex2. Fator 0.0 é 100% hex1, 1.0 é 100% hex2."""
+        h1 = hex1.lstrip('#')
+        h2 = hex2.lstrip('#')
+        r1, g1, b1 = (int(h1, 16) for i in (0, 2, 4))
+        r2, g2, b2 = (int(h2, 16) for i in (0, 2, 4))
+        
+        r = int(r1 * (1 - factor) + r2 * factor)
+        g = int(g1 * (1 - factor) + g2 * factor)
+        b = int(b1 * (1 - factor) + b2 * factor)
+        return f'#{r:02x}{g:02x}{b:02x}'
 
     def _action_toggle_fullscreen(self, action, param):
         """Toggle fullscreen mode"""

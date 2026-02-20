@@ -434,10 +434,15 @@ class TacApplication(Adw.Application):
 
             /* Wiki help button highlight */
             .wiki-help-button {
-                background: alpha(@warning_color, 0.35);
-                border: 1px solid alpha(@warning_color, 0.5);
+                background: alpha(@accent_color, 0.15);
+                border: 1px solid alpha(@accent_color, 0.4);
                 border-radius: 6px;
                 transition: all 200ms ease;
+            }
+
+            .wiki-help-button:hover {
+                background: alpha(@accent_color, 0.25);
+                border: 1px solid alpha(@accent_color, 0.5);
             }
 
             .wiki-help-button:hover {

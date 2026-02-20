@@ -481,9 +481,8 @@ class PomodoroDialog(Adw.Window):
         self.minimize_button = Gtk.Button()
         self.minimize_button.set_icon_name('tac-window-minimize-symbolic')
         self.minimize_button.set_tooltip_text(_("Minimizar"))
-        self.minimize_button.add_css_class("flat")
         self.minimize_button.add_css_class("circular")
-        self.minimize_button.set_size_request(30, 30)
+        self.minimize_button.set_size_request(34, 34)
         self.minimize_button.set_hexpand(False)
         self.minimize_button.set_vexpand(False)
         self.minimize_button.set_halign(Gtk.Align.CENTER)
@@ -593,10 +592,10 @@ class PomodoroDialog(Adw.Window):
             
             button.circular {
                 border-radius: 15px;
-                min-width: 30px;
-                min-height: 30px;
-                max-width: 30px;
-                max-height: 30px;
+                min-width: 34px;
+                min-height: 34px;
+                max-width: 34px;
+                max-height: 34px;
                 padding: 0;
             }
             
