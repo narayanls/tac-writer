@@ -1,4 +1,4 @@
-# TAC Writer
+# Tac Writer
 
 <p align="center">
   <img src="https://github.com/narayanls/tac-writer/blob/main/usr/share/icons/hicolor/scalable/apps/tac-writer.svg" alt="Logo do TAC Writer" width="128" height="128">
@@ -26,7 +26,7 @@
 ---
 ## Visão Geral
 
-O **TAC Writer** é um assistente de escrita acadêmica moderno projetado para ajudar estudantes e pesquisadores a criar textos acadêmicos estruturados usando a **Técnica da Argumentação Contínua (TAC)**. Construído com GTK4 e libadwaita, o TAC oferece uma interface intuitiva para organizar pensamentos, gerenciar a estrutura do documento e produzir conteúdo acadêmico de alta qualidade.
+**Tac Writer** é um assistente de escrita acadêmica moderno projetado para ajudar estudantes e pesquisadores a criar textos acadêmicos estruturados usando a **Técnica da Argumentação Contínua (TAC)**. Construído com GTK4 e libadwaita, o aplicativo oferece uma interface intuitiva para organizar pensamentos, gerenciar a estrutura do documento e produzir conteúdo acadêmico de alta qualidade.
 
 A Técnica da Argumentação Contínua enfatiza parágrafos interconectados que se baseiam uns nos outros, tornando tópicos complexos mais fáceis de entender e argumentos mais convincentes.
 
