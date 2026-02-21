@@ -19,17 +19,20 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 if os.environ.get('APPIMAGE'):
     os.environ['GTK_IM_MODULE'] = 'gtk-im-context-simple'
 
-# Fix for KDE Plasma (dead keys)
-if os.environ.get('XDG_CURRENT_DESKTOP') == 'KDE':
-    os.environ.setdefault('GTK_IM_MODULE', 'xim')
-    
-# Fix for Hyprland (dead keys/accents issue)
-if os.environ.get('XDG_CURRENT_DESKTOP') == 'Hyprland':
-    os.environ.setdefault('GTK_IM_MODULE', 'gtk-im-context-simple')
+# Identifica o ambiente gráfico e o tipo de sessão
+current_desktop = os.environ.get('XDG_CURRENT_DESKTOP', '')
+session_type = os.environ.get('XDG_SESSION_TYPE', '').lower()
 
-# Fix for Niri (dead keys/accents issue)
-if os.environ.get('XDG_CURRENT_DESKTOP') == 'niri':
+# Fix for dead keys/accents in different Desktop Environments
+if current_desktop in ('Hyprland', 'niri'):
     os.environ.setdefault('GTK_IM_MODULE', 'gtk-im-context-simple')
+elif current_desktop == 'KDE':
+    if session_type == 'wayland':
+        # KDE Plasma 6+ (Wayland default)
+        os.environ.setdefault('GTK_IM_MODULE', 'gtk-im-context-simple')
+    else:
+        # Legacy KDE Plasma (X11)
+        os.environ.setdefault('GTK_IM_MODULE', 'xim')
 
 
 # Suppress GTK and enchant warnings via environment variables
