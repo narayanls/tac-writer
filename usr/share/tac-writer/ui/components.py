@@ -1321,8 +1321,8 @@ class ParagraphEditor(Gtk.Box):
             css_cache = get_cached_css_provider(font_family, font_size)
             self.text_view.add_css_class(css_cache['class_name'])
 
-            # Apply provider globally only once
-            if not hasattr(self.__class__, '_css_applied'):
+            # CORREÇÃO: Aplica o CSS de forma segura, evitando bugs de interface em múltiplas fontes
+            if not css_cache.get('applied', False):
                 display = Gdk.Display.get_default()
                 if display:
                     Gtk.StyleContext.add_provider_for_display(
@@ -1330,12 +1330,9 @@ class ParagraphEditor(Gtk.Box):
                         css_cache['provider'],
                         Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
                     )
-                self.__class__._css_applied = True
+                css_cache['applied'] = True
 
             self._apply_formatting()
-            
-            # DEBUG: Visual confirmation in terminal ---
-            print(f"DEBUG: ParagraphEditor {self.paragraph.id[:8]} MAPPED (Type: {self.paragraph.type})", flush=True)
             
         except Exception as e:
             print(f"Error during paragraph editor initialization: {e}", flush=True)
@@ -1844,32 +1841,49 @@ class ParagraphEditor(Gtk.Box):
         # Create text tags
         tag_table = self.text_buffer.get_tag_table()
 
-        # Remove existing format tag using its unique name
-        if hasattr(self, '_current_format_tag_name'):
-            existing_tag = tag_table.lookup(self._current_format_tag_name)
-            if existing_tag:
-                tag_table.remove(existing_tag)
+        # Usar um nome de tag único para garantir isolamento total
+        tag_name = f"base_format_{id(self)}"
+        
+        existing_tag = tag_table.lookup(tag_name)
+        if existing_tag:
+            tag_table.remove(existing_tag)
 
-        # Create new formatting tag with a unique name for THIS instance
-        self._current_format_tag_name = f"format_{id(self)}"
-        format_tag = self.text_buffer.create_tag(self._current_format_tag_name)
+        # Create new formatting tag
+        format_tag = self.text_buffer.create_tag(tag_name)
+        # PRIORIDADE 0 para permitir que os botões de negrito/itálico do usuário funcionem por cima
+        format_tag.set_priority(0)
 
-        # Apply styles securely using Enums
-        if formatting.get('bold', False):
+        # -- PROTEÇÃO CONTRA VAZAMENTO --
+        is_quote_epigraph = self.paragraph.type in [ParagraphType.QUOTE, ParagraphType.EPIGRAPH]
+        is_title = self.paragraph.type in [ParagraphType.TITLE_1, ParagraphType.TITLE_2]
+        
+        # Weight (Negrito)
+        if is_title or formatting.get('bold', False):
             format_tag.set_property("weight", Pango.Weight.BOLD)
-        if formatting.get('italic', False):
+        else:
+            format_tag.set_property("weight", Pango.Weight.NORMAL)
+
+        # Style (Itálico)
+        if is_quote_epigraph:
             format_tag.set_property("style", Pango.Style.ITALIC)
+        else:
+            format_tag.set_property("style", Pango.Style.NORMAL)
+            
+        # Underline
         if formatting.get('underline', False):
             format_tag.set_property("underline", Pango.Underline.SINGLE)
+        else:
+            format_tag.set_property("underline", Pango.Underline.NONE)
 
         # Apply tag to all text
         start_iter = self.text_buffer.get_start_iter()
         end_iter = self.text_buffer.get_end_iter()
         self.text_buffer.apply_tag(format_tag, start_iter, end_iter)
 
-        # Apply margins
-        left_margin = formatting.get('indent_left', 0.0)
+        # Apply margins - protegendo o recuo padrão da Citação ABNT
+        left_margin = 4.0 if self.paragraph.type == ParagraphType.QUOTE else formatting.get('indent_left', 0.0)
         right_margin = formatting.get('indent_right', 0.0)
+        
         self.text_view.set_left_margin(int(left_margin * 28))
         self.text_view.set_right_margin(int(right_margin * 28))
 
