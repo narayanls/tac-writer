@@ -482,11 +482,11 @@ class MainWindow(Adw.ApplicationWindow):
         paragraph_types = [
             (_("Título 1"), ParagraphType.TITLE_1),
             (_("Título 2"), ParagraphType.TITLE_2),
+            (_("Epígrafe"), ParagraphType.EPIGRAPH),
             (_("Introdução"), ParagraphType.INTRODUCTION),
             (_("Argumento"), ParagraphType.ARGUMENT),
             (_("Retomada do Argumento"), ParagraphType.ARGUMENT_RESUMPTION),
             (_("Citação"), ParagraphType.QUOTE),
-            (_("Epígrafe"), ParagraphType.EPIGRAPH),
             (_("Conclusão"), ParagraphType.CONCLUSION),
         ]
 

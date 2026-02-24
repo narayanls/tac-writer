@@ -1820,11 +1820,11 @@ class ParagraphEditor(Gtk.Box):
         type_labels = {
             ParagraphType.TITLE_1: _("Título 1"),
             ParagraphType.TITLE_2: _("Título 2"),
+            ParagraphType.EPIGRAPH: _("Epígrafe"),
             ParagraphType.INTRODUCTION: _("Introdução"),
             ParagraphType.ARGUMENT: _("Argumento"),
             ParagraphType.ARGUMENT_RESUMPTION: _("Retomada do Argumento"),
             ParagraphType.QUOTE: _("Citação"),
-            ParagraphType.EPIGRAPH: _("Epígrafe"),
             ParagraphType.CONCLUSION: _("Conclusão"),
             ParagraphType.LATEX: _("Equação LaTeX"),
             ParagraphType.CODE: _("Bloco de Código")
