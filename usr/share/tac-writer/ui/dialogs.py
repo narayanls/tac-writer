@@ -1360,7 +1360,7 @@ class WelcomeDialog(Adw.Window):
         wiki_button = Gtk.Button()
         wiki_button.set_label(_("Saiba Mais - Documentação Online"))
         wiki_button.set_icon_name('tac-help-browser-symbolic')
-        wiki_button.add_css_class("suggested-action")
+        wiki_button.add_css_class("flat")
         wiki_button.add_css_class("wiki-help-button")
         wiki_button.set_tooltip_text(_("Acesse o guia completo e tutoriais"))
         wiki_button.connect('clicked', self._on_wiki_clicked)
