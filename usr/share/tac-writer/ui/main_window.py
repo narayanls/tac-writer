@@ -2334,7 +2334,7 @@ class MainWindow(Adw.ApplicationWindow):
         method_label = method_labels.get(method, method)
 
         body = _(
-            "Uma nova versão do TAC Writer está disponível!\n\n"
+            "Uma nova versão do Tac Writer está disponível!\n\n"
             "Versão instalada: {current}\n"
             "Nova versão: {latest}\n"
             "Método de instalação: {method}"
@@ -2446,12 +2446,12 @@ class MainWindow(Adw.ApplicationWindow):
 
         script_content = f"""#!/bin/bash
 echo "==========================================="
-echo "  Atualizando TAC Writer via AUR"
+echo "  Atualizando Tac Writer via AUR"
 echo "==========================================="
 echo ""
 {update_cmd}
 echo ""
-echo "Atualização concluída. Reinicie o TAC Writer."
+echo "Atualização concluída. Reinicie o Tac Writer."
 echo "Pressione ENTER para fechar este terminal."
 read
 """
@@ -2501,7 +2501,7 @@ read
 
         # ── Progress dialog ──
         progress_win = Adw.Window()
-        progress_win.set_title(_("Atualizando TAC Writer"))
+        progress_win.set_title(_("Atualizando Tac Writer"))
         progress_win.set_transient_for(self)
         progress_win.set_modal(True)
         progress_win.set_default_size(420, 200)
@@ -2575,7 +2575,7 @@ read
             dialog = Adw.MessageDialog.new(
                 self,
                 _("Atualização Concluída!"),
-                _("TAC Writer foi atualizado para a versão {}.\n"
+                _("Tac Writer foi atualizado para a versão {}.\n"
                   "Reinicie o aplicativo para aplicar as mudanças.").format(version),
             )
             dialog.add_response("later", _("Depois"))

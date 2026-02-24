@@ -37,7 +37,7 @@ class WritingAiAssistant:
         " academic writing. Your job is to revise, correct, and refine the provided"
         " text while preserving the original meaning, maintaining a formal tone,"
         " and respecting the Continuous Argumentation Technique (introduction,"
-        " argumentation, evidence, connection). Fix only what is grammatically or"
+        " argumentation, evidence, connection). Fix only what is grammatically, ortographic, semantic or"
         " stylistically incorrect, rewriting sentences only where needed. The response"
         " MUST be a JSON object containing the field 'reply' with the fully corrected"
         " text (no extra commentary) and, if necessary, 'suggestions' with brief notes."
