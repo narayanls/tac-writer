@@ -3247,9 +3247,9 @@ class SupporterDialog(Adw.Window):
         status_page.set_icon_name("tac-emblem-favorite-symbolic")
         status_page.set_title(_("Apoie o Tac Writer"))
         status_page.set_description(
-            _("O Tac Writer é um projeto de código aberto feito com dedicação. "
-              "Apoie no Catarse para ajudar a manter o projeto vivo e desbloqueie "
-              "RECURSOS EXCLUSIVOS para a sua escrita acadêmica!")
+            _("Apoie o Tac Writer e desbloqueie RECURSOS EXCLUSIVOS. "
+              "Além de aproveitar funções adicionais você ajuda a manter o projeto vivo. "
+              "Apoie no Catarse com uma colaboração única.")
         )
         status_page.add_css_class("compact")
         
