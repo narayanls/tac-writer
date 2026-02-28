@@ -196,9 +196,15 @@ class MainWindow(Adw.ApplicationWindow):
         self.goals_button.set_tooltip_text(_("Metas e Estatísticas"))
         self.goals_button.connect('clicked', self._on_goals_clicked)
         self.goals_button.set_sensitive(False)
-        # Só exibe se já for apoiador
-        if self.config.get_is_supporter():
-            self.header_bar.pack_start(self.goals_button)
+        self.header_bar.pack_start(self.goals_button)
+
+        # Mapa Mental e Plano Guiado (Premium)
+        self.mindmap_button = Gtk.Button()
+        self.mindmap_button.set_icon_name('tac-find-location-symbolic')
+        self.mindmap_button.set_tooltip_text(_("Mapa Mental e Plano Guiado"))
+        self.mindmap_button.connect('clicked', self._on_mindmap_clicked)
+        self.mindmap_button.set_sensitive(False)
+        self.header_bar.pack_start(self.mindmap_button)
 
         # Cloud Sync Button (Dropbox)
         self.cloud_button = Gtk.Button()
@@ -360,6 +366,7 @@ class MainWindow(Adw.ApplicationWindow):
             ('insert_image', self._action_insert_image),
             ('insert_table', self._action_insert_table),
             ('insert_chart', self._action_insert_chart),
+            ('insert_mindmap', self._action_insert_mindmap),
             ('show_welcome', self._action_show_welcome),
             ('undo', self._action_undo),
             ('redo', self._action_redo),
@@ -544,6 +551,7 @@ class MainWindow(Adw.ApplicationWindow):
         data_menu = Gio.Menu()
         data_menu.append(_("📊 Inserir Gráfico (Premium)"), "win.insert_chart")
         data_menu.append(_("📋 Inserir Tabela (Premium)"), "win.insert_table")
+        data_menu.append(_("🗺️ Mapa Mental e Plano Guiado (Premium)"), "win.insert_mindmap")
         
         data_button.set_menu_model(data_menu)
         toolbar_box.append(data_button)
@@ -687,7 +695,8 @@ class MainWindow(Adw.ApplicationWindow):
                     editor_widget = self._create_chart_widget(paragraph)
                     if not hasattr(editor_widget, 'paragraph'):
                         editor_widget.paragraph = paragraph
-                        
+
+
                 else:
                     editor_widget = ParagraphEditor(paragraph, config=self.config)
                 
@@ -1173,6 +1182,9 @@ class MainWindow(Adw.ApplicationWindow):
 
     def _on_goals_clicked(self, button):
         """Abre o dialog de Metas e Estatísticas Avançadas (só apoiadores)."""
+        if not self.config.get_is_supporter():
+            self._show_supporter_lock_dialog(_("Metas e Estatísticas Avançadas"))
+            return
         if not self.current_project:
             return
         dialog = GoalsDialog(self, self.current_project, self.config)
@@ -1479,6 +1491,128 @@ class MainWindow(Adw.ApplicationWindow):
         except Exception as e:
             print(f"Erro ao adicionar gráfico: {e}")
             self._show_toast(_("Erro ao salvar gráfico."), Adw.ToastPriority.HIGH)
+
+    # ── Mapa Mental e Plano Guiado (Premium) ──────────────────────────────
+
+    def _on_mindmap_clicked(self, button):
+        """Botão da header bar: viewer se mapa já existe, planner se não existe."""
+        if not self.config.get_is_supporter():
+            self._show_supporter_lock_dialog(_("Mapa Mental e Plano Guiado"))
+            return
+        if not self.current_project:
+            self._show_toast(_("Nenhum projeto aberto"), Adw.ToastPriority.HIGH)
+            return
+        meta = self.current_project.metadata.get('mindmap')
+        if meta and meta.get('image_path'):
+            self._show_mindmap_viewer(meta)
+        else:
+            self._open_mindmap_dialog()
+
+    def _action_insert_mindmap(self, action, param):
+        """Ação de menu: viewer ou planner (Premium)."""
+        if not self.config.get_is_supporter():
+            self._show_supporter_lock_dialog(_("Mapa Mental e Plano Guiado"))
+            return
+        if not self.current_project:
+            self._show_toast(_("Nenhum projeto aberto"), Adw.ToastPriority.HIGH)
+            return
+        meta = self.current_project.metadata.get('mindmap')
+        if meta and meta.get('image_path'):
+            self._show_mindmap_viewer(meta)
+        else:
+            self._open_mindmap_dialog()
+
+    def _open_mindmap_dialog(self):
+        """Instancia e apresenta o MindMapPlannerDialog."""
+        from ui.dialogs import MindMapPlannerDialog
+        dialog = MindMapPlannerDialog(
+            parent=self,
+            project=self.current_project,
+        )
+        dialog.connect('mindmap-generated', self._on_mindmap_generated)
+        dialog.present()
+
+    def _show_mindmap_viewer(self, meta):
+        """Abre janela grande para visualizar o mapa mental do projeto atual."""
+        import os
+
+        win = Adw.Window()
+        win.set_title(_("Mapa Mental — {}").format(meta.get('theme', '')))
+        win.set_transient_for(self)
+        win.set_modal(False)          # Não bloqueia o editor
+        win.set_default_size(1000, 720)
+        win.set_resizable(True)
+
+        content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        win.set_content(content_box)
+
+        # Header bar
+        hbar = Adw.HeaderBar()
+        hbar.set_show_end_title_buttons(True)
+
+        regen_btn = Gtk.Button(label=_("Refazer Mapa"))
+        regen_btn.set_icon_name('tac-view-refresh-symbolic')
+        regen_btn.set_tooltip_text(_("Responder as perguntas novamente e gerar um novo mapa"))
+        def _on_regen(_b, w=win):
+            w.destroy()
+            self._open_mindmap_dialog()
+        regen_btn.connect('clicked', _on_regen)
+        hbar.pack_start(regen_btn)
+
+        content_box.append(hbar)
+
+        # Área rolável com a imagem
+        scrolled = Gtk.ScrolledWindow(vexpand=True, hexpand=True)
+        scrolled.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
+        content_box.append(scrolled)
+
+        image_path = meta.get('image_path', '')
+        if image_path and os.path.exists(image_path):
+            try:
+                texture = Gdk.Texture.new_from_filename(image_path)
+                picture = Gtk.Picture(paintable=texture, can_shrink=False)
+                picture.set_content_fit(Gtk.ContentFit.CONTAIN)
+                picture.set_margin_top(16)
+                picture.set_margin_bottom(16)
+                picture.set_margin_start(16)
+                picture.set_margin_end(16)
+                scrolled.set_child(picture)
+            except Exception as e:
+                err = Gtk.Label(label=_("Erro ao carregar imagem: {}").format(e))
+                err.add_css_class('error')
+                scrolled.set_child(err)
+        else:
+            err = Gtk.Label(label=_("Arquivo de imagem não encontrado.\nClique em 'Refazer Mapa' para gerar novamente."))
+            err.set_justify(Gtk.Justification.CENTER)
+            err.set_valign(Gtk.Align.CENTER)
+            scrolled.set_child(err)
+
+        win.present()
+
+    def _on_mindmap_generated(self, dialog, meta):
+        """Salva o mapa mental nos metadados do projeto e abre o viewer."""
+        if not self.current_project:
+            return
+        try:
+            from datetime import datetime
+            # Apaga imagem anterior se existir
+            old_meta = self.current_project.metadata.get('mindmap', {})
+            old_path = old_meta.get('image_path', '')
+            if old_path:
+                import os
+                if os.path.exists(old_path):
+                    try:
+                        os.remove(old_path)
+                    except OSError:
+                        pass
+
+            self.current_project.metadata['mindmap'] = meta
+            self.current_project.modified_at = datetime.now()
+            self.project_manager.save_project(self.current_project)
+            self._show_toast(_("Mapa Mental gerado! Clique no botão 🗺️ para visualizar."))
+        except Exception as e:
+            print(f"Erro ao salvar mapa mental: {e}")
+            self._show_toast(_("Erro ao salvar o Mapa Mental."), Adw.ToastPriority.HIGH)
 
     def _create_chart_widget(self, paragraph):
         """Renderiza o gráfico no editor"""
@@ -2401,6 +2535,8 @@ class MainWindow(Adw.ApplicationWindow):
             self.references_button.set_sensitive(False)
             if hasattr(self, 'goals_button'):
                 self.goals_button.set_sensitive(False)
+            if hasattr(self, 'mindmap_button'):
+                self.mindmap_button.set_sensitive(False)
 
         elif view_name == "editor" and self.current_project:
             title_widget.set_title(self.current_project.name)
@@ -2411,8 +2547,10 @@ class MainWindow(Adw.ApplicationWindow):
             self.save_button.set_sensitive(True)
             self.pomodoro_button.set_sensitive(True)
             self.references_button.set_sensitive(True)
-            if self.config.get_is_supporter():
+            if hasattr(self, 'goals_button'):
                 self.goals_button.set_sensitive(True)
+            if hasattr(self, 'mindmap_button'):
+                self.mindmap_button.set_sensitive(True)
 
 
     def _show_loading_state(self):
@@ -2701,13 +2839,6 @@ class MainWindow(Adw.ApplicationWindow):
         if self.config.get_is_supporter():
             if hasattr(self, 'supporter_button') and self.supporter_button.get_parent() == self.header_bar:
                 self.header_bar.remove(self.supporter_button)
-
-            # Adiciona o botão de metas na headerbar se ainda não estiver lá
-            if hasattr(self, 'goals_button') and self.goals_button.get_parent() != self.header_bar:
-                self.header_bar.pack_start(self.goals_button)
-                # Habilita imediatamente se já há um projeto aberto
-                if self.current_project:
-                    self.goals_button.set_sensitive(True)
 
             self._show_toast(_("Modo Apoiador Ativado! Funcionalidades exclusivas liberadas. ✨"))
 
