@@ -4376,3 +4376,425 @@ class ChartDialog(Adw.Window):
         # Salva a imagem
         plt.savefig(str(filepath), dpi=150, bbox_inches='tight')
         plt.close() # Limpa a memória do matplotlib
+
+
+class MindMapPlannerDialog(Adw.Window):
+    """
+    Dialog for creating a guided Mind Map / Project Planner (Premium).
+    The user answers 5 structured questions about their research/writing
+    project and the app generates a visual mind map as an image paragraph.
+    """
+
+    __gtype_name__ = 'TacMindMapPlannerDialog'
+
+    __gsignals__ = {
+        'mindmap-generated': (GObject.SIGNAL_RUN_FIRST, None, (object,)),
+    }
+
+    # Labels and placeholder text for each question (index → dict)
+    QUESTIONS = [
+        {
+            'label':       _("1. Tema principal / Objeto da pesquisa"),
+            'placeholder': _("Ex: O impacto das redes sociais na política contemporânea"),
+            'hint':        _("Este será o nó central do mapa. Seja objetivo."),
+            'key':         'theme',
+            'multiline':   False,
+        },
+        {
+            'label':       _("2. Perguntas que o texto pretende responder"),
+            'placeholder': _("Separe cada pergunta com ENTER\nEx:\nComo as redes sociais influenciam eleições?\nQuais grupos são mais afetados?"),
+            'hint':        _("Use uma linha por pergunta."),
+            'key':         'questions',
+            'multiline':   True,
+        },
+        {
+            'label':       _("3. Principais argumentos / respostas"),
+            'placeholder': _("Separe cada argumento com ENTER\nEx:\nAlgoritmos criam bolhas de informação\nDesinformação acelera polarização"),
+            'hint':        _("Use uma linha por argumento."),
+            'key':         'arguments',
+            'multiline':   True,
+        },
+        {
+            'label':       _("4. Autores / dados / fontes de apoio"),
+            'placeholder': _("Separe cada fonte com ENTER\nEx:\nFilterBubble – Eli Pariser (2011)\nIBGE – Pesquisa TIC Domicílios 2023"),
+            'hint':        _("Use uma linha por fonte."),
+            'key':         'sources',
+            'multiline':   True,
+        },
+        {
+            'label':       _("5. O que espera obter no final deste trabalho?"),
+            'placeholder': _("Ex: Demonstrar que o consumo passivo de redes sociais reduz o senso crítico do eleitor"),
+            'hint':        _("Descreva o objetivo ou contribuição esperada."),
+            'key':         'goal',
+            'multiline':   False,
+        },
+    ]
+
+    def __init__(self, parent, project, **kwargs):
+        super().__init__(**kwargs)
+
+        self.project = project
+        self.config = parent.config
+
+        self.set_title(_("Mapa Mental e Plano Guiado"))
+        self.set_transient_for(parent)
+        self.set_modal(True)
+        self.set_default_size(640, 680)
+        self.set_resizable(True)
+
+        # Will hold the Gtk.TextView widgets keyed by question 'key'
+        self._text_widgets: dict = {}
+
+        self._create_ui()
+
+        if not MATPLOTLIB_AVAILABLE:
+            self._warn_missing_matplotlib()
+
+    # ── UI Construction ────────────────────────────────────────────────────
+
+    def _create_ui(self):
+        content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.set_content(content_box)
+
+        # ── Header bar ──
+        header_bar = Adw.HeaderBar()
+        header_bar.set_show_end_title_buttons(False)
+
+        cancel_btn = Gtk.Button(label=_("Cancelar"))
+        cancel_btn.connect('clicked', lambda _b: self.destroy())
+        header_bar.pack_start(cancel_btn)
+
+        generate_btn = Gtk.Button(label=_("Gerar Mapa Mental"))
+        generate_btn.add_css_class('suggested-action')
+        generate_btn.connect('clicked', self._on_generate_clicked)
+        header_bar.pack_end(generate_btn)
+
+        content_box.append(header_bar)
+
+        # ── Scrollable main area ──
+        scrolled = Gtk.ScrolledWindow(vexpand=True)
+        scrolled.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        content_box.append(scrolled)
+
+        main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=20)
+        main_box.set_margin_top(20)
+        main_box.set_margin_bottom(24)
+        main_box.set_margin_start(24)
+        main_box.set_margin_end(24)
+        scrolled.set_child(main_box)
+
+        # ── Introductory banner ──
+        banner_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        banner_box.add_css_class('card')
+        banner_box.set_margin_bottom(4)
+
+        icon = Gtk.Image.new_from_icon_name('tac-find-location-symbolic')
+        icon.set_pixel_size(32)
+        icon.set_margin_start(16)
+        icon.set_margin_top(12)
+        icon.set_margin_bottom(12)
+        banner_box.append(icon)
+
+        banner_text_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+        banner_text_box.set_margin_top(12)
+        banner_text_box.set_margin_bottom(12)
+        banner_text_box.set_margin_end(16)
+
+        title_lbl = Gtk.Label()
+        title_lbl.set_markup(f"<b>{_('Plano Guiado do Projeto')}</b>")
+        title_lbl.set_xalign(0)
+        banner_text_box.append(title_lbl)
+
+        subtitle_lbl = Gtk.Label(
+            label=_("Responda as perguntas abaixo. O TAC vai organizar suas ideias visualmente.")
+        )
+        subtitle_lbl.set_xalign(0)
+        subtitle_lbl.set_wrap(True)
+        subtitle_lbl.add_css_class('dim-label')
+        banner_text_box.append(subtitle_lbl)
+
+        banner_box.append(banner_text_box)
+        main_box.append(banner_box)
+
+        # ── One group per question ──
+        for q in self.QUESTIONS:
+            group = Adw.PreferencesGroup(title=q['label'])
+            group.set_description(q['hint'])
+
+            if q['multiline']:
+                # Multi-line: use a Frame + TextView
+                frame = Gtk.Frame()
+                frame.set_margin_start(12)
+                frame.set_margin_end(12)
+                frame.set_margin_top(4)
+                frame.set_margin_bottom(8)
+
+                sw = Gtk.ScrolledWindow()
+                sw.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+                sw.set_min_content_height(90)
+                sw.set_max_content_height(160)
+
+                tv = Gtk.TextView()
+                tv.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
+                tv.set_top_margin(8)
+                tv.set_bottom_margin(8)
+                tv.set_left_margin(10)
+                tv.set_right_margin(10)
+
+                # Placeholder: escreve em cinza, limpa ao focar (GTK4)
+                buf = tv.get_buffer()
+                placeholder = q['placeholder']
+
+                buf.set_text(placeholder)
+                ph_tag = buf.create_tag('placeholder', foreground='gray')
+                buf.apply_tag(ph_tag, buf.get_start_iter(), buf.get_end_iter())
+
+                focus_ctrl = Gtk.EventControllerFocus()
+
+                def _on_focus_enter(fc, b=buf, ph=placeholder):
+                    start, end = b.get_bounds()
+                    if b.get_text(start, end, False) == ph:
+                        b.set_text('')
+
+                focus_ctrl.connect('enter', _on_focus_enter)
+                tv.add_controller(focus_ctrl)
+
+                sw.set_child(tv)
+                frame.set_child(sw)
+                group.add(frame)
+                self._text_widgets[q['key']] = tv
+            else:
+                # Single-line: use Adw.EntryRow
+                entry_row = Adw.EntryRow(title='')
+                entry_row.set_show_apply_button(False)
+                group.add(entry_row)
+                self._text_widgets[q['key']] = entry_row
+
+            main_box.append(group)
+
+    # ── Helpers ──────────────────────────────────────────────────────────
+
+    def _get_text(self, key: str) -> str:
+        """Retrieve and clean user text from a widget."""
+        widget = self._text_widgets.get(key)
+        if widget is None:
+            return ''
+
+        if isinstance(widget, Gtk.TextView):
+            buf = widget.get_buffer()
+            start, end = buf.get_bounds()
+            raw = buf.get_text(start, end, False).strip()
+            # Discard placeholder text
+            for q in self.QUESTIONS:
+                if q['key'] == key and raw == q['placeholder'].strip():
+                    return ''
+            return raw
+        elif isinstance(widget, Adw.EntryRow):
+            return widget.get_text().strip()
+        return ''
+
+    def _split_lines(self, text: str) -> list:
+        """Split multi-line text into a clean list of non-empty items."""
+        return [line.strip() for line in text.splitlines() if line.strip()]
+
+    # ── Generation ────────────────────────────────────────────────────────
+
+    def _on_generate_clicked(self, _btn):
+        if not MATPLOTLIB_AVAILABLE:
+            self._warn_missing_matplotlib()
+            return
+
+        theme     = self._get_text('theme')
+        questions = self._split_lines(self._get_text('questions'))
+        arguments = self._split_lines(self._get_text('arguments'))
+        sources   = self._split_lines(self._get_text('sources'))
+        goal      = self._get_text('goal')
+
+        if not theme:
+            self._show_validation_error(
+                _("Campo obrigatório"),
+                _("Por favor, preencha ao menos o Tema Principal (pergunta 1).")
+            )
+            return
+
+        # Build image
+        images_dir = self.config.data_dir / 'images' / self.project.id
+        images_dir.mkdir(parents=True, exist_ok=True)
+        filename = f"mindmap_{uuid.uuid4().hex[:8]}.png"
+        filepath = images_dir / filename
+
+        self._generate_mind_map_image(
+            filepath, theme, questions, arguments, sources, goal
+        )
+
+        # Empacota metadados e emite — sem criar parágrafo
+        meta = {
+            'theme':      theme,
+            'questions':  questions,
+            'arguments':  arguments,
+            'sources':    sources,
+            'goal':       goal,
+            'image_path': str(filepath),
+        }
+
+        self.emit('mindmap-generated', meta)
+        self.destroy()
+
+    # ── Matplotlib rendering ───────────────────────────────────────────────
+
+    def _generate_mind_map_image(
+        self, filepath, theme, questions, arguments, sources, goal
+    ):
+        """
+        Draw a radial mind map with matplotlib:
+
+        Centre ── Perguntas
+               ── Argumentos
+               ── Fontes
+               ── Objetivo
+        """
+        import math
+
+        # ── Figure setup ──
+        fig, ax = plt.subplots(figsize=(14, 10))
+        ax.set_aspect('equal')
+        ax.axis('off')
+        fig.patch.set_facecolor('#1e1e2e')  # dark background
+
+        # ── Colour palette (GNOME-inspired) ──
+        BRANCH_COLORS = [
+            '#3584e4',  # blue  – questions
+            '#e5a50a',  # amber – arguments
+            '#2ec27e',  # green – sources
+            '#e01b24',  # red   – goal
+        ]
+        CENTER_COLOR   = '#9141ac'  # purple
+        NODE_BG        = '#313244'
+        TEXT_COLOR     = '#cdd6f4'
+        DIM_COLOR      = '#a6adc8'
+
+        # ── Helpers ──────────────────────────────────────────────────────
+
+        def wrap(text: str, max_len: int = 28) -> str:
+            """Naïve word-wrap for node labels."""
+            words = text.split()
+            lines, line = [], ''
+            for w in words:
+                if len(line) + len(w) + 1 <= max_len:
+                    line = (line + ' ' + w).strip()
+                else:
+                    if line:
+                        lines.append(line)
+                    line = w
+            if line:
+                lines.append(line)
+            return '\n'.join(lines)
+
+        def draw_node(x, y, text, color, fontsize=9, alpha=1.0, bold=False):
+            bbox_props = dict(
+                boxstyle='round,pad=0.4',
+                facecolor=color,
+                edgecolor='none',
+                alpha=alpha,
+            )
+            weight = 'bold' if bold else 'normal'
+            ax.text(
+                x, y, wrap(text),
+                ha='center', va='center',
+                fontsize=fontsize, color=TEXT_COLOR,
+                fontweight=weight,
+                bbox=bbox_props, zorder=3,
+            )
+
+        def draw_edge(x0, y0, x1, y1, color):
+            ax.annotate(
+                '', xy=(x1, y1), xytext=(x0, y0),
+                arrowprops=dict(
+                    arrowstyle='->', color=color,
+                    lw=1.5, connectionstyle='arc3,rad=0.08'
+                ),
+                zorder=2,
+            )
+
+        # ── Layout ───────────────────────────────────────────────────────
+        cx, cy = 0.0, 0.0  # centre
+
+        branches = [
+            (_("Perguntas"),   questions, BRANCH_COLORS[0]),
+            (_("Argumentos"),  arguments, BRANCH_COLORS[1]),
+            (_("Fontes"),      sources,   BRANCH_COLORS[2]),
+            (_("Objetivo"),    [goal] if goal else [], BRANCH_COLORS[3]),
+        ]
+
+        # Angles for each branch (evenly distributed)
+        n_branches = len(branches)
+        branch_angles = [
+            math.radians(90 + i * (360 / n_branches))
+            for i in range(n_branches)
+        ]
+        branch_radius = 2.8   # distance from centre to branch label
+        leaf_radius   = 4.6   # distance from centre to leaf nodes
+
+        # ── Draw centre ──
+        draw_node(cx, cy, theme, CENTER_COLOR, fontsize=11, bold=True)
+
+        # ── Draw branches and leaves ──
+        for (label, items, color), angle in zip(branches, branch_angles):
+            bx = cx + branch_radius * math.cos(angle)
+            by = cy + branch_radius * math.sin(angle)
+
+            draw_edge(cx, cy, bx * 0.7, by * 0.7, color)
+            draw_node(bx, by, label, color, fontsize=10, bold=True)
+
+            if not items:
+                continue
+
+            # Spread leaves around the branch angle
+            half_spread = math.radians(30)
+            if len(items) == 1:
+                leaf_angles = [angle]
+            else:
+                step = (2 * half_spread) / max(len(items) - 1, 1)
+                leaf_angles = [
+                    angle - half_spread + i * step
+                    for i in range(len(items))
+                ]
+
+            for la, item in zip(leaf_angles, items[:6]):  # cap at 6 per branch
+                lx = cx + leaf_radius * math.cos(la)
+                ly = cy + leaf_radius * math.sin(la)
+                draw_edge(bx, by, lx, ly, color)
+                draw_node(lx, ly, item, NODE_BG, fontsize=8)
+
+        # ── Title ──
+        ax.set_title(
+            theme, fontsize=13, color=TEXT_COLOR,
+            fontweight='bold', pad=14
+        )
+
+        ax.set_xlim(-6.5, 6.5)
+        ax.set_ylim(-6.5, 6.5)
+
+        plt.tight_layout()
+        plt.savefig(str(filepath), dpi=150, bbox_inches='tight',
+                    facecolor=fig.get_facecolor())
+        plt.close()
+
+    # ── Error helpers ─────────────────────────────────────────────────────
+
+    def _warn_missing_matplotlib(self):
+        dialog = Adw.MessageDialog.new(
+            self,
+            _("Biblioteca ausente"),
+            _("A biblioteca 'matplotlib' é necessária para gerar o Mapa Mental.\n"
+              "Instale via terminal: pip install matplotlib")
+        )
+        dialog.add_response("ok", _("Entendi"))
+        dialog.connect("response", lambda d, _r: self.destroy())
+        dialog.present()
+
+    def _show_validation_error(self, title: str, message: str):
+        dialog = Adw.MessageDialog.new(self, title, message)
+        dialog.add_response("ok", _("OK"))
+        dialog.connect("response", lambda d, _r: d.destroy())
+        dialog.present()
