@@ -19,7 +19,7 @@ from core.ai_assistant import WritingAiAssistant
 from utils.helpers import FormatHelper
 from utils.i18n import _
 from .components import WelcomeView, ParagraphEditor, ProjectListWidget, SpellCheckHelper, PomodoroTimer, FirstRunTour, ReorderableParagraphRow
-from .dialogs import NewProjectDialog, ExportDialog, PreferencesDialog, AboutDialog, WelcomeDialog, BackupManagerDialog, ImageDialog, CloudSyncDialog, ReferencesDialog
+from .dialogs import NewProjectDialog, ExportDialog, PreferencesDialog, AboutDialog, WelcomeDialog, BackupManagerDialog, ImageDialog, CloudSyncDialog, ReferencesDialog, SupporterDialog, GoalsDialog
 
 import os
 import threading
@@ -50,6 +50,8 @@ class MainWindow(Adw.ApplicationWindow):
         # Pomodoro Timer
         self.pomodoro_dialog = None
         self.timer = PomodoroTimer()
+        # Conta sessões de foco concluídas para as Estatísticas Avançadas
+        self.timer.connect('timer-finished', self._on_pomodoro_session_finished)
 
         # AI assistant
         self.ai_assistant = WritingAiAssistant(self, self.config)
@@ -188,6 +190,16 @@ class MainWindow(Adw.ApplicationWindow):
         self.pomodoro_button.set_sensitive(False)
         self.header_bar.pack_start(self.pomodoro_button)
 
+        # Metas e Estatísticas (exclusivo Apoiadores)
+        self.goals_button = Gtk.Button()
+        self.goals_button.set_icon_name('tac-task-due-date-symbolic')
+        self.goals_button.set_tooltip_text(_("Metas e Estatísticas"))
+        self.goals_button.connect('clicked', self._on_goals_clicked)
+        self.goals_button.set_sensitive(False)
+        # Só exibe se já for apoiador
+        if self.config.get_is_supporter():
+            self.header_bar.pack_start(self.goals_button)
+
         # Cloud Sync Button (Dropbox)
         self.cloud_button = Gtk.Button()
         self.cloud_button.set_icon_name('tac-cloud-symbolic')
@@ -203,7 +215,6 @@ class MainWindow(Adw.ApplicationWindow):
         self.references_button.connect('clicked', self._on_references_clicked)
         self.references_button.set_sensitive(False) 
         self.header_bar.pack_start(self.references_button)
-
 
         # Right side buttons
         # Menu button
@@ -246,6 +257,17 @@ class MainWindow(Adw.ApplicationWindow):
 
         self.header_bar.pack_end(search_box)
 
+        # -- NOVO: Botão do Apoiador (Coração) --
+        self.supporter_button = Gtk.Button()
+        self.supporter_button.set_icon_name('tac-emblem-favorite-symbolic')
+        self.supporter_button.set_tooltip_text(_("Versão do Apoiador 💖"))
+        self.supporter_button.add_css_class("flat")
+        self.supporter_button.add_css_class("error") # Deixa o ícone avermelhado/destacado no Adwaita
+        self.supporter_button.connect('clicked', self._on_supporter_clicked)
+        
+        # Só exibe o botão na barra se o usuário AINDA NÃO for um apoiador ativado
+        if not self.config.get_is_supporter():
+            self.header_bar.pack_end(self.supporter_button)
         
 
     def _setup_menu(self, menu_button):
@@ -272,7 +294,7 @@ class MainWindow(Adw.ApplicationWindow):
         # Help section
         help_section = Gio.Menu()
         help_section.append(_("Guia de Boas-vindas"), "win.show_welcome")
-        help_section.append(_("Faça uma Doação ❤"), "win.donate")
+        help_section.append(_("Versão do Apoiador 💖"), "win.supporter")
         help_section.append(_("Sobre o TAC"), "app.about")
         menu_model.append_section(None, help_section)
 
@@ -336,12 +358,14 @@ class MainWindow(Adw.ApplicationWindow):
             ('toggle_fullscreen', self._action_toggle_fullscreen),
             ('add_paragraph', self._action_add_paragraph, 's'),
             ('insert_image', self._action_insert_image),
+            ('insert_table', self._action_insert_table),
+            ('insert_chart', self._action_insert_chart),
             ('show_welcome', self._action_show_welcome),
             ('undo', self._action_undo),
             ('redo', self._action_redo),
             ('backup_manager', self._action_backup_manager),
             ('new_project', self._action_new_project, 's'),
-            ('donate', self._on_donate),
+            ('supporter', self._action_supporter),
         ]
 
         for action_data in actions:
@@ -507,10 +531,23 @@ class MainWindow(Adw.ApplicationWindow):
         # Add image button
         image_button = Gtk.Button()
         image_button.set_label(_("Inserir Imagem"))
-        image_button.set_icon_name('insert-image-symbolic')
+        image_button.set_icon_name('tac-insert-image-symbolic')
         image_button.set_tooltip_text(_("Inserir Imagem (Ctrl+Alt+I)"))
         image_button.set_action_name('win.insert_image')
         toolbar_box.append(image_button)
+
+        # Botão de Dados (Tabelas e Gráficos)
+        data_button = Gtk.MenuButton()
+        data_button.set_label(_("Dados Estruturados"))
+        data_button.set_icon_name('tac-x-office-spreadsheet-symbolic')
+        
+        data_menu = Gio.Menu()
+        data_menu.append(_("📊 Inserir Gráfico (Premium)"), "win.insert_chart")
+        data_menu.append(_("📋 Inserir Tabela (Premium)"), "win.insert_table")
+        
+        data_button.set_menu_model(data_menu)
+        toolbar_box.append(data_button)
+
 
         return toolbar_box
     
@@ -551,24 +588,30 @@ class MainWindow(Adw.ApplicationWindow):
             adjustment = self.editor_scrolled.get_vadjustment()
             adjustment.set_value(adjustment.get_lower())
 
-    def _on_scroll_to_bottom(self, button):
-        """Scroll to the bottom of the project"""
-        # If loading, scroll after
-        if self._is_loading_paragraphs:
-            self._pending_scroll_to_bottom = True
-            # Optional: Show a quick warning or change the cursor
-            self._show_toast(_("Carregando restante do documento..."), Adw.ToastPriority.LOW)
-            
-            # Force scroll to current point immediately too
+    def _on_scroll_to_top(self, button):
+        """Scroll to the top of the project"""
+        def scroll():
             if hasattr(self, 'editor_scrolled'):
                 adjustment = self.editor_scrolled.get_vadjustment()
-                adjustment.set_value(adjustment.get_upper())
+                adjustment.set_value(adjustment.get_lower())
+            return False
+        GLib.idle_add(scroll)
+
+    def _on_scroll_to_bottom(self, button):
+        """Scroll to the bottom of the project"""
+        if self._is_loading_paragraphs:
+            self._pending_scroll_to_bottom = True
+            self._show_toast(_("Carregando restante do documento..."), Adw.ToastPriority.NORMAL)
             return
 
-        # Default behavior if everything has already loaded
-        if hasattr(self, 'editor_scrolled'):
-            adjustment = self.editor_scrolled.get_vadjustment()
-            adjustment.set_value(adjustment.get_upper() - adjustment.get_page_size())
+        def scroll():
+            if hasattr(self, 'editor_scrolled'):
+                adjustment = self.editor_scrolled.get_vadjustment()
+                # Cálculo exato para bater no fim da página no GTK4
+                adjustment.set_value(adjustment.get_upper() - adjustment.get_page_size())
+            return False
+            
+        GLib.idle_add(scroll)
 
     def _refresh_paragraphs(self):
         """Refresh paragraphs display with optimized loading"""
@@ -617,32 +660,37 @@ class MainWindow(Adw.ApplicationWindow):
 
     def _process_paragraph_batch(self):
         """Process a batch of paragraphs for asynchronous loading"""
-        # PERFORMANCE SETUP
         BATCH_SIZE = 10 
         
         count = 0
         while self._paragraphs_to_add and count < BATCH_SIZE:
             paragraph = self._paragraphs_to_add.pop(0)
             
-            # Widget creation/reuse logic
             row_widget = None
             if paragraph.id in self._existing_widgets:
                 row_widget = self._existing_widgets[paragraph.id]
             else:
                 editor_widget = None 
 
-                # Use 'editor_widget' instead of 'widget
-                if paragraph.type == ParagraphType.IMAGE:
+                # FIX: Comparação blindada (compara o Enum e a String para evitar bugs de salvamento)
+                if paragraph.type == ParagraphType.IMAGE or paragraph.type == "image":
                     editor_widget = self._create_image_widget(paragraph)
-                    # Ensures image widget has paragraph reference
                     if not hasattr(editor_widget, 'paragraph'):
                         editor_widget.paragraph = paragraph
+                        
+                elif paragraph.type == ParagraphType.TABLE or paragraph.type == "table":
+                    editor_widget = self._create_table_widget(paragraph)
+                    if not hasattr(editor_widget, 'paragraph'):
+                        editor_widget.paragraph = paragraph
+                        
+                elif paragraph.type == ParagraphType.CHART or paragraph.type == "chart":
+                    editor_widget = self._create_chart_widget(paragraph)
+                    if not hasattr(editor_widget, 'paragraph'):
+                        editor_widget.paragraph = paragraph
+                        
                 else:
                     editor_widget = ParagraphEditor(paragraph, config=self.config)
-                    editor_widget.connect('content-changed', self._on_paragraph_changed)
-                    editor_widget.connect('remove-requested', self._on_paragraph_remove_requested)
-
-                # Now editor_widget is no longer None
+                
                 from ui.components import ReorderableParagraphRow 
                 row_widget = ReorderableParagraphRow(editor_widget)
 
@@ -663,7 +711,7 @@ class MainWindow(Adw.ApplicationWindow):
                 GLib.idle_add(self._restore_scroll_position, priority=GLib.PRIORITY_LOW)
             
             elif self._pending_scroll_to_bottom:
-                GLib.idle_add(self._execute_pending_scroll)
+                GLib.idle_add(self._execute_pending_scroll, priority=GLib.PRIORITY_LOW)
                 self._pending_scroll_to_bottom = False
                 
             return False
@@ -1123,6 +1171,39 @@ class MainWindow(Adw.ApplicationWindow):
             self.pomodoro_dialog = PomodoroDialog(self, self.timer)
         self.pomodoro_dialog.show_dialog()
 
+    def _on_goals_clicked(self, button):
+        """Abre o dialog de Metas e Estatísticas Avançadas (só apoiadores)."""
+        if not self.current_project:
+            return
+        dialog = GoalsDialog(self, self.current_project, self.config)
+        dialog.present()
+
+    def _on_pomodoro_session_finished(self, timer, session_type):
+        """
+        Chamado pelo sinal 'timer-finished' do PomodoroTimer.
+        Só incrementa quando termina uma sessão de FOCO (work),
+        não durante as pausas.
+        """
+        if session_type == 'work':
+            current = self.config.get('pomodoro_completed', 0)
+            self.config.set('pomodoro_completed', current + 1)
+            self.config.save()
+
+    def _record_usage_date(self):
+        """
+        Registra a data de hoje na lista usage_dates do config.
+        Chamado sempre que um projeto é aberto com sucesso.
+        Usado pela GoalsDialog para calcular dias consecutivos de uso.
+        """
+        from datetime import date
+        today = date.today().isoformat()
+        dates = self.config.get('usage_dates', [])
+        if today not in dates:
+            dates.append(today)
+            # Mantém só os últimos 365 dias para não inflar o config.json
+            dates = dates[-365:]
+            self.config.set('usage_dates', dates)
+            self.config.save()
 
     # Action handlers
 
@@ -1172,6 +1253,354 @@ class MainWindow(Adw.ApplicationWindow):
         dialog.connect('image-added', self._on_image_added)
         
         # Present dialog
+        dialog.present()
+
+    def _action_insert_table(self, action, param):
+        """Handle insert table action (Premium)"""
+        if not self.config.get_is_supporter():
+            self._show_supporter_lock_dialog(_("Tabelas Dinâmicas"))
+            return
+            
+        if not self.current_project:
+            self._show_toast(_("Nenhum projeto aberto"), Adw.ToastPriority.HIGH)
+            return
+            
+        current_index = len(self.current_project.paragraphs) - 1 if self.current_project.paragraphs else -1
+        
+        from ui.dialogs import TableDialog
+        dialog = TableDialog(
+            parent=self,
+            project=self.current_project,
+            insert_after_index=current_index
+        )
+        dialog.connect('table-added', self._on_table_added)
+        dialog.present()
+
+    def _on_table_added(self, dialog, paragraph, position):
+        """Handler de quando a tabela é criada e inserida no documento"""
+        if not self.current_project:
+            return
+        
+        try:
+            from datetime import datetime
+            
+            if position == -1 or position >= len(self.current_project.paragraphs):
+                self.current_project.paragraphs.append(paragraph)
+            else:
+                self.current_project.paragraphs.insert(position + 1, paragraph)
+                
+            self.current_project.update_paragraph_order()
+            self.current_project.modified_at = datetime.now()
+            
+            if self.project_manager.save_project(self.current_project):
+                self._refresh_paragraphs()
+                
+                self._update_header_for_view("editor")
+                self._show_toast(_("Tabela inserida com sucesso!"))
+        except Exception as e:
+            print(f"Erro ao adicionar tabela: {e}")
+            self._show_toast(_("Erro ao salvar tabela."), Adw.ToastPriority.HIGH)
+
+    def _create_table_widget(self, paragraph):
+        """Renderiza a tabela visualmente no editor"""
+        metadata = getattr(paragraph, 'metadata', {})
+        if not isinstance(metadata, dict): metadata = {}
+        formatting = getattr(paragraph, 'formatting', {})
+        if not isinstance(formatting, dict): formatting = {}
+        
+        # Pega os dados do metadata (padrão) ou do formatting (fallback)
+        meta = metadata.get('table_data') or formatting.get('table_data', {})
+        caption = meta.get('caption', '')
+        table_data = meta.get('data',[])
+        has_header = meta.get('has_header', True)
+
+        container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        container.set_margin_top(12); container.set_margin_bottom(12)
+        container.set_margin_start(24); container.set_margin_end(24)
+        container.add_css_class("card")
+        container.paragraph = paragraph
+
+        css = """
+        .tac-table-cell {
+            padding: 8px 12px;
+            border: 1px solid alpha(@theme_fg_color, 0.15);
+        }
+        .tac-table-header {
+            background-color: alpha(@theme_fg_color, 0.05);
+            font-weight: bold;
+        }
+        """
+        provider = Gtk.CssProvider()
+        provider.load_from_data(css, -1)
+        Gtk.StyleContext.add_provider_for_display(
+            Gdk.Display.get_default(),
+            provider,
+            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+        )
+
+        if caption:
+            cap_label = Gtk.Label(label=f"<b>Tabela:</b> {caption}", use_markup=True)
+            cap_label.set_halign(Gtk.Align.CENTER)
+            cap_label.set_margin_top(8)
+            container.append(cap_label)
+
+        grid = Gtk.Grid(halign=Gtk.Align.CENTER, margin_bottom=8, column_spacing=0, row_spacing=0)
+
+        for r_idx, row in enumerate(table_data):
+            for c_idx, cell_text in enumerate(row):
+                cell_lbl = Gtk.Label(label=cell_text, wrap=True, max_width_chars=25, xalign=0.5)
+                cell_lbl.add_css_class("tac-table-cell")
+                if has_header and r_idx == 0:
+                    cell_lbl.add_css_class("tac-table-header")
+                grid.attach(cell_lbl, c_idx, r_idx, 1, 1)
+
+        scroll = Gtk.ScrolledWindow()
+        scroll.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.NEVER)
+        scroll.set_child(grid)
+        container.append(scroll)
+
+        toolbar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6, halign=Gtk.Align.CENTER, margin_bottom=8)
+        
+        edit_btn = Gtk.Button(icon_name='tac-edit-symbolic', tooltip_text=_("Editar Tabela"))
+        edit_btn.connect('clicked', lambda b: self._on_edit_table(paragraph))
+        toolbar.append(edit_btn)
+
+        remove_btn = Gtk.Button(icon_name='tac-user-trash-symbolic', tooltip_text=_("Remover Tabela"))
+        remove_btn.add_css_class('destructive-action')
+        remove_btn.connect('clicked', lambda b: self._on_remove_table(paragraph))
+        toolbar.append(remove_btn)
+
+        container.append(toolbar)
+        return container
+
+    def _on_edit_table(self, paragraph):
+        """Abre o diálogo para edição da tabela existente"""
+        if not self.current_project: return
+        
+        # Sincroniza dados para garantir que o TableDialog encontre os valores
+        formatting = getattr(paragraph, 'formatting', {})
+        if not hasattr(paragraph, 'metadata') or not isinstance(paragraph.metadata, dict):
+            paragraph.metadata = {}
+            
+        if formatting and isinstance(formatting, dict):
+            for k, v in formatting.items():
+                if k not in paragraph.metadata:
+                    paragraph.metadata[k] = v
+                    
+        try:
+            para_index = self.current_project.paragraphs.index(paragraph)
+            from ui.dialogs import TableDialog
+            dialog = TableDialog(
+                parent=self, project=self.current_project,
+                insert_after_index=para_index, edit_paragraph=paragraph
+            )
+            dialog.connect('table-updated', self._on_table_updated)
+            dialog.present()
+        except ValueError:
+            pass
+
+    def _on_table_updated(self, dialog, updated_paragraph, original_paragraph):
+        """Handler quando a tabela é salva na edição"""
+        if not self.current_project: return
+        try:
+            index = self.current_project.paragraphs.index(original_paragraph)
+            self.current_project.paragraphs[index] = updated_paragraph
+            updated_paragraph.order = original_paragraph.order
+            
+            # Remove o widget original da memória (cache) para forçar a recriação visual
+            if original_paragraph.id in self._existing_widgets:
+                del self._existing_widgets[original_paragraph.id]
+            
+            if self.project_manager.save_project(self.current_project):
+                self._refresh_paragraphs()
+                self._show_toast(_("Tabela atualizada."))
+        except ValueError:
+            pass
+
+    def _on_remove_table(self, paragraph):
+        """Confirmação para deletar a tabela"""
+        dialog = Adw.MessageDialog.new(self, _("Remover Tabela?"), _("Deseja realmente remover esta tabela?"))
+        dialog.add_response("cancel", _("Cancelar"))
+        dialog.add_response("remove", _("Remover"))
+        dialog.set_response_appearance("remove", Adw.ResponseAppearance.DESTRUCTIVE)
+        
+        def on_response(d, resp):
+            d.destroy()
+            if resp == "remove" and self.current_project:
+                self.current_project.paragraphs.remove(paragraph)
+                self.current_project.update_paragraph_order()
+                if self.project_manager.save_project(self.current_project):
+                    self._refresh_paragraphs()
+                    self._show_toast(_("Tabela removida."))
+                    
+        dialog.connect('response', on_response)
+        dialog.present()
+
+    def _action_insert_chart(self, action, param):
+        """Handle insert chart action (Premium)"""
+        if not self.config.get_is_supporter():
+            self._show_supporter_lock_dialog(_("Gráficos Integrados"))
+            return
+            
+        if not self.current_project:
+            self._show_toast(_("Nenhum projeto aberto"), Adw.ToastPriority.HIGH)
+            return
+            
+        current_index = len(self.current_project.paragraphs) - 1 if self.current_project.paragraphs else -1
+        
+        from ui.dialogs import ChartDialog
+        dialog = ChartDialog(
+            parent=self,
+            project=self.current_project,
+            insert_after_index=current_index
+        )
+        dialog.connect('chart-added', self._on_chart_added)
+        dialog.present()
+
+    def _on_chart_added(self, dialog, paragraph, position):
+        """Handler quando o gráfico é gerado e adicionado"""
+        if not self.current_project:
+            return
+        try:
+            from datetime import datetime
+            if position == -1 or position >= len(self.current_project.paragraphs):
+                self.current_project.paragraphs.append(paragraph)
+            else:
+                self.current_project.paragraphs.insert(position + 1, paragraph)
+                
+            self.current_project.update_paragraph_order()
+            self.current_project.modified_at = datetime.now()
+            
+            if self.project_manager.save_project(self.current_project):
+                self._refresh_paragraphs()
+                
+                self._update_header_for_view("editor")
+                self._show_toast(_("Gráfico gerado com sucesso!"))
+        except Exception as e:
+            print(f"Erro ao adicionar gráfico: {e}")
+            self._show_toast(_("Erro ao salvar gráfico."), Adw.ToastPriority.HIGH)
+
+    def _create_chart_widget(self, paragraph):
+        """Renderiza o gráfico no editor"""
+        # CORRIGIDO: Usando 'formatting' de forma segura
+        formatting = getattr(paragraph, 'formatting', {})
+        if not isinstance(formatting, dict): formatting = {}
+        
+        meta = formatting.get('chart_data', {})
+        image_path = meta.get('image_path', '')
+        title = meta.get('title', 'Gráfico')
+
+        container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        container.set_margin_top(12); container.set_margin_bottom(12)
+        container.set_margin_start(24); container.set_margin_end(24)
+        container.add_css_class("card")
+        container.paragraph = paragraph
+
+        import os
+        if image_path and os.path.exists(image_path):
+            try:
+                texture = Gdk.Texture.new_from_filename(image_path)
+                picture = Gtk.Picture(paintable=texture, can_shrink=True)
+                picture.set_content_fit(Gtk.ContentFit.CONTAIN)
+                picture.set_size_request(-1, 300)
+                container.append(picture)
+            except Exception as e:
+                err_lbl = Gtk.Label(label=_("Erro ao carregar imagem: {}").format(e))
+                err_lbl.add_css_class("error")
+                container.append(err_lbl)
+        else:
+            err_lbl = Gtk.Label(label=_("Imagem do gráfico não encontrada."))
+            err_lbl.add_css_class("error")
+            container.append(err_lbl)
+
+        toolbar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6, halign=Gtk.Align.CENTER, margin_bottom=8)
+        
+        edit_btn = Gtk.Button(icon_name='tac-edit-symbolic', tooltip_text=_("Editar Dados do Gráfico"))
+        edit_btn.connect('clicked', lambda b: self._on_edit_chart(paragraph))
+        toolbar.append(edit_btn)
+
+        remove_btn = Gtk.Button(icon_name='tac-user-trash-symbolic', tooltip_text=_("Remover Gráfico"))
+        remove_btn.add_css_class('destructive-action')
+        remove_btn.connect('clicked', lambda b: self._on_remove_chart(paragraph))
+        toolbar.append(remove_btn)
+
+        container.append(toolbar)
+        return container
+
+    def _on_edit_chart(self, paragraph):
+        if not self.current_project: return
+        try:
+            para_index = self.current_project.paragraphs.index(paragraph)
+            from ui.dialogs import ChartDialog
+            dialog = ChartDialog(
+                parent=self, project=self.current_project,
+                insert_after_index=para_index, edit_paragraph=paragraph
+            )
+            dialog.connect('chart-updated', self._on_chart_updated)
+            dialog.present()
+        except ValueError:
+            pass
+
+    def _on_chart_updated(self, dialog, updated_paragraph, original_paragraph):
+        if not self.current_project: return
+        try:
+            index = self.current_project.paragraphs.index(original_paragraph)
+            self.current_project.paragraphs[index] = updated_paragraph
+            updated_paragraph.order = original_paragraph.order
+            
+            if self.project_manager.save_project(self.current_project):
+                self._refresh_paragraphs()
+                self._show_toast(_("Gráfico atualizado com sucesso."))
+        except ValueError:
+            pass
+
+    def _on_remove_chart(self, paragraph):
+        dialog = Adw.MessageDialog.new(self, _("Remover Gráfico?"), _("Deseja realmente apagar este gráfico e seus dados?"))
+        dialog.add_response("cancel", _("Cancelar"))
+        dialog.add_response("remove", _("Remover"))
+        dialog.set_response_appearance("remove", Adw.ResponseAppearance.DESTRUCTIVE)
+        
+        def on_response(d, resp):
+            d.destroy()
+            if resp == "remove" and self.current_project:
+                # CORRIGIDO: Lendo do 'formatting'
+                formatting = getattr(paragraph, 'formatting', {})
+                meta = formatting.get('chart_data', {})
+                img_path = meta.get('image_path', '')
+                import os
+                if img_path and os.path.exists(img_path):
+                    try: os.remove(img_path)
+                    except: pass
+
+                self.current_project.paragraphs.remove(paragraph)
+                self.current_project.update_paragraph_order()
+                if self.project_manager.save_project(self.current_project):
+                    self._refresh_paragraphs()
+                    self._show_toast(_("Gráfico removido."))
+                    
+        dialog.connect('response', on_response)
+        dialog.present()
+
+    def _show_supporter_lock_dialog(self, feature_name):
+        """Mostra o diálogo de bloqueio para usuários não-apoiadores"""
+        dialog = Adw.MessageDialog.new(
+            self,
+            _("Recurso Exclusivo 👑"),
+            _("A funcionalidade '{feature}' é exclusiva para os apoiadores do projeto.\n\n"
+              "Apoie o Tac Writer para desbloquear esta e outras ferramentas avançadas, "
+              "além de ajudar a manter o projeto vivo!").format(feature=feature_name)
+        )
+        dialog.add_response("cancel", _("Cancelar"))
+        dialog.add_response("support", _("Quero Apoiar 💖"))
+        dialog.set_response_appearance("support", Adw.ResponseAppearance.SUGGESTED)
+        
+        def on_response(dlg, resp):
+            dlg.destroy()
+            if resp == "support":
+                # Chama a janela do apoiador
+                self._on_supporter_clicked(None)
+                
+        dialog.connect('response', on_response)
         dialog.present()
 
     def _action_show_welcome(self, action, param):
@@ -1225,8 +1654,9 @@ class MainWindow(Adw.ApplicationWindow):
                     project = self.project_manager.load_project(file_path)
                     if project:
                         self.current_project = project
-                        self._show_editor_view()
-                        self.project_list.refresh_projects()
+                        self._record_usage_date()
+                        # Show editor optimized
+                        self._show_editor_view_optimized()
                         self._show_toast(_("Projeto aberto: {}").format(project.name))
                     else:
                         self._show_toast(_("Falha ao abrir projeto"), Adw.ToastPriority.HIGH)
@@ -1969,6 +2399,8 @@ class MainWindow(Adw.ApplicationWindow):
             self.save_button.set_sensitive(False)
             self.pomodoro_button.set_sensitive(False)
             self.references_button.set_sensitive(False)
+            if hasattr(self, 'goals_button'):
+                self.goals_button.set_sensitive(False)
 
         elif view_name == "editor" and self.current_project:
             title_widget.set_title(self.current_project.name)
@@ -1979,6 +2411,8 @@ class MainWindow(Adw.ApplicationWindow):
             self.save_button.set_sensitive(True)
             self.pomodoro_button.set_sensitive(True)
             self.references_button.set_sensitive(True)
+            if self.config.get_is_supporter():
+                self.goals_button.set_sensitive(True)
 
 
     def _show_loading_state(self):
@@ -2254,20 +2688,28 @@ class MainWindow(Adw.ApplicationWindow):
             # hide headbar
             self.header_bar.set_visible(False)
 
-    def _on_donate(self, action, param):
-        """Abre a página de doação no navegador padrão"""
-        launcher = Gtk.UriLauncher.new("https://ko-fi.com/narayanls")
-        launcher.launch(self, None, self._on_donate_launch_done)
+    def _action_supporter(self, action, param):
+        """Action trigger via Menu Principal"""
+        self._on_supporter_clicked(None)
 
-    def _on_donate_launch_done(self, launcher, result):
-        """Callback após tentativa de abrir o navegador"""
-        try:
-            launcher.launch_finish(result)
-        except GLib.Error as e:
-            self._show_toast(
-                _("Não foi possível abrir o navegador: {}").format(e.message),
-                Adw.ToastPriority.HIGH,
-            )
+    def _on_supporter_clicked(self, button):
+        """Abre a janela da Versão do Apoiador"""
+        dialog = SupporterDialog(self, self.config)
+        dialog.present()
+
+    def refresh_supporter_ui(self):
+        if self.config.get_is_supporter():
+            if hasattr(self, 'supporter_button') and self.supporter_button.get_parent() == self.header_bar:
+                self.header_bar.remove(self.supporter_button)
+
+            # Adiciona o botão de metas na headerbar se ainda não estiver lá
+            if hasattr(self, 'goals_button') and self.goals_button.get_parent() != self.header_bar:
+                self.header_bar.pack_start(self.goals_button)
+                # Habilita imediatamente se já há um projeto aberto
+                if self.current_project:
+                    self.goals_button.set_sensitive(True)
+
+            self._show_toast(_("Modo Apoiador Ativado! Funcionalidades exclusivas liberadas. ✨"))
 
     # ── Update checking ────────────────────────────────────────
 

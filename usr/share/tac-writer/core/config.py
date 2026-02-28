@@ -16,7 +16,7 @@ class Config:
     """Application configuration manager"""
 
     # Application version and metadata
-    APP_VERSION = "1.33.13"
+    APP_VERSION = "1.34.0"
     APP_NAME = "TAC"
     APP_FULL_NAME = "TAC - Continuous Argumentation Technique"
     APP_DESCRIPTION = "Academic Writing Assistant"
@@ -25,7 +25,15 @@ class Config:
     APP_DEVELOPERS = ["Tales Mendonça, Narayan Silva, Jibreel al-Yahya"]
     APP_DESIGNERS = ["Narayan Silva"]
 
+    # CHAVE PUB:
+    _SUPPORTER_PUBLIC_KEY_PEM = (
+        "-----BEGIN PUBLIC KEY-----\n"
+        "MCowBQYDK2VwAyEAlVtJJ3vq6Fya68xIMJ4KQe47Z9JJ1bXMlcdiapsk2o0=\n"
+        "-----END PUBLIC KEY-----\n"
+    )
+
     def __init__(self):
+        self._supporter_cache = None
         self._setup_directories()
         self._load_defaults()
         self.load()
@@ -150,6 +158,10 @@ class Config:
             'ai_openrouter_site_url': '',
             'ai_openrouter_site_name': '',
 
+            # Apoiador / Premium
+            'supporter_email': '',
+            'supporter_code': '',
+
             # Recent projects list
             'recent_projects': []
         }
@@ -204,6 +216,7 @@ class Config:
                 with open(self.config_file, 'r', encoding='utf-8') as f:
                     saved_config = json.load(f)
                 self._config.update(saved_config)
+                self._supporter_cache = None
             return True
         except Exception as e:
             print(f"Error loading configuration: {e}")
@@ -344,3 +357,55 @@ class Config:
 
     def set_color_accent(self, color: str) -> None:
         self.set('color_accent', color)
+
+    # Supporter Methods
+    def verify_supporter_code(self, email: str, code: str) -> bool:
+        """Faz a validação matemática da assinatura"""
+        import base64
+        try:
+            from cryptography.hazmat.primitives.serialization import load_pem_public_key
+            from cryptography.exceptions import InvalidSignature
+
+            if not code.strip().startswith("TAC-"):
+                return False
+
+            b64url_part = code.strip()[4:]
+            padding     = '=' * (4 - len(b64url_part) % 4) if len(b64url_part) % 4 else ''
+            signature   = base64.urlsafe_b64decode(b64url_part + padding)
+
+            if len(signature) != 64: 
+                return False
+
+            pub_key = load_pem_public_key(self._SUPPORTER_PUBLIC_KEY_PEM.encode())
+            pub_key.verify(signature, email.strip().lower().encode())
+            return True
+
+        except Exception:
+            return False
+
+    def get_is_supporter(self) -> bool:
+        """Verifica se o usuário é um apoiador validando o código salvo"""
+        # Se já checamos nesta sessão, retorna direto do cache (muito mais rápido)
+        if self._supporter_cache is not None:
+            return self._supporter_cache
+
+        # Se não tá no cache, lê do config.json e roda a matemática
+        email = self.get('supporter_email', '')
+        code = self.get('supporter_code', '')
+        
+        if not email or not code:
+            self._supporter_cache = False
+            return False
+            
+        self._supporter_cache = self.verify_supporter_code(email, code)
+        return self._supporter_cache
+
+    def set_supporter_credentials(self, email: str, code: str) -> None:
+        """Salva as credenciais no config.json apenas se forem válidas"""
+        is_valid = self.verify_supporter_code(email, code)
+        self._supporter_cache = is_valid
+        
+        if is_valid:
+            self.set('supporter_email', email.strip().lower())
+            self.set('supporter_code', code.strip())
+            self.save()

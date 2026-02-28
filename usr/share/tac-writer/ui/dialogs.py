@@ -12,10 +12,18 @@ import os
 import sqlite3
 import threading
 import subprocess
+import random
 from pathlib import Path
 from datetime import datetime
 from typing import Dict, List, Any
 import uuid
+try:
+    import matplotlib
+    matplotlib.use('Agg') # Modo 'Agg' gera a imagem em background sem abrir janela
+    import matplotlib.pyplot as plt
+    MATPLOTLIB_AVAILABLE = True
+except ImportError:
+    MATPLOTLIB_AVAILABLE = False
 
 from core.models import Project, DEFAULT_TEMPLATES
 from core.services import ProjectManager, ExportService
@@ -24,6 +32,7 @@ from utils.helpers import ValidationHelper, FileHelper
 from utils.i18n import _
 
 import webbrowser
+
 
 # Try to import Dropbox SDK
 try:
@@ -3201,3 +3210,1169 @@ class ReferencesDialog(Adw.Window):
     def _show_toast(self, message):
         toast = Adw.Toast.new(message)
         self.toast_overlay.add_toast(toast)
+
+class SupporterDialog(Adw.Window):
+    """Dialog para ativação da Versão do Apoiador (Catarse)"""
+
+    __gtype_name__ = 'TacSupporterDialog'
+
+    def __init__(self, parent, config: Config, **kwargs):
+        super().__init__(**kwargs)
+        self.set_title(_("Versão do Apoiador"))
+        self.set_transient_for(parent)
+        self.set_modal(True)
+        self.set_default_size(500, 600)
+        self.set_resizable(False)
+
+        self.config = config
+        self.parent_window = parent
+
+        self._create_ui()
+
+    def _create_ui(self):
+        # Toast Overlay para notificações
+        self.toast_overlay = Adw.ToastOverlay()
+        self.set_content(self.toast_overlay)
+
+        # Caixa principal
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.toast_overlay.set_child(box)
+
+        # Header Bar
+        header_bar = Adw.HeaderBar()
+        box.append(header_bar)
+
+        # Status Page 
+        status_page = Adw.StatusPage()
+        status_page.set_icon_name("tac-emblem-favorite-symbolic")
+        status_page.set_title(_("Apoie o Tac Writer"))
+        status_page.set_description(
+            _("O Tac Writer é um projeto de código aberto feito com dedicação. "
+              "Apoie no Catarse para ajudar a manter o projeto vivo e desbloqueie "
+              "RECURSOS EXCLUSIVOS para a sua escrita acadêmica!")
+        )
+        status_page.add_css_class("compact")
+        
+        # Container rolável para telas menores
+        scrolled = Gtk.ScrolledWindow()
+        scrolled.set_vexpand(True)
+        scrolled.set_child(status_page)
+        box.append(scrolled)
+
+        # Box para o conteúdo abaixo do StatusPage
+        content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=16)
+        content_box.set_margin_start(32)
+        content_box.set_margin_end(32)
+        content_box.set_margin_bottom(32)
+        status_page.set_child(content_box)
+
+        # Botão do Catarse
+        catarse_btn = Gtk.Button(label=_("Apoiar no Catarse 💖"))
+        catarse_btn.add_css_class("suggested-action")
+        catarse_btn.add_css_class("pill")
+        catarse_btn.set_size_request(-1, 45)
+        catarse_btn.connect("clicked", self._on_catarse_clicked)
+        content_box.append(catarse_btn)
+
+        # Lista de Benefícios (Mockup visual)
+        benefits_group = Adw.PreferencesGroup()
+        benefits_group.set_title(_("Recursos Desbloqueados:"))
+        
+        benefits =[
+            _("Metas e Estatísticas Avançadas"),
+            _("Criação de Tabelas nativas"),
+            _("Geração de Gráficos integrados"),
+            _("Mapa Mental e Planner Guiado"),
+            
+        ]
+        
+        for benefit in benefits:
+            row = Adw.ActionRow()
+            row.set_title(benefit)
+            row.add_prefix(Gtk.Image.new_from_icon_name("object-select-symbolic"))
+            benefits_group.add(row)
+            
+        content_box.append(benefits_group)
+
+        # Área para inserir o código de ativação
+        activation_group = Adw.PreferencesGroup()
+        activation_group.set_title(_("Já é um apoiador?"))
+        activation_group.set_description(_("Use o e-mail cadastrado no Catarse e o código recebido após o pagamento."))
+
+        self.email_row = Adw.EntryRow()
+        self.email_row.set_title(_("E-mail do Catarse"))
+        self.email_row.set_input_purpose(Gtk.InputPurpose.EMAIL)
+        activation_group.add(self.email_row)
+
+        self.code_row = Adw.EntryRow()
+        self.code_row.set_title(_("Código de Ativação"))
+        self.code_row.set_show_apply_button(True)
+        self.code_row.connect("apply", self._on_activate_clicked)
+        activation_group.add(self.code_row)
+
+        content_box.append(activation_group)
+
+        self._update_ui_state()
+
+    def _update_ui_state(self):
+        """Muda a tela se o usuário já estiver ativado"""
+        if self.config.get_is_supporter():
+            self.email_row.set_text(_("ATIVADO"))
+            self.email_row.set_sensitive(False)
+            self.code_row.set_text(_("ATIVADO"))
+            self.code_row.set_sensitive(False)
+
+            # Mostra um toast agradecendo
+            toast = Adw.Toast.new(_("Obrigado pelo seu apoio! 💖"))
+            self.toast_overlay.add_toast(toast)
+
+    def _on_catarse_clicked(self, btn):
+        """Abre o navegador no link do seu Catarse"""
+        url = "https://www.catarse.me/apoiador_do_tac_writer_3988?ref=project_link"
+        try:
+            launcher = Gtk.UriLauncher.new(uri=url)
+            launcher.launch(self, None, None)
+        except AttributeError:
+            Gio.AppInfo.launch_default_for_uri(url, None)
+
+
+    def _on_activate_clicked(self, entry_row):
+        email = self.email_row.get_text().strip()
+        code  = entry_row.get_text().strip()
+
+        if not email:
+            self.email_row.add_css_class("error")
+            toast = Adw.Toast.new(_("Informe o e-mail cadastrado no Catarse."))
+            self.toast_overlay.add_toast(toast)
+            return
+
+        self.email_row.remove_css_class("error")
+        entry_row.remove_css_class("error")
+
+        if self.config.verify_supporter_code(email, code):   
+            self.config.set_supporter_credentials(email, code) 
+            self._update_ui_state()
+
+            success_dialog = Adw.MessageDialog.new(
+                self,
+                _("Ativação Concluída!"),
+                _("Muito obrigado por apoiar o Tac Writer! Todos os recursos extras foram desbloqueados para você.")
+            )
+            success_dialog.add_response("ok", _("Vamos escrever!"))
+            success_dialog.present()
+
+            if hasattr(self.parent_window, 'refresh_supporter_ui'):
+                self.parent_window.refresh_supporter_ui()
+        else:
+            entry_row.add_css_class("error")
+            toast = Adw.Toast.new(_("Código inválido. Verifique o e-mail e o código enviado pelo Catarse."))
+            self.toast_overlay.add_toast(toast)
+
+class GoalsDialog(Adw.Window):
+    """
+    Dialog de Metas e Estatísticas Avançadas — exclusivo para Apoiadores.
+
+    Aba 1 · Estatísticas: palavras, caracteres, parágrafos, dias consecutivos
+            de uso e sessões Pomodoro concluídas.
+    Aba 2 · Metas: cria metas por projeto (parágrafos ou palavras novas
+            até uma data escolhida), acompanha progresso e exibe frases
+            de incentivo.
+
+    Persistência:
+      - config.get('usage_dates', [])          → lista de datas ISO usadas
+      - config.get('pomodoro_completed', 0)    → total de sessões work concluídas
+      - config.get(f'goals_{project.id}', [])  → metas do projeto
+    """
+
+    __gtype_name__ = 'TacGoalsDialog'
+
+    def __init__(self, parent, project, config: Config, **kwargs):
+        super().__init__(**kwargs)
+        self.set_title(_("Metas e Estatísticas"))
+        self.set_transient_for(parent)
+        self.set_modal(True)
+        self.set_default_size(580, 720)
+        self.set_resizable(True)
+
+        self.project = project
+        self.config = config
+        self._selected_deadline = None   # objeto datetime.date escolhido no calendário
+
+        self._create_ui()
+
+    # =========================================================================
+    # Estrutura principal
+    # =========================================================================
+
+    def _create_ui(self):
+        # Toast overlay envolve tudo para notificações internas
+        self.toast_overlay = Adw.ToastOverlay()
+        self.set_content(self.toast_overlay)
+
+        content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.toast_overlay.set_child(content_box)
+
+        # Header bar com botão fechar
+        header_bar = Adw.HeaderBar()
+        close_btn = Gtk.Button(label=_("Fechar"))
+        close_btn.connect('clicked', lambda b: self.destroy())
+        header_bar.pack_start(close_btn)
+        content_box.append(header_bar)
+
+        # ViewStack com duas abas
+        self.view_stack = Adw.ViewStack()
+        self.view_stack.set_vexpand(True)
+
+        stats_page = self._build_stats_page()
+        self.view_stack.add_titled_with_icon(
+            stats_page, 'stats', _("Estatísticas"), 'tac-office-chart-bar-symbolic'
+        )
+
+        goals_page = self._build_goals_page()
+        self.view_stack.add_titled_with_icon(
+            goals_page, 'goals', _("Metas"), 'tac-task-due-date-symbolic'
+        )
+
+        content_box.append(self.view_stack)
+
+        # Barra de navegação inferior (substitui abas no topo)
+        switcher_bar = Adw.ViewSwitcherBar()
+        switcher_bar.set_stack(self.view_stack)
+        switcher_bar.set_reveal(True)
+        content_box.append(switcher_bar)
+
+    # =========================================================================
+    # Aba 1 — Estatísticas Avançadas
+    # =========================================================================
+
+    def _build_stats_page(self):
+        scrolled = Gtk.ScrolledWindow()
+        scrolled.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=24)
+        box.set_margin_top(24)
+        box.set_margin_bottom(24)
+        box.set_margin_start(24)
+        box.set_margin_end(24)
+        scrolled.set_child(box)
+
+        # Coleta os dados
+        stats            = self.project.get_statistics()
+        total_words      = stats.get('total_words', 0)
+        total_paragraphs = stats.get('total_paragraphs', 0)
+        total_chars      = self._count_total_chars()
+        consecutive_days = self._calc_consecutive_days()
+        pomodoro_sessions= self.config.get('pomodoro_completed', 0)
+
+        # ── Grupo: Progresso da Escrita ───────────────────────────
+        writing_group = Adw.PreferencesGroup()
+        writing_group.set_title(_("Progresso da Escrita"))
+        writing_group.set_description(self.project.name)
+        box.append(writing_group)
+
+        self._add_stat_row(writing_group,
+                           _("Total de Palavras"),
+                           str(total_words),
+                           'tac-format-text-symbolic')
+        self._add_stat_row(writing_group,
+                           _("Total de Caracteres"),
+                           str(total_chars),
+                           'tac-format-text-symbolic')
+        self._add_stat_row(writing_group,
+                           _("Total de Parágrafos"),
+                           str(total_paragraphs),
+                           'tac-view-list-symbolic')
+
+        # ── Grupo: Hábito de Escrita ──────────────────────────────
+        habit_group = Adw.PreferencesGroup()
+        habit_group.set_title(_("Hábito de Escrita"))
+        box.append(habit_group)
+
+        # Linha de dias consecutivos — com frase surpresa proporcional ao streak
+        streak_row = Adw.ActionRow()
+        streak_row.set_title(_("Dias Consecutivos no App"))
+        try:
+            streak_row.add_prefix(Gtk.Image.new_from_icon_name('tac-appointment-soon-symbolic'))
+        except Exception:
+            pass
+
+        streak_val = Gtk.Label(label=str(consecutive_days))
+        streak_val.add_css_class('title-2')
+        streak_val.set_valign(Gtk.Align.CENTER)
+        streak_row.add_suffix(streak_val)
+
+        if consecutive_days >= 30:
+            streak_sub = _("🏆 {} dias consecutivos! Disciplina de campeão — você é um exemplo!").format(consecutive_days)
+        elif consecutive_days >= 14:
+            streak_sub = _("🔥 Duas semanas seguidas! {} dias de dedicação real. Fantástico!").format(consecutive_days)
+        elif consecutive_days >= 7:
+            streak_sub = _("⭐ Uma semana inteira de escrita consistente. Continue assim!")
+        elif consecutive_days >= 3:
+            streak_sub = _("📈 {} dias seguidos — você está construindo um hábito forte!").format(consecutive_days)
+        elif consecutive_days == 1:
+            streak_sub = _("Hoje você abriu o app. Tente abri-lo amanhã também para começar sua sequência!")
+        else:
+            streak_sub = _("Abra o app e um projeto todos os dias para acompanhar sua sequência aqui.")
+
+        streak_row.set_subtitle(streak_sub)
+        habit_group.add(streak_row)
+
+        # Linha de sessões Pomodoro
+        pom_row = self._add_stat_row(habit_group,
+                                     _("Sessões Pomodoro Concluídas"),
+                                     str(pomodoro_sessions),
+                                     'tac-alarm-symbolic')
+        if pomodoro_sessions > 0:
+            hours = round(pomodoro_sessions * 25 / 60, 1)
+            pom_row.set_subtitle(
+                _("Aproximadamente {} hora(s) de foco dedicadas à sua escrita.").format(hours)
+            )
+        else:
+            pom_row.set_subtitle(_("Use o Temporizador Pomodoro durante a escrita para registrar aqui."))
+
+        return scrolled
+
+    def _add_stat_row(self, group, title, value, icon_name=None):
+        """Cria e adiciona uma linha de estatística ao grupo."""
+        row = Adw.ActionRow()
+        row.set_title(title)
+        if icon_name:
+            try:
+                row.add_prefix(Gtk.Image.new_from_icon_name(icon_name))
+            except Exception:
+                pass
+        val_label = Gtk.Label(label=value)
+        val_label.add_css_class('title-2')
+        val_label.set_valign(Gtk.Align.CENTER)
+        row.add_suffix(val_label)
+        group.add(row)
+        return row
+
+    # =========================================================================
+    # Aba 2 — Metas
+    # =========================================================================
+
+    def _build_goals_page(self):
+        scrolled = Gtk.ScrolledWindow()
+        scrolled.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+
+        self.goals_page_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=20)
+        self.goals_page_box.set_margin_top(24)
+        self.goals_page_box.set_margin_bottom(24)
+        self.goals_page_box.set_margin_start(24)
+        self.goals_page_box.set_margin_end(24)
+        scrolled.set_child(self.goals_page_box)
+
+        self._build_new_goal_section()
+        self._build_goals_list_section()
+
+        return scrolled
+
+    # ── Formulário de nova meta ───────────────────────────────────
+
+    def _build_new_goal_section(self):
+        new_group = Adw.PreferencesGroup()
+        new_group.set_title(_("Nova Meta"))
+        new_group.set_description(
+            _("A baseline é tirada agora — só novos itens escritos a partir de hoje contam.")
+        )
+        self.goals_page_box.append(new_group)
+
+        # Métrica: parágrafos ou palavras
+        self.metric_combo = Adw.ComboRow()
+        self.metric_combo.set_title(_("Métrica"))
+        self.metric_combo.set_model(Gtk.StringList.new([_("Parágrafos"), _("Palavras")]))
+        new_group.add(self.metric_combo)
+
+        # Quantidade alvo
+        target_row = Adw.ActionRow()
+        target_row.set_title(_("Quantidade Alvo"))
+        target_row.set_subtitle(_("Quantos novos itens você quer escrever"))
+        self.target_spin = Gtk.SpinButton.new_with_range(1, 99999, 1)
+        self.target_spin.set_value(10)
+        self.target_spin.set_valign(Gtk.Align.CENTER)
+        target_row.add_suffix(self.target_spin)
+        new_group.add(target_row)
+
+        # Data limite (abre popover com Gtk.Calendar)
+        self.deadline_row = Adw.ActionRow()
+        self.deadline_row.set_title(_("Data Limite"))
+        self.deadline_row.set_subtitle(_("Nenhuma data escolhida"))
+        deadline_btn = Gtk.Button(label=_("Escolher Data"))
+        deadline_btn.add_css_class('flat')
+        deadline_btn.set_valign(Gtk.Align.CENTER)
+        deadline_btn.connect('clicked', self._on_choose_deadline)
+        self.deadline_row.add_suffix(deadline_btn)
+        new_group.add(self.deadline_row)
+
+        # Botão criar
+        create_btn = Gtk.Button(label=_("✍️  Criar Meta"))
+        create_btn.add_css_class('suggested-action')
+        create_btn.add_css_class('pill')
+        create_btn.set_halign(Gtk.Align.CENTER)
+        create_btn.set_size_request(180, 42)
+        create_btn.set_margin_top(4)
+        create_btn.connect('clicked', self._on_create_goal)
+        self.goals_page_box.append(create_btn)
+
+    # ── Lista de metas ────────────────────────────────────────────
+
+    def _build_goals_list_section(self):
+        """Cria o grupo e popula pela primeira vez."""
+        self.goals_list_group = Adw.PreferencesGroup()
+        self.goals_list_group.set_title(_("Metas do Projeto"))
+        self.goals_page_box.append(self.goals_list_group)
+        self._populate_goals_list()
+
+    def _populate_goals_list(self):
+        """Adiciona linhas de meta ao grupo existente."""
+        goals = self.config.get(f'goals_{self.project.id}', [])
+
+        if not goals:
+            empty_row = Adw.ActionRow()
+            empty_row.set_title(_("Nenhuma meta criada ainda"))
+            empty_row.set_subtitle(_("Use o formulário acima para criar sua primeira meta."))
+            self.goals_list_group.add(empty_row)
+            return
+
+        stats         = self.project.get_statistics()
+        cur_paragraphs= stats.get('total_paragraphs', 0)
+        cur_words     = stats.get('total_words', 0)
+
+        from datetime import date
+        today = date.today()
+
+        for goal in reversed(goals):          # mais recente no topo
+            self._add_goal_row(goal, cur_paragraphs, cur_words, today)
+
+    def _refresh_goals_ui(self):
+        """Remove e recria a seção de metas (após criar ou deletar)."""
+        self.goals_page_box.remove(self.goals_list_group)
+        self.goals_list_group = Adw.PreferencesGroup()
+        self.goals_list_group.set_title(_("Metas do Projeto"))
+        self.goals_page_box.append(self.goals_list_group)
+        self._populate_goals_list()
+
+    def _add_goal_row(self, goal, cur_paragraphs, cur_words, today):
+        """Renderiza uma meta como ExpanderRow com barra de progresso."""
+        from datetime import date
+
+        metric   = goal['metric']
+        target   = goal['target']
+        deadline = date.fromisoformat(goal['deadline'])
+        baseline = (goal['baseline_paragraphs'] if metric == 'paragraphs'
+                    else goal['baseline_words'])
+        current  = cur_paragraphs if metric == 'paragraphs' else cur_words
+
+        progress = max(0, current - baseline)
+        pct      = min(1.0, progress / target) if target > 0 else 0.0
+        m_label  = _("parágrafos") if metric == 'paragraphs' else _("palavras")
+
+        is_achieved = progress >= target
+        is_expired  = (today > deadline) and not is_achieved
+
+        # ── Header do ExpanderRow ─────────────────────────────────
+        exp_row = Adw.ExpanderRow()
+        exp_row.set_title(_("{} novos {}").format(target, m_label))
+
+        deadline_str = deadline.strftime('%d/%m/%Y')
+        remaining    = (deadline - today).days
+
+        if is_achieved:
+            exp_row.set_subtitle(_("✅ Meta alcançada! Prazo era {}").format(deadline_str))
+        elif is_expired:
+            exp_row.set_subtitle(_("⏰ Prazo encerrado em {}").format(deadline_str))
+        elif remaining == 0:
+            exp_row.set_subtitle(_("🔔 Prazo é hoje! ({})").format(deadline_str))
+        elif remaining == 1:
+            exp_row.set_subtitle(_("📅 Amanhã é o último dia — Prazo: {}").format(deadline_str))
+        else:
+            exp_row.set_subtitle(_("📅 {} dias restantes — Prazo: {}").format(remaining, deadline_str))
+
+        # ── Conteúdo interno ──────────────────────────────────────
+        inner_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        inner_box.set_margin_top(10)
+        inner_box.set_margin_bottom(14)
+        inner_box.set_margin_start(16)
+        inner_box.set_margin_end(16)
+
+        # Barra de progresso
+        prog_bar = Gtk.ProgressBar()
+        prog_bar.set_fraction(pct)
+        prog_bar.set_show_text(True)
+        prog_bar.set_text(
+            "{} / {} {}  ({}%)".format(progress, target, m_label, int(pct * 100))
+        )
+        inner_box.append(prog_bar)
+
+        # Frase de incentivo
+        phrase = self._get_encouragement(is_achieved, is_expired, pct,
+                                          progress, target, m_label)
+        phrase_lbl = Gtk.Label(label=phrase)
+        phrase_lbl.set_wrap(True)
+        phrase_lbl.set_xalign(0)
+        phrase_lbl.add_css_class('dim-label')
+        inner_box.append(phrase_lbl)
+
+        # Botão remover
+        del_btn = Gtk.Button(label=_("Remover Meta"))
+        del_btn.add_css_class('destructive-action')
+        del_btn.add_css_class('flat')
+        del_btn.set_halign(Gtk.Align.END)
+        del_btn.set_margin_top(4)
+        del_btn.connect('clicked', self._on_delete_goal, goal['id'])
+        inner_box.append(del_btn)
+
+        inner_row = Adw.ActionRow()
+        inner_row.set_child(inner_box)
+        exp_row.add_row(inner_row)
+
+        self.goals_list_group.add(exp_row)
+
+    def _get_encouragement(self, is_achieved, is_expired, pct,
+                            progress, target, m_label):
+        """Retorna uma frase de incentivo adequada ao estado da meta."""
+        if is_achieved:
+            options = [
+                _("Parabéns pela conquista! O foco é um fator determinante "
+                  "para a conclusão de um trabalho."),
+                _("Incrível! Você provou para si mesmo que é capaz. "
+                  "A constância é a chave do sucesso acadêmico."),
+                _("Meta cumprida! Cada parágrafo escrito é um passo a mais "
+                  "em direção à sua obra finalizada."),
+            ]
+
+        elif is_expired:
+            if pct >= 0.5:
+                options = [
+                    _("Apesar de não ter concluído a meta, você escreveu {} de {} {}. "
+                      "Não desanime — o progresso real não tem prazo!").format(
+                        progress, target, m_label),
+                    _("Você chegou a {} de {} {}. Crie uma nova meta e supere este marco!").format(
+                        progress, target, m_label),
+                ]
+            else:
+                options = [
+                    _("Apesar do prazo, {} {} escritos já conta! "
+                      "Tente uma meta menor e vá aumentando gradualmente.").format(
+                        progress, m_label),
+                    _("Recomeçar faz parte do processo. "
+                      "Defina uma nova meta e encontre o ritmo que funciona para você."),
+                ]
+
+        elif pct >= 0.75:
+            options = [
+                _("Você está quase lá! Faltam apenas {} {} para alcançar a meta. "
+                  "Não pare agora!").format(target - progress, m_label),
+                _("Impressionante ritmo! {} de {} {} concluídos. "
+                  "A reta final é a mais especial.").format(progress, target, m_label),
+            ]
+
+        elif pct >= 0.4:
+            options = [
+                _("Bom andamento! Você já está a {}% da meta. "
+                  "Siga escrevendo!").format(int(pct * 100)),
+                _("Cada sessão conta. Você já tem {} {} — continue!").format(
+                    progress, m_label),
+            ]
+
+        else:
+            options = [
+                _("Todo começo é um ato de coragem. "
+                  "Você já escreveu {} {}. Continue!").format(progress, m_label),
+                _("A escrita acadêmica é uma maratona, não uma corrida. "
+                  "Vá no seu ritmo e não desista."),
+            ]
+
+        return random.choice(options)
+
+    # =========================================================================
+    # Popover do Calendário
+    # =========================================================================
+
+    def _on_choose_deadline(self, btn):
+        """Abre um popover com Gtk.Calendar para o usuário escolher a data."""
+        popover = Gtk.Popover()
+        popover.set_parent(btn)
+        popover.set_autohide(True)
+
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        box.set_margin_top(12)
+        box.set_margin_bottom(12)
+        box.set_margin_start(12)
+        box.set_margin_end(12)
+
+        calendar = Gtk.Calendar()
+
+        # Pré-seleciona a data já escolhida (se houver)
+        if self._selected_deadline:
+            gdt = GLib.DateTime.new_local(
+                self._selected_deadline.year,
+                self._selected_deadline.month,
+                self._selected_deadline.day,
+                0, 0, 0.0
+            )
+            calendar.select_day(gdt)
+
+        box.append(calendar)
+
+        confirm_btn = Gtk.Button(label=_("Confirmar Data"))
+        confirm_btn.add_css_class('suggested-action')
+        confirm_btn.connect('clicked', self._on_deadline_confirmed, calendar, popover)
+        box.append(confirm_btn)
+
+        popover.set_child(box)
+        popover.popup()
+
+    def _on_deadline_confirmed(self, btn, calendar, popover):
+        """Lê a data do calendário e atualiza a linha de prazo."""
+        gdt = calendar.get_date()
+        from datetime import date
+        self._selected_deadline = date(
+            gdt.get_year(), gdt.get_month(), gdt.get_day_of_month()
+        )
+        self.deadline_row.set_subtitle(self._selected_deadline.strftime('%d/%m/%Y'))
+        popover.popdown()
+
+    # =========================================================================
+    # CRUD das Metas
+    # =========================================================================
+
+    def _on_create_goal(self, btn):
+        """Valida e persiste uma nova meta no config."""
+        from datetime import date
+
+        if not self._selected_deadline:
+            self._show_toast(_("Escolha uma data limite para a meta."))
+            return
+
+        today = date.today()
+        if self._selected_deadline <= today:
+            self._show_toast(_("A data limite deve ser uma data futura."))
+            return
+
+        stats      = self.project.get_statistics()
+        metric_idx = self.metric_combo.get_selected()
+        metric     = 'paragraphs' if metric_idx == 0 else 'words'
+        target     = int(self.target_spin.get_value())
+
+        goal = {
+            'id':                   str(uuid.uuid4())[:8],
+            'metric':               metric,
+            'target':               target,
+            'deadline':             self._selected_deadline.isoformat(),
+            'created_at':           today.isoformat(),
+            'baseline_paragraphs':  stats.get('total_paragraphs', 0),
+            'baseline_words':       stats.get('total_words', 0),
+        }
+
+        goals = self.config.get(f'goals_{self.project.id}', [])
+        goals.append(goal)
+        self.config.set(f'goals_{self.project.id}', goals)
+        self.config.save()
+
+        # Resetar formulário
+        self._selected_deadline = None
+        self.deadline_row.set_subtitle(_("Nenhuma data escolhida"))
+        self.target_spin.set_value(10)
+        self.metric_combo.set_selected(0)
+
+        self._show_toast(_("Meta criada com sucesso! Boa escrita! ✍️"))
+        self._refresh_goals_ui()
+
+    def _on_delete_goal(self, btn, goal_id):
+        """Remove a meta pelo id e atualiza a lista."""
+        goals = self.config.get(f'goals_{self.project.id}', [])
+        goals = [g for g in goals if g['id'] != goal_id]
+        self.config.set(f'goals_{self.project.id}', goals)
+        self.config.save()
+        self._refresh_goals_ui()
+        self._show_toast(_("Meta removida."))
+
+    # =========================================================================
+    # Helpers
+    # =========================================================================
+
+    def _count_total_chars(self):
+        """Conta todos os caracteres do conteúdo do projeto."""
+        total = 0
+        for para in self.project.paragraphs:
+            if hasattr(para, 'content') and para.content:
+                total += len(para.content)
+        return total
+
+    def _calc_consecutive_days(self):
+        """
+        Calcula quantos dias consecutivos (até hoje) o usuário abriu o app.
+        Lê a lista 'usage_dates' do config — será populada pela Alteração 2
+        em main_window.py.
+        """
+        from datetime import date, timedelta
+        raw = self.config.get('usage_dates', [])
+        if not raw:
+            return 0
+        try:
+            dates = set(date.fromisoformat(d) for d in raw)
+        except (ValueError, TypeError):
+            return 0
+
+        today  = date.today()
+        streak = 0
+        check  = today
+        while check in dates:
+            streak += 1
+            check  -= timedelta(days=1)
+        return streak
+
+    def _show_toast(self, message):
+        """Exibe uma notificação toast dentro do dialog."""
+        toast = Adw.Toast.new(message)
+        toast.set_timeout(3)
+        self.toast_overlay.add_toast(toast)
+
+class TableDialog(Adw.Window):
+    """Dialog for creating and editing tables (Premium)"""
+
+    __gtype_name__ = 'TacTableDialog'
+
+    __gsignals__ = {
+        'table-added': (GObject.SIGNAL_RUN_FIRST, None, (object, int)),
+        'table-updated': (GObject.SIGNAL_RUN_FIRST, None, (object, object)),
+    }
+
+    def __init__(self, parent, project, insert_after_index: int = -1, edit_paragraph=None, **kwargs):
+        super().__init__(**kwargs)
+
+        self.edit_mode = edit_paragraph is not None
+        self.edit_paragraph = edit_paragraph
+        self.project = project
+        self.insert_after_index = insert_after_index
+
+        self.set_title(_("Editar Tabela") if self.edit_mode else _("Inserir Tabela"))
+        self.set_transient_for(parent)
+        self.set_modal(True)
+        self.set_default_size(700, 500)
+        self.set_resizable(True)
+
+        # Dados iniciais
+        self.rows = 3
+        self.cols = 3
+        self.table_data =[]
+        self.caption = ""
+        self.has_header = True
+
+        self.entries =[]  # Para guardar as referências dos Gtk.Entry
+
+        if self.edit_mode and hasattr(self.edit_paragraph, 'metadata'):
+            meta = self.edit_paragraph.metadata.get('table_data', {})
+            self.rows = meta.get('rows', 3)
+            self.cols = meta.get('cols', 3)
+            self.table_data = meta.get('data',[])
+            self.caption = meta.get('caption', '')
+            self.has_header = meta.get('has_header', True)
+
+        self._create_ui()
+        self._build_grid()
+
+    def _create_ui(self):
+        content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.set_content(content_box)
+
+        # Header bar
+        header_bar = Adw.HeaderBar()
+        cancel_button = Gtk.Button(label=_("Cancelar"))
+        cancel_button.connect('clicked', lambda b: self.destroy())
+        header_bar.pack_start(cancel_button)
+
+        save_button = Gtk.Button(label=_("Atualizar") if self.edit_mode else _("Inserir"))
+        save_button.add_css_class('suggested-action')
+        save_button.connect('clicked', self._on_save_clicked)
+        header_bar.pack_end(save_button)
+        content_box.append(header_bar)
+
+        # Controls (Linhas, Colunas, Legenda)
+        controls_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        controls_box.set_margin_top(12)
+        controls_box.set_margin_bottom(12)
+        controls_box.set_margin_start(16)
+        controls_box.set_margin_end(16)
+        content_box.append(controls_box)
+
+        # Spinners
+        controls_box.append(Gtk.Label(label=_("Linhas:")))
+        self.spin_rows = Gtk.SpinButton.new_with_range(1, 20, 1)
+        self.spin_rows.set_value(self.rows)
+        self.spin_rows.connect("value-changed", self._on_dimensions_changed)
+        controls_box.append(self.spin_rows)
+
+        controls_box.append(Gtk.Label(label=_("Colunas:"), margin_start=12))
+        self.spin_cols = Gtk.SpinButton.new_with_range(1, 10, 1)
+        self.spin_cols.set_value(self.cols)
+        self.spin_cols.connect("value-changed", self._on_dimensions_changed)
+        controls_box.append(self.spin_cols)
+
+        # Header Checkbox
+        self.check_header = Gtk.CheckButton(label=_("Primeira linha é cabeçalho"))
+        self.check_header.set_active(self.has_header)
+        self.check_header.set_margin_start(12)
+        controls_box.append(self.check_header)
+
+        # Legenda
+        cap_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        cap_box.set_margin_start(16)
+        cap_box.set_margin_end(16)
+        cap_box.set_margin_bottom(12)
+        cap_box.append(Gtk.Label(label=_("Legenda:")))
+        self.entry_caption = Gtk.Entry(hexpand=True)
+        self.entry_caption.set_text(self.caption)
+        self.entry_caption.set_placeholder_text(_("Ex: Tabela 1 - Resultados da pesquisa..."))
+        cap_box.append(self.entry_caption)
+        content_box.append(cap_box)
+
+        # Scrollable Grid Area
+        scrolled = Gtk.ScrolledWindow(hexpand=True, vexpand=True)
+        scrolled.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
+        scrolled.set_margin_start(16)
+        scrolled.set_margin_end(16)
+        scrolled.set_margin_bottom(16)
+
+        # Usamos um Viewport para permitir rolagem de um grid grande
+        viewport = Gtk.Viewport()
+        self.grid = Gtk.Grid()
+        self.grid.set_row_spacing(4)
+        self.grid.set_column_spacing(4)
+        self.grid.set_halign(Gtk.Align.CENTER)
+        
+        viewport.set_child(self.grid)
+        scrolled.set_child(viewport)
+        content_box.append(scrolled)
+
+    def _on_dimensions_changed(self, spin):
+        """Reconstrói a grade se as dimensões mudarem preservando os dados possíveis"""
+        # Salva o estado atual antes de mudar a grade
+        self._extract_current_data()
+        self.rows = int(self.spin_rows.get_value())
+        self.cols = int(self.spin_cols.get_value())
+        self._build_grid()
+
+    def _extract_current_data(self):
+        """Puxa os dados atuais dos campos Gtk.Entry para a memória"""
+        new_data =[]
+        for r, row_entries in enumerate(self.entries):
+            row_data =[]
+            for c, entry in enumerate(row_entries):
+                row_data.append(entry.get_text())
+            new_data.append(row_data)
+        self.table_data = new_data
+
+    def _build_grid(self):
+        """Constrói a grade de campos de texto"""
+        # Limpar grid
+        child = self.grid.get_first_child()
+        while child:
+            next_child = child.get_next_sibling()
+            self.grid.remove(child)
+            child = next_child
+
+        self.entries =[]
+        for r in range(self.rows):
+            row_entries =[]
+            for c in range(self.cols):
+                entry = Gtk.Entry()
+                entry.set_width_chars(15)
+                
+                # Destaca a primeira linha se for cabeçalho
+                if r == 0 and self.check_header.get_active():
+                    entry.add_css_class("heading")
+
+                # Preencher com dados existentes (se houver)
+                if r < len(self.table_data) and c < len(self.table_data[r]):
+                    entry.set_text(self.table_data[r][c])
+
+                self.grid.attach(entry, c, r, 1, 1)
+                row_entries.append(entry)
+            self.entries.append(row_entries)
+
+    def _on_save_clicked(self, btn):
+        """Salva a tabela no documento"""
+        self._extract_current_data()
+        
+        from core.models import Paragraph, ParagraphType
+        
+        meta = {
+            'rows': self.rows,
+            'cols': self.cols,
+            'data': self.table_data,
+            'caption': self.entry_caption.get_text().strip(),
+            'has_header': self.check_header.get_active()
+        }
+
+        if self.edit_mode:
+            new_para = Paragraph(ParagraphType.TABLE)
+            new_para.formatting = {'table_data': meta}
+            new_para.content = f"[Tabela: {meta['caption']}]"
+            
+            self.emit('table-updated', new_para, self.edit_paragraph)
+        else:
+            new_para = Paragraph(ParagraphType.TABLE)
+            new_para.formatting = {'table_data': meta}
+            new_para.content = f"[Tabela: {meta['caption']}]"
+            
+            self.emit('table-added', new_para, self.insert_after_index)
+
+        self.destroy()
+
+class ChartDialog(Adw.Window):
+    """Dialog for creating and editing charts (Premium)"""
+
+    __gtype_name__ = 'TacChartDialog'
+
+    __gsignals__ = {
+        'chart-added': (GObject.SIGNAL_RUN_FIRST, None, (object, int)),
+        'chart-updated': (GObject.SIGNAL_RUN_FIRST, None, (object, object)),
+    }
+
+    def __init__(self, parent, project, insert_after_index: int = -1, edit_paragraph=None, **kwargs):
+        super().__init__(**kwargs)
+
+        self.edit_mode = edit_paragraph is not None
+        self.edit_paragraph = edit_paragraph
+        self.project = project
+        self.insert_after_index = insert_after_index
+        self.config = parent.config
+
+        self.set_title(_("Editar Gráfico") if self.edit_mode else _("Inserir Gráfico"))
+        self.set_transient_for(parent)
+        self.set_modal(True)
+        self.set_default_size(600, 500)
+        self.set_resizable(True)
+
+        # Dados iniciais
+        self.chart_title = ""
+        self.chart_type = "bar"
+        self.chart_data = [["Categoria 1", "10"], ["Categoria 2", "20"]] #[Rótulo, Valor]
+        self.image_path = ""
+
+        if self.edit_mode and hasattr(self.edit_paragraph, 'metadata'):
+            meta = self.edit_paragraph.metadata.get('chart_data', {})
+            self.chart_title = meta.get('title', '')
+            self.chart_type = meta.get('type', 'bar')
+            self.chart_data = meta.get('data', self.chart_data)
+            self.image_path = meta.get('image_path', '')
+
+        self.row_boxes =[] 
+
+        self._create_ui()
+
+        if not MATPLOTLIB_AVAILABLE:
+            self._show_error_overlay()
+
+    def _create_ui(self):
+        content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.set_content(content_box)
+
+        # Header bar
+        header_bar = Adw.HeaderBar()
+        cancel_btn = Gtk.Button(label=_("Cancelar"))
+        cancel_btn.connect('clicked', lambda b: self.destroy())
+        header_bar.pack_start(cancel_btn)
+
+        save_btn = Gtk.Button(label=_("Gerar e Salvar"))
+        save_btn.add_css_class('suggested-action')
+        save_btn.connect('clicked', self._on_save_clicked)
+        header_bar.pack_end(save_btn)
+        content_box.append(header_bar)
+
+        main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=16)
+        main_box.set_margin_top(16); main_box.set_margin_bottom(16)
+        main_box.set_margin_start(24); main_box.set_margin_end(24)
+        content_box.append(main_box)
+
+        # Controles Iniciais (Título e Tipo)
+        group_settings = Adw.PreferencesGroup(title=_("Configurações do Gráfico"))
+        main_box.append(group_settings)
+
+        self.entry_title = Adw.EntryRow(title=_("Título do Gráfico"))
+        self.entry_title.set_text(self.chart_title)
+        group_settings.add(self.entry_title)
+
+        self.combo_type = Adw.ComboRow(title=_("Tipo de Gráfico"))
+        model = Gtk.StringList.new([_("Barras"), _("Pizza"), _("Linha")])
+        self.combo_type.set_model(model)
+        
+        type_map = {"bar": 0, "pie": 1, "line": 2}
+        self.combo_type.set_selected(type_map.get(self.chart_type, 0))
+        group_settings.add(self.combo_type)
+
+        # Dados do Gráfico
+        group_data = Adw.PreferencesGroup(title=_("Dados"))
+        main_box.append(group_data)
+
+        # Cabeçalho dos dados
+        header_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        lbl_cat = Gtk.Label(label=_("Categoria / Rótulo"), hexpand=True, xalign=0)
+        lbl_cat.add_css_class("dim-label")
+        lbl_val = Gtk.Label(label=_("Valor Numérico"), hexpand=True, xalign=0)
+        lbl_val.add_css_class("dim-label")
+        header_box.append(lbl_cat)
+        header_box.append(lbl_val)
+        
+        # Spacer para alinhar com o botão de deletar
+        spacer = Gtk.Box(width_request=40)
+        header_box.append(spacer)
+        
+        # Box que vai conter as linhas, usando ScrolledWindow se ficar grande
+        scroll = Gtk.ScrolledWindow(vexpand=True)
+        scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        scroll.set_min_content_height(150)
+        
+        self.data_list_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        self.data_list_box.append(header_box)
+        scroll.set_child(self.data_list_box)
+        main_box.append(scroll)
+
+        # Popular com dados existentes
+        for row in self.chart_data:
+            self._add_data_row(row[0], str(row[1]))
+
+        # Botão de Adicionar Linha
+        add_btn = Gtk.Button(label=_("Adicionar Novo Dado"), icon_name="list-add-symbolic")
+        add_btn.set_halign(Gtk.Align.CENTER)
+        add_btn.add_css_class("flat")
+        add_btn.connect("clicked", lambda b: self._add_data_row("", ""))
+        main_box.append(add_btn)
+
+    def _add_data_row(self, label_text, value_text):
+        row_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        
+        entry_label = Gtk.Entry(hexpand=True)
+        entry_label.set_text(label_text)
+        entry_label.set_placeholder_text(_("Ex: Ano 2024"))
+        
+        entry_value = Gtk.Entry(hexpand=True)
+        entry_value.set_text(value_text)
+        entry_value.set_placeholder_text(_("Ex: 150.5"))
+        
+        del_btn = Gtk.Button(icon_name="user-trash-symbolic")
+        del_btn.add_css_class("destructive-action")
+        del_btn.add_css_class("flat")
+        del_btn.connect("clicked", lambda b: self._remove_data_row(row_box))
+
+        row_box.append(entry_label)
+        row_box.append(entry_value)
+        row_box.append(del_btn)
+
+        # Armazena as referências para podermos extrair os dados depois
+        row_box.entry_label = entry_label
+        row_box.entry_value = entry_value
+
+        self.row_boxes.append(row_box)
+        self.data_list_box.append(row_box)
+
+    def _remove_data_row(self, row_box):
+        self.data_list_box.remove(row_box)
+        if row_box in self.row_boxes:
+            self.row_boxes.remove(row_box)
+
+    def _show_error_overlay(self):
+        """Se o matplotlib não estiver instalado, mostra um aviso"""
+        dialog = Adw.MessageDialog.new(
+            self, _("Biblioteca Ausente"), 
+            _("A biblioteca 'matplotlib' é necessária para gerar gráficos.\nInstale via terminal: pip install matplotlib")
+        )
+        dialog.add_response("ok", _("Entendi"))
+        dialog.connect("response", lambda d, r: self.destroy())
+        dialog.present()
+
+    def _on_save_clicked(self, btn):
+        if not MATPLOTLIB_AVAILABLE:
+            return
+
+        # 1. Coletar e limpar os dados
+        labels = []
+        values = []
+        raw_data =[]
+
+        for row in self.row_boxes:
+            lbl = row.entry_label.get_text().strip()
+            val_str = row.entry_value.get_text().strip().replace(',', '.')
+            
+            if not lbl or not val_str:
+                continue
+                
+            try:
+                val = float(val_str)
+                labels.append(lbl)
+                values.append(val)
+                raw_data.append([lbl, val])
+            except ValueError:
+                continue # Ignora linhas com valores não numéricos
+
+        if not labels:
+            return # Não faz nada se não tiver dados válidos
+
+        # 2. Gerar o gráfico com matplotlib
+        title = self.entry_title.get_text().strip()
+        type_idx = self.combo_type.get_selected()
+        type_map = {0: "bar", 1: "pie", 2: "line"}
+        chart_type = type_map.get(type_idx, "bar")
+
+        # Gerar nome de arquivo e criar pasta se não existir
+        images_dir = self.config.data_dir / 'images' / self.project.id
+        images_dir.mkdir(parents=True, exist_ok=True)
+        
+        filename = f"chart_{uuid.uuid4().hex[:8]}.png"
+        filepath = images_dir / filename
+
+        self._generate_matplotlib_image(filepath, title, chart_type, labels, values)
+
+        # 3. Empacotar os metadados
+        meta = {
+            'title': title,
+            'type': chart_type,
+            'data': raw_data,
+            'image_path': str(filepath)
+        }
+
+        from core.models import Paragraph, ParagraphType
+        new_para = Paragraph(ParagraphType.CHART)
+        new_para.formatting = {'chart_data': meta} # CORRIGIDO
+        new_para.content = f"[Gráfico: {title}]"
+
+        if self.edit_mode:
+            if self.image_path and os.path.exists(self.image_path) and self.image_path != str(filepath):
+                try: os.remove(self.image_path)
+                except: pass
+
+            self.emit('chart-updated', new_para, self.edit_paragraph)
+        else:
+            self.emit('chart-added', new_para, self.insert_after_index)
+
+        self.destroy()
+
+    def _generate_matplotlib_image(self, filepath, title, chart_type, labels, values):
+        """Gera a imagem do gráfico e salva no disco"""
+        plt.figure(figsize=(7, 4.5))
+        
+        # Cores do TAC
+        primary_color = '#3584e4'
+        pie_colors =['#3584e4', '#e5a50a', '#e01b24', '#2ec27e', '#9141ac', '#986a44']
+
+        if chart_type == 'bar':
+            plt.bar(labels, values, color=primary_color)
+            plt.grid(axis='y', linestyle='--', alpha=0.7)
+        elif chart_type == 'pie':
+            plt.pie(values, labels=labels, autopct='%1.1f%%', colors=pie_colors, startangle=140)
+        elif chart_type == 'line':
+            plt.plot(labels, values, marker='o', color=primary_color, linewidth=2, markersize=8)
+            plt.grid(True, linestyle='--', alpha=0.7)
+
+        if title:
+            plt.title(title, pad=15, fontweight='bold')
+
+        # Ajusta as margens para não cortar os nomes
+        plt.tight_layout()
+        
+        # Salva a imagem
+        plt.savefig(str(filepath), dpi=150, bbox_inches='tight')
+        plt.close() # Limpa a memória do matplotlib

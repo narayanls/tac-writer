@@ -48,9 +48,10 @@ except ImportError:
 # PDF export dependencies
 try:
     from reportlab.lib.pagesizes import A4
+    from reportlab.lib import colors
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
     from reportlab.lib.units import cm
-    from reportlab.platypus import SimpleDocTemplate, Paragraph as RLParagraph, Spacer, Image as RLImage
+    from reportlab.platypus import SimpleDocTemplate, Paragraph as RLParagraph, Spacer, Image as RLImage, Table as RLTable, TableStyle
     from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_RIGHT, TA_JUSTIFY
     PDF_AVAILABLE = True
 except ImportError:
@@ -1406,6 +1407,14 @@ class ExportService:
                                 dest_path = temp_dir / "Pictures" / dest_name
                                 shutil.copy2(img_path, dest_path)
                                 image_files.append(dest_name)
+                    # Imagens de gráficos
+                    elif paragraph.type in (ParagraphType.CHART, 'chart'):
+                        image_path, title = self._get_chart_meta(paragraph)
+                        if image_path and Path(image_path).exists():
+                            dest_name = Path(image_path).name
+                            shutil.copy2(image_path, temp_dir / "Pictures" / dest_name)
+                            if dest_name not in image_files:
+                                image_files.append(dest_name)
                 
                 self._create_manifest(temp_dir / "META-INF" / "manifest.xml", image_files)
                 self._create_styles(temp_dir / "styles.xml")
@@ -1501,48 +1510,74 @@ class ExportService:
 
         return NoEscape(text)
 
-    def _export_md(self, project: Project, file_path: str) -> bool:
+    def _export_md(self, project, file_path):
         """Export to Markdown format"""
         try:
+            from pathlib import Path
             file_path_obj = Path(file_path)
             file_path_obj.parent.mkdir(parents=True, exist_ok=True)
-            
+
             with open(file_path, 'w', encoding='utf-8') as f:
                 f.write(f"# {project.name}\n\n")
                 if project.metadata.get('author'):
                     f.write(f"**Autor:** {project.metadata['author']}\n\n")
-                
+
                 for paragraph in project.paragraphs:
                     content = paragraph.content.strip()
-                    
                     content = content.replace("<b>", "**").replace("</b>", "**")
                     content = content.replace("<i>", "*").replace("</i>", "*")
                     content = content.replace("<u>", "").replace("</u>", "")
 
                     if paragraph.type == ParagraphType.TITLE_1:
                         f.write(f"# {content}\n\n")
-                    
+
                     elif paragraph.type == ParagraphType.TITLE_2:
                         f.write(f"## {content}\n\n")
-                    
+
                     elif paragraph.type == ParagraphType.CODE:
                         f.write("```\n")
                         f.write(paragraph.content)
                         f.write("\n```\n\n")
-                    
+
                     elif paragraph.type == ParagraphType.QUOTE:
                         f.write(f"> {content}\n\n")
-                    
+
                     elif paragraph.type == ParagraphType.IMAGE:
                         meta = paragraph.get_image_metadata()
                         if meta:
                             caption = meta.get('caption', '')
                             path = meta.get('filename', 'image.png')
                             f.write(f"![{caption}]({path})\n\n")
-                    
+
+                    elif paragraph.type in (ParagraphType.TABLE, 'table'):
+                        table_data, has_header, caption = self._get_table_meta(paragraph)
+                        if caption:
+                            f.write(f"**Tabela: {caption}**\n\n")
+                        if table_data:
+                            # Cabeçalho
+                            header = table_data[0]
+                            f.write('| ' + ' | '.join(str(c) for c in header) + ' |\n')
+                            # Separador (negrito se has_header, senão linha comum)
+                            if has_header:
+                                f.write('| ' + ' | '.join('---' for _ in header) + ' |\n')
+                            # Linhas de dados
+                            for row in (table_data[1:] if has_header else table_data):
+                                f.write('| ' + ' | '.join(str(c) for c in row) + ' |\n')
+                            f.write('\n')
+
+                    elif paragraph.type in (ParagraphType.CHART, 'chart'):
+                        image_path, title = self._get_chart_meta(paragraph)
+                        if title:
+                            f.write(f"**Gráfico: {title}**\n\n")
+                        if image_path and Path(image_path).exists():
+                            filename = Path(image_path).name
+                            f.write(f"![{title}]({filename})\n\n")
+                        else:
+                            f.write(f"*[Gráfico: {title}]*\n\n")
+
                     else:
                         f.write(f"{content}\n\n")
-            
+
             return True
         except Exception as e:
             print(f"Error exporting to Markdown: {e}")
@@ -1634,15 +1669,47 @@ class ExportService:
                 if img_metadata:
                     grouped_odt.append({'type': 'image', 'metadata': img_metadata})
                 last_was_quote = False
-            
-            elif paragraph.type in [ParagraphType.INTRODUCTION, ParagraphType.ARGUMENT, ParagraphType.CONCLUSION, ParagraphType.ARGUMENT_RESUMPTION]:
+
+            elif paragraph.type in (ParagraphType.TABLE, 'table'):
+                if current_paragraph_content:
+                    combined = " ".join(current_paragraph_content)
+                    style = "Introduction" if paragraph_starts_with_introduction else "Normal"
+                    grouped_odt.append({'type': 'content', 'content': combined, 'style': style})
+                    current_paragraph_content = []
+                    paragraph_starts_with_introduction = False
+                table_data, has_header, caption = self._get_table_meta(paragraph)
+                grouped_odt.append({
+                    'type': 'table',
+                    'data': table_data,
+                    'has_header': has_header,
+                    'caption': caption,
+                })
+                last_was_quote = False
+
+            elif paragraph.type in (ParagraphType.CHART, 'chart'):
+                if current_paragraph_content:
+                    combined = " ".join(current_paragraph_content)
+                    style = "Introduction" if paragraph_starts_with_introduction else "Normal"
+                    grouped_odt.append({'type': 'content', 'content': combined, 'style': style})
+                    current_paragraph_content = []
+                    paragraph_starts_with_introduction = False
+                image_path, title = self._get_chart_meta(paragraph)
+                grouped_odt.append({
+                    'type': 'chart',
+                    'image_path': image_path,
+                    'title': title,
+                })
+                last_was_quote = False
+
+            elif paragraph.type in [ParagraphType.INTRODUCTION, ParagraphType.ARGUMENT,
+                                     ParagraphType.CONCLUSION, ParagraphType.ARGUMENT_RESUMPTION]:
                 should_start_new = (
                     paragraph.type == ParagraphType.INTRODUCTION or
                     paragraph.type == ParagraphType.ARGUMENT_RESUMPTION or
                     last_was_quote or
                     not current_paragraph_content
                 )
-                
+
                 if should_start_new and current_paragraph_content:
                     combined = " ".join(current_paragraph_content)
                     style = "Introduction" if paragraph_starts_with_introduction else "Normal"
@@ -1695,6 +1762,7 @@ class ExportService:
     xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0"
     xmlns:style="urn:oasis:names:tc:opendocument:xmlns:style:1.0"
     xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0"
+    xmlns:table="urn:oasis:names:tc:opendocument:xmlns:table:1.0"
     xmlns:draw="urn:oasis:names:tc:opendocument:xmlns:drawing:1.0"
     xmlns:xlink="http://www.w3.org/1999/xlink"
     xmlns:svg="urn:oasis:names:tc:opendocument:xmlns:svg-compatible:1.0"
@@ -1724,6 +1792,21 @@ class ExportService:
     <style:style style:name="T_Underline" style:family="text">
       <style:text-properties style:text-underline-style="solid"
           style:text-underline-width="auto" style:text-underline-color="font-color"/>
+    </style:style>
+
+    <style:style style:name="TacTable" style:family="table">
+      <style:table-properties style:width="15cm" fo:margin-top="0.3cm" fo:margin-bottom="0.3cm"
+          table:align="center"/>
+    </style:style>
+    <style:style style:name="TacTableCol" style:family="table-column">
+      <style:table-column-properties style:use-optimal-column-width="true"/>
+    </style:style>
+    <style:style style:name="TacTableCell" style:family="table-cell">
+      <style:table-cell-properties fo:padding="0.15cm" fo:border="0.05pt solid #000000"/>
+    </style:style>
+    <style:style style:name="TacTableHeaderCell" style:family="table-cell">
+      <style:table-cell-properties fo:padding="0.15cm" fo:border="0.05pt solid #000000"
+          fo:background-color="#e8e8e8"/>
     </style:style>
 </office:automatic-styles>
 
@@ -1774,6 +1857,59 @@ class ExportService:
                 
                 if caption:
                     content_xml += f'<text:p text:style-name="ImageCaption">{caption}</text:p>\n'
+            # TABLE
+            elif item['type'] == 'table':
+                table_data  = item['data']
+                has_header  = item['has_header']
+                caption     = item['caption']
+                if caption:
+                    content_xml += f'<text:p text:style-name="ImageCaption">Tabela: {caption}</text:p>\n'
+                if table_data:
+                    num_cols = max(len(row) for row in table_data)
+                    col_width_cm = round(15.0 / num_cols, 2) if num_cols else 15.0
+                    content_xml += '<table:table table:name="TacTable" table:style-name="TacTable">\n'
+                    for _ in range(num_cols):
+                        content_xml += f'  <table:table-column table:style-name="TacTableCol"/>\n'
+                    for r_idx, row in enumerate(table_data):
+                        content_xml += '  <table:table-row>\n'
+                        cell_style = "TacTableHeaderCell" if (has_header and r_idx == 0) else "TacTableCell"
+                        for cell in row:
+                            cell_escaped = str(cell).replace('&','&amp;').replace('<','&lt;').replace('>','&gt;')
+                            content_xml += (
+                                f'    <table:table-cell table:style-name="{cell_style}"'
+                                f' office:value-type="string">'
+                                f'<text:p>{cell_escaped}</text:p>'
+                                f'</table:table-cell>\n'
+                            )
+                        content_xml += '  </table:table-row>\n'
+                    content_xml += '</table:table>\n'
+
+            # CHART
+            elif item['type'] == 'chart':
+                from pathlib import Path as _Path
+                image_path = item['image_path']
+                title      = item['title']
+                if title:
+                    content_xml += f'<text:p text:style-name="ImageCaption">Gráfico: {title}</text:p>\n'
+                if image_path and _Path(image_path).exists():
+                    filename = _Path(image_path).name
+                    # Largura padrão 80% da página para gráficos
+                    img_width_cm  = 12.0
+                    img_height_cm = 8.0
+                    try:
+                        from PIL import Image as _PILImage
+                        with _PILImage.open(image_path) as im:
+                            w, h = im.size
+                            img_height_cm = round(img_width_cm * h / w, 2)
+                    except Exception:
+                        pass
+                    content_xml += f'''<text:p text:style-name="Normal">
+  <draw:frame draw:style-name="GraphicsCenter" draw:name="{filename}" text:anchor-type="paragraph"
+              svg:width="{img_width_cm:.2f}cm" svg:height="{img_height_cm:.2f}cm"
+              draw:z-index="0">
+    <draw:image xlink:href="Pictures/{filename}" xlink:type="simple" xlink:show="embed" xlink:actuate="onLoad"/>
+  </draw:frame>
+</text:p>\n'''
                     
             elif item['type'] == 'content':
                 content_xml += f'<text:p text:style-name="{item["style"]}">{item["content"]}</text:p>\n'
@@ -2189,6 +2325,14 @@ class ExportService:
                 fontName=font_roman,
                 alignment=TA_JUSTIFY
             )
+
+            caption_style = ParagraphStyle(
+                'Caption',
+                parent=normal_style,
+                fontSize=10,
+                alignment=TA_CENTER,
+                fontName=font_italic
+            )
             
             all_footnotes, footnote_map = self._collect_footnotes(project)
             
@@ -2257,6 +2401,33 @@ class ExportService:
                     if img_metadata:
                         grouped_pdf.append({'type': 'image', 'metadata': img_metadata})
                     last_was_quote = False
+
+                elif paragraph.type in (ParagraphType.TABLE, 'table'):
+                    if current_paragraph_content:
+                        combined = " ".join(current_paragraph_content)
+                        grouped_pdf.append({'type': 'content', 'content': combined, 'style': current_style})
+                        current_paragraph_content = []
+                        current_style = None
+                        paragraph_starts_with_introduction = False
+                    table_data, has_header, caption = self._get_table_meta(paragraph)
+                    grouped_pdf.append({
+                        'type': 'table',
+                        'data': table_data,
+                        'has_header': has_header,
+                        'caption': caption,
+                    })
+                    last_was_quote = False
+
+                elif paragraph.type in (ParagraphType.CHART, 'chart'):
+                    if current_paragraph_content:
+                        combined = " ".join(current_paragraph_content)
+                        grouped_pdf.append({'type': 'content', 'content': combined, 'style': current_style})
+                        current_paragraph_content = []
+                        current_style = None
+                        paragraph_starts_with_introduction = False
+                    image_path, title = self._get_chart_meta(paragraph)
+                    grouped_pdf.append({'type': 'chart', 'image_path': image_path, 'title': title})
+                    last_was_quote = False
                 
                 elif paragraph.type in [ParagraphType.INTRODUCTION, ParagraphType.ARGUMENT, ParagraphType.CONCLUSION, ParagraphType.ARGUMENT_RESUMPTION]:
                     should_start_new = (
@@ -2315,6 +2486,8 @@ class ExportService:
             story = []
             story.append(RLParagraph(project.name, title_style))
             story.append(Spacer(1, 20))
+
+            usable_width = 15.0 * cm   # largura útil entre margens
             
             for item in grouped_pdf:
                 if item['type'] == 'title1':
@@ -2375,6 +2548,73 @@ class ExportService:
                         print(_("Erro ao adicionar imagem ao PDF: {}").format(e))
                         story.append(RLParagraph(f"[Image: {metadata.get('filename', 'image')}]", normal_style))
                 
+                # TABLE
+                elif item['type'] == 'table':
+                    table_data = item['data']
+                    has_header = item['has_header']
+                    caption    = item['caption']
+                    if table_data:
+                        cell_normal = ParagraphStyle('TCellN', parent=styles['Normal'],
+                                                 fontSize=10, leading=12, fontName=font_roman)
+                        cell_header = ParagraphStyle('TCellH', parent=styles['Normal'],
+                                                 fontSize=10, leading=12, fontName=font_bold)
+                        rl_data = []
+                        for r_idx, row in enumerate(table_data):
+                            style = cell_header if (has_header and r_idx == 0) else cell_normal
+                            rl_data.append([RLParagraph(str(c), style) for c in row])
+
+                        num_cols = max(len(r) for r in table_data)
+                        col_width = usable_width / num_cols
+
+                        ts = TableStyle([
+                            ('GRID',        (0, 0), (-1, -1), 0.5, colors.grey),
+                            ('VALIGN',      (0, 0), (-1, -1), 'MIDDLE'),
+                            ('TOPPADDING',  (0, 0), (-1, -1), 4),
+                            ('BOTTOMPADDING',(0,0), (-1, -1), 4),
+                            ('LEFTPADDING', (0, 0), (-1, -1), 6),
+                            ('RIGHTPADDING',(0, 0), (-1, -1), 6),
+                        ])
+                        if has_header:
+                            ts.add('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#E8E8E8'))
+
+                        tbl = RLTable(rl_data, colWidths=[col_width] * num_cols, repeatRows=1 if has_header else 0)
+                        tbl.setStyle(ts)
+                        story.append(Spacer(1, 6))
+                        story.append(tbl)
+                        story.append(Spacer(1, 6))
+                        if caption:
+                            story.append(RLParagraph(f"Tabela: {caption}", caption_style))
+                            story.append(Spacer(1, 6))
+
+                # CHART
+                elif item['type'] == 'chart':
+                    image_path = item['image_path']
+                    title      = item['title']
+                    if image_path and Path(image_path).exists():
+                        try:
+                            img_width_cm  = 12.0
+                            img_height_cm = 8.0
+                            try:
+                                from PIL import Image as _PIL
+                                with _PIL.open(image_path) as im:
+                                    w, h = im.size
+                                    img_height_cm = round(img_width_cm * h / w, 2)
+                            except Exception:
+                                pass
+                            pdf_img = RLImage(image_path, width=img_width_cm*cm, height=img_height_cm*cm)
+                            pdf_img.hAlign = 'CENTER'
+                            story.append(Spacer(1, 6))
+                            story.append(pdf_img)
+                            story.append(Spacer(1, 6))
+                        except Exception as e:
+                            print(_("Erro ao adicionar gráfico ao PDF: {}").format(e))
+                            story.append(RLParagraph(f"[Gráfico: {title}]", normal_style))
+                    else:
+                        story.append(RLParagraph(f"[Gráfico: {title}]", normal_style))
+                    if title:
+                        story.append(RLParagraph(f"Gráfico: {title}", caption_style))
+                        story.append(Spacer(1, 6))
+
                 elif item['type'] == 'content':
                     story.append(RLParagraph(item['content'], item['style']))
             
@@ -2420,6 +2660,8 @@ class ExportService:
             doc.packages.append(Package('indentfirst'))
             doc.packages.append(Package('setspace'))
             doc.packages.append(Package('listings'))
+            doc.packages.append(Package('booktabs'))
+            doc.packages.append(Package('array')) 
             
             doc.preamble.append(NoEscape(r'\lstset{basicstyle=\ttfamily\footnotesize, breaklines=true, frame=single}'))
 
@@ -2511,6 +2753,42 @@ class ExportService:
                             if img_metadata.get('caption'):
                                 pic.add_caption(img_metadata['caption'])
 
+                # TABLE
+                elif paragraph.type in (ParagraphType.TABLE, 'table'):
+                    table_data, has_header, caption = self._get_table_meta(paragraph)
+                    if table_data:
+                        num_cols = max(len(row) for row in table_data)
+                        col_spec = ' '.join(['>{\\centering\\arraybackslash}p{' +
+                                         f'{12.0/num_cols:.1f}' + 'cm}'] * num_cols)
+                        lines = [
+                            NoEscape(r'\begin{table}[h!]'),
+                            NoEscape(r'\centering'),
+                        ]
+                        if caption:
+                            lines.append(NoEscape(r'\caption{' + escape_latex(caption) + '}'))
+                        lines.append(NoEscape(r'\begin{tabular}{' + col_spec + '}'))
+                        lines.append(NoEscape(r'\toprule'))
+                        for r_idx, row in enumerate(table_data):
+                            row_escaped = [escape_latex(str(c)) for c in row]
+                            row_str     = ' & '.join(row_escaped) + r' \\'
+                            lines.append(NoEscape(row_str))
+                            if has_header and r_idx == 0:
+                                lines.append(NoEscape(r'\midrule'))
+                        lines.append(NoEscape(r'\bottomrule'))
+                        lines.append(NoEscape(r'\end{tabular}'))
+                        lines.append(NoEscape(r'\end{table}'))
+                        for line in lines:
+                            doc.append(line)
+
+                # CHART
+                elif paragraph.type in (ParagraphType.CHART, 'chart'):
+                    image_path, title = self._get_chart_meta(paragraph)
+                    if image_path and Path(image_path).exists():
+                        with doc.create(Figure(position='h!')) as pic:
+                            pic.add_image(image_path, width=NoEscape(r'0.8\textwidth'))
+                            if title:
+                                pic.add_caption(title)
+
             flush_buffer()
 
             doc.generate_tex(str(file_path_obj.with_suffix('')))
@@ -2522,3 +2800,20 @@ class ExportService:
             import traceback
             traceback.print_exc()
             return False
+
+    def _get_table_meta(self, paragraph):
+        """Retorna (table_data, has_header, caption) de um parágrafo TABLE."""
+        metadata = getattr(paragraph, 'metadata', {}) or {}
+        formatting = getattr(paragraph, 'formatting', {}) or {}
+        meta = metadata.get('table_data') or formatting.get('table_data', {})
+        return (
+            meta.get('data', []),
+            meta.get('has_header', True),
+            meta.get('caption', ''),
+        )
+
+    def _get_chart_meta(self, paragraph):
+        """Retorna (image_path, title) de um parágrafo CHART."""
+        formatting = getattr(paragraph, 'formatting', {}) or {}
+        meta = formatting.get('chart_data', {})
+        return meta.get('image_path', ''), meta.get('title', 'Gráfico')

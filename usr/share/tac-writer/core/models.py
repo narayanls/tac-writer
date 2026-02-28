@@ -24,6 +24,8 @@ class ParagraphType(Enum):
     IMAGE = "image"
     LATEX = "latex"
     CODE = "code"
+    TABLE = "table"
+    CHART = "chart"
 
 class Paragraph:
     """Represents a single paragraph in a document"""
