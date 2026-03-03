@@ -2901,6 +2901,7 @@ class MainWindow(Adw.ApplicationWindow):
             'aur': 'AUR (pacman)',
             'deb': 'DEB (apt)',
             'rpm': 'RPM (dnf/zypper)',
+            'flatpak': 'Flatpak',
             'windows': 'Windows (Instalador)',
             'unknown': _('Desconhecido'),
         }
@@ -2985,6 +2986,8 @@ class MainWindow(Adw.ApplicationWindow):
             self._perform_update_aur()
         elif method in ('deb', 'rpm'):
             self._perform_update_package(update_info)
+        elif method == 'flatpak':
+            self._perform_update_flatpak(update_info)
         else:
             self._perform_update_unknown()
 
@@ -3172,8 +3175,112 @@ read
 
         return False
 
-    # ── Unknown install method ─────────────────────────────────
 
+    # -- Flatpak update --------------------------------------------------
+
+    def _perform_update_flatpak(self, update_info):
+        """Download the .flatpak bundle and install via flatpak install."""
+        from core.update_checker import UpdateChecker
+
+        assets = update_info["assets"]
+        asset = UpdateChecker.find_flatpak_asset(assets)
+
+        if not asset or not asset.get("url"):
+            self._show_toast(
+                _("Pacote .flatpak nao encontrado no release do GitHub."),
+                Adw.ToastPriority.HIGH,
+            )
+            return
+
+        progress_win = Adw.Window()
+        progress_win.set_title(_("Atualizando Tac Writer"))
+        progress_win.set_transient_for(self)
+        progress_win.set_modal(True)
+        progress_win.set_default_size(420, 200)
+        progress_win.set_deletable(False)
+
+        vbox = Gtk.Box(
+            orientation=Gtk.Orientation.VERTICAL, spacing=16,
+            valign=Gtk.Align.CENTER, halign=Gtk.Align.CENTER,
+            margin_top=40, margin_bottom=40, margin_start=40, margin_end=40,
+        )
+        spinner = Gtk.Spinner()
+        spinner.start()
+        spinner.set_size_request(48, 48)
+        vbox.append(spinner)
+
+        status_label = Gtk.Label(label=_("Baixando {}...").format(asset["name"]))
+        status_label.set_wrap(True)
+        status_label.set_max_width_chars(45)
+        vbox.append(status_label)
+
+        progress_win.set_content(vbox)
+        progress_win.present()
+
+        tmp_path = os.path.join(tempfile.gettempdir(), asset["name"])
+
+        def worker():
+            try:
+                import urllib.request
+                urllib.request.urlretrieve(asset["url"], tmp_path)
+                GLib.idle_add(status_label.set_text, _("Instalando bundle flatpak..."))
+                result = subprocess.run(
+                    ["flatpak", "install", "--bundle", "--noninteractive", "-y", tmp_path],
+                    timeout=300,
+                )
+                success = result.returncode == 0
+                GLib.idle_add(
+                    self._on_flatpak_update_finished,
+                    progress_win, success,
+                    update_info["latest_version"], tmp_path, None,
+                )
+            except Exception as exc:
+                GLib.idle_add(
+                    self._on_flatpak_update_finished,
+                    progress_win, False,
+                    update_info["latest_version"], tmp_path, str(exc),
+                )
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _on_flatpak_update_finished(self, progress_win, success, version, tmp_path, error):
+        """Handle the result of a flatpak bundle update attempt."""
+        progress_win.destroy()
+        try:
+            if os.path.exists(tmp_path):
+                os.remove(tmp_path)
+        except OSError:
+            pass
+
+        if success:
+            self.config.set("skipped_version", "")
+            self.config.save()
+            dialog = Adw.MessageDialog.new(
+                self,
+                _("Atualizacao Concluida!"),
+                _("Tac Writer foi atualizado para a versao {}.\n"
+                  "Reinicie o aplicativo para aplicar as mudancas.").format(version),
+            )
+            dialog.add_response("later", _("Depois"))
+            dialog.add_response("quit", _("Fechar Aplicativo"))
+            dialog.set_response_appearance("quit", Adw.ResponseAppearance.SUGGESTED)
+            dialog.set_default_response("quit")
+            dialog.set_close_response("later")
+            def on_resp(dlg, resp):
+                dlg.destroy()
+                if resp == "quit":
+                    self.get_application().quit()
+            dialog.connect("response", on_resp)
+            dialog.present()
+        else:
+            msg = _("A instalacao flatpak foi cancelada ou falhou.")
+            if error:
+                msg += "\n" + str(error)
+            self._show_toast(msg, Adw.ToastPriority.HIGH)
+        return False
+
+
+    # ── Unknown install method ─────────────────────────────────
     def _perform_update_unknown(self):
         """Fallback: open the GitHub releases page."""
         url = "https://github.com/narayanls/tac-writer/releases/latest"

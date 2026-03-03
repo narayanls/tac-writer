@@ -24,6 +24,7 @@ class UpdateChecker:
     GITHUB_USER = "narayanls"
     GITHUB_REPO = "tac-writer"
     APP_PACKAGE_NAME = "tac-writer"
+    FLATPAK_APP_ID    = "io.github.narayanls.TacWriter"
 
     def __init__(self, current_version: str):
         self.current_version = current_version
@@ -55,6 +56,8 @@ class UpdateChecker:
 
             if install_method == "aur":
                 result = self._check_via_aur(install_method, distro)
+            elif install_method == "flatpak":
+                result = self._check_via_flatpak(install_method, distro)
             else:
                 result = self._check_via_github(install_method, distro)
 
@@ -119,6 +122,62 @@ class UpdateChecker:
         }
 
     # ── GitHub strategy ───────────────────────────────────────
+
+    # __ Flatpak strategy _________________________________________________
+
+    def _check_via_flatpak(self, install_method, distro):
+        """Check updates: installed flatpak version vs GitHub latest tag."""
+        installed_ver = self._get_flatpak_version()
+        if not installed_ver:
+            print("[UpdateChecker] Could not read flatpak version. "
+                  "Falling back to GitHub check.")
+            return self._check_via_github(install_method, distro)
+
+        print(f"[UpdateChecker] Installed (flatpak): {installed_ver}")
+
+        release = self._fetch_latest_release()
+        if release is None:
+            print("[UpdateChecker] Could not fetch GitHub release.")
+            return None
+
+        latest = release.get("tag_name", "").lstrip("v")
+        print(f"[UpdateChecker] Latest (GitHub tag): {latest}")
+        if not latest:
+            return None
+
+        cmp = self._compare_versions(installed_ver, latest)
+        print(f"[UpdateChecker] compare_versions({installed_ver!r}, {latest!r}) = {cmp}")
+        if cmp >= 0:
+            print("[UpdateChecker] Already up-to-date (flatpak).")
+            return None
+
+        return {
+            "current_version": installed_ver,
+            "latest_version":  latest,
+            "release_notes":   release.get("body", ""),
+            "published_at":    release.get("published_at", ""),
+            "assets":          release.get("assets", []),
+            "install_method":  install_method,
+            "distro":          distro,
+        }
+
+    def _get_flatpak_version(self):
+        """Return the installed app version via flatpak info."""
+        try:
+            r = subprocess.run(
+                ["flatpak", "info", self.FLATPAK_APP_ID],
+                capture_output=True, text=True, timeout=5,
+            )
+            if r.returncode != 0:
+                return None
+            for line in r.stdout.splitlines():
+                if line.strip().lower().startswith("version:"):
+                    ver = line.split(":", 1)[1].strip().lstrip("v")
+                    if ver:
+                        return ver
+        except (FileNotFoundError, subprocess.TimeoutExpired) as e:
+            print(f"[UpdateChecker] flatpak info failed: {e}")
+        return None
 
     def _check_via_github(self, install_method, distro):
         """Check for updates via GitHub releases (for deb/rpm/windows/unknown)."""
@@ -314,6 +373,17 @@ class UpdateChecker:
         if IS_WINDOWS:
             return "windows"
 
+        # Flatpak tem prioridade sobre gestores nativos
+        try:
+            r = subprocess.run(
+                ["flatpak", "info", UpdateChecker.FLATPAK_APP_ID],
+                capture_output=True, text=True, timeout=5,
+            )
+            if r.returncode == 0:
+                return "flatpak"
+        except (FileNotFoundError, subprocess.TimeoutExpired):
+            pass
+
         checks = [
             ("pacman", ["-Q", "tac-writer"], "aur"),
             ("dpkg",   ["-s", "tac-writer"], "deb"),
@@ -407,5 +477,17 @@ class UpdateChecker:
                 return {
                     "name": name,
                     "url": asset.get("browser_download_url", ""),
+                }
+        return None
+
+    @staticmethod
+    def find_flatpak_asset(assets):
+        """Find the .flatpak bundle in GitHub release assets."""
+        for asset in assets:
+            name = asset.get("name", "")
+            if name.endswith(".flatpak"):
+                return {
+                    "name": name,
+                    "url":  asset.get("browser_download_url", ""),
                 }
         return None
