@@ -3212,7 +3212,7 @@ class ReferencesDialog(Adw.Window):
         self.toast_overlay.add_toast(toast)
 
 class SupporterDialog(Adw.Window):
-    """Dialog para ativação da Versão do Apoiador (Catarse)"""
+    """Dialog para ativação da Versão do Apoiador (Infinitepay)"""
 
     __gtype_name__ = 'TacSupporterDialog'
 
@@ -3249,7 +3249,7 @@ class SupporterDialog(Adw.Window):
         status_page.set_description(
             _("Apoie o Tac Writer e desbloqueie RECURSOS EXCLUSIVOS. "
               "Além de aproveitar funções adicionais você ajuda a manter o projeto vivo. "
-              "Apoie no Catarse com uma colaboração única.")
+              "Apoie no Infinitepay com uma colaboração única.")
         )
         status_page.add_css_class("compact")
         
@@ -3266,8 +3266,8 @@ class SupporterDialog(Adw.Window):
         content_box.set_margin_bottom(32)
         status_page.set_child(content_box)
 
-        # Botão do Catarse
-        catarse_btn = Gtk.Button(label=_("Apoiar no Catarse 💖"))
+        # Botão do Infitnitepay
+        catarse_btn = Gtk.Button(label=_("Apoiar no Infinitepay 💖"))
         catarse_btn.add_css_class("suggested-action")
         catarse_btn.add_css_class("pill")
         catarse_btn.set_size_request(-1, 45)
@@ -3297,10 +3297,10 @@ class SupporterDialog(Adw.Window):
         # Área para inserir o código de ativação
         activation_group = Adw.PreferencesGroup()
         activation_group.set_title(_("Já é um apoiador?"))
-        activation_group.set_description(_("Use o e-mail cadastrado no Catarse e o código recebido após o pagamento."))
+        activation_group.set_description(_("Use o e-mail cadastrado no Infinitepay e o código recebido após o pagamento."))
 
         self.email_row = Adw.EntryRow()
-        self.email_row.set_title(_("E-mail do Catarse"))
+        self.email_row.set_title(_("E-mail no Infinitepay"))
         self.email_row.set_input_purpose(Gtk.InputPurpose.EMAIL)
         activation_group.add(self.email_row)
 
@@ -3327,8 +3327,8 @@ class SupporterDialog(Adw.Window):
             self.toast_overlay.add_toast(toast)
 
     def _on_catarse_clicked(self, btn):
-        """Abre o navegador no link do seu Catarse"""
-        url = "https://www.catarse.me/apoiador_do_tac_writer_3988?ref=project_link"
+        """Abre o navegador no link do seu Infinitepay"""
+        url = "https://loja.infinitepay.io/narayan-lima"
         try:
             launcher = Gtk.UriLauncher.new(uri=url)
             launcher.launch(self, None, None)
@@ -3342,7 +3342,7 @@ class SupporterDialog(Adw.Window):
 
         if not email:
             self.email_row.add_css_class("error")
-            toast = Adw.Toast.new(_("Informe o e-mail cadastrado no Catarse."))
+            toast = Adw.Toast.new(_("Informe o e-mail cadastrado no Infinitepay."))
             self.toast_overlay.add_toast(toast)
             return
 
@@ -3365,7 +3365,7 @@ class SupporterDialog(Adw.Window):
                 self.parent_window.refresh_supporter_ui()
         else:
             entry_row.add_css_class("error")
-            toast = Adw.Toast.new(_("Código inválido. Verifique o e-mail e o código enviado pelo Catarse."))
+            toast = Adw.Toast.new(_("Código inválido. Verifique o e-mail e o código enviado."))
             self.toast_overlay.add_toast(toast)
 
 class GoalsDialog(Adw.Window):
