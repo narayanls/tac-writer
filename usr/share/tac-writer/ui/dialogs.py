@@ -4487,10 +4487,10 @@ class MindMapPreviewDialog(Adw.Window):
 
     def _update_toggle_btn(self):
         if self._current_theme == 'dark':
-            self._toggle_btn.set_icon_name('weather-clear-night-symbolic')
+            self._toggle_btn.set_icon_name('tac-weather-clear-night-symbolic')
             self._toggle_btn.set_tooltip_text(_("Ver versão com fundo claro"))
         else:
-            self._toggle_btn.set_icon_name('weather-clear-symbolic')
+            self._toggle_btn.set_icon_name('tac-weather-clear-symbolic')
             self._toggle_btn.set_tooltip_text(_("Ver versão com fundo escuro"))
 
     def _update_badge(self):
