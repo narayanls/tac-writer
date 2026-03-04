@@ -24,7 +24,7 @@ class UpdateChecker:
     GITHUB_USER = "narayanls"
     GITHUB_REPO = "tac-writer"
     APP_PACKAGE_NAME = "tac-writer"
-    FLATPAK_APP_ID    = "io.github.narayanls.TacWriter"
+    FLATPAK_APP_ID    = "io.github.narayanls.tacwriter"
 
     def __init__(self, current_version: str):
         self.current_version = current_version

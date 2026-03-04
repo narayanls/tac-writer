@@ -3225,7 +3225,7 @@ read
                 urllib.request.urlretrieve(asset["url"], tmp_path)
                 GLib.idle_add(status_label.set_text, _("Instalando bundle flatpak..."))
                 result = subprocess.run(
-                    ["flatpak", "install", "--bundle", "--noninteractive", "-y", tmp_path],
+                    ["flatpak", "install", "--user", "-y", tmp_path],
                     timeout=300,
                 )
                 success = result.returncode == 0
