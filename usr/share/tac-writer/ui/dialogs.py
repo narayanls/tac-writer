@@ -3328,7 +3328,7 @@ class SupporterDialog(Adw.Window):
 
     def _on_catarse_clicked(self, btn):
         """Abre o navegador no link do seu Infinitepay"""
-        url = "https://loja.infinitepay.io/narayan-lima"
+        url = "https://loja.infinitepay.io/narayan-lima/rts5410-tac-writer---versao-de-apoiador"
         try:
             launcher = Gtk.UriLauncher.new(uri=url)
             launcher.launch(self, None, None)
@@ -4404,6 +4404,140 @@ class ChartDialog(Adw.Window):
         plt.savefig(str(filepath), dpi=150, bbox_inches='tight')
         plt.close() # Limpa a memória do matplotlib
 
+class MindMapPreviewDialog(Adw.Window):
+    """
+    Shows both dark and light versions of a generated mind map so the user
+    can compare and choose which one to insert into the document.
+    """
+
+    def __init__(self, parent, path_dark, path_light, base_meta, planner_dialog, **kwargs):
+        super().__init__(**kwargs)
+
+        self._path_dark      = path_dark
+        self._path_light     = path_light
+        self._base_meta      = base_meta
+        self._planner        = planner_dialog   # MindMapPlannerDialog instance
+        self._current_theme  = 'dark'           # starts showing dark
+
+        self.set_title(_("Pré-visualização do Mapa Mental"))
+        self.set_transient_for(parent)
+        self.set_modal(True)
+        self.set_default_size(900, 660)
+        self.set_resizable(True)
+
+        self._create_ui()
+
+    # ── UI ────────────────────────────────────────────────────────────────
+
+    def _create_ui(self):
+        root = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.set_content(root)
+
+        # ── Header bar ──────────────────────────────────────────────────
+        header = Adw.HeaderBar()
+        header.set_show_end_title_buttons(False)
+
+        cancel_btn = Gtk.Button(label=_("Cancelar"))
+        cancel_btn.connect('clicked', self._on_cancel)
+        header.pack_start(cancel_btn)
+
+        # Theme toggle (icon + label inside a box)
+        insert_btn = Gtk.Button(label=_("Inserir este tema"))
+        insert_btn.add_css_class('suggested-action')
+        insert_btn.connect('clicked', self._on_insert)
+        header.pack_end(insert_btn)
+
+        self._toggle_btn = Gtk.Button()
+        self._toggle_btn.set_tooltip_text(_("Alternar entre tema escuro e claro"))
+        self._toggle_btn.connect('clicked', self._on_toggle_theme)
+        header.pack_end(self._toggle_btn)
+        self._update_toggle_btn()          # set initial icon + label
+
+        root.append(header)
+
+        # ── Theme badge label ────────────────────────────────────────────
+        self._badge = Gtk.Label()
+        self._badge.set_margin_top(8)
+        self._badge.set_margin_bottom(4)
+        self._update_badge()
+        root.append(self._badge)
+
+        # ── Image viewer ────────────────────────────────────────────────
+        scroll = Gtk.ScrolledWindow(vexpand=True, hexpand=True)
+        scroll.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
+
+        self._picture = Gtk.Picture()
+        self._picture.set_can_shrink(True)
+        self._picture.set_content_fit(Gtk.ContentFit.CONTAIN)
+        self._picture.set_margin_start(12)
+        self._picture.set_margin_end(12)
+        self._picture.set_margin_bottom(12)
+        scroll.set_child(self._picture)
+        root.append(scroll)
+
+        self._load_current_image()
+
+    # ── Helpers ───────────────────────────────────────────────────────────
+
+    def _current_path(self):
+        return self._path_dark if self._current_theme == 'dark' else self._path_light
+
+    def _load_current_image(self):
+        self._picture.set_filename(str(self._current_path()))
+
+    def _update_toggle_btn(self):
+        if self._current_theme == 'dark':
+            self._toggle_btn.set_icon_name('weather-clear-night-symbolic')
+            self._toggle_btn.set_tooltip_text(_("Ver versão com fundo claro"))
+        else:
+            self._toggle_btn.set_icon_name('weather-clear-symbolic')
+            self._toggle_btn.set_tooltip_text(_("Ver versão com fundo escuro"))
+
+    def _update_badge(self):
+        if self._current_theme == 'dark':
+            self._badge.set_markup(
+                f"<b>{_('Tema atual:')}</b>  🌙 {_('Escuro')}"
+            )
+        else:
+            self._badge.set_markup(
+                f"<b>{_('Tema atual:')}</b>  ☀️ {_('Claro')}"
+            )
+
+    # ── Callbacks ─────────────────────────────────────────────────────────
+
+    def _on_toggle_theme(self, _btn):
+        self._current_theme = 'light' if self._current_theme == 'dark' else 'dark'
+        self._update_toggle_btn()
+        self._update_badge()
+        self._load_current_image()
+
+    def _on_insert(self, _btn):
+        chosen  = self._current_path()
+        discard = self._path_light if self._current_theme == 'dark' else self._path_dark
+
+        # Delete the unused image file
+        try:
+            if discard.exists():
+                discard.unlink()
+        except OSError:
+            pass
+
+        meta = dict(self._base_meta)
+        meta['image_path'] = str(chosen)
+
+        self._planner.emit('mindmap-generated', meta)
+        self._planner.destroy()
+        self.destroy()
+
+    def _on_cancel(self, _btn):
+        # Delete both generated images since the user cancelled
+        for p in (self._path_dark, self._path_light):
+            try:
+                if p.exists():
+                    p.unlink()
+            except OSError:
+                pass
+        self.destroy()
 
 class MindMapPlannerDialog(Adw.Window):
     """
@@ -4533,7 +4667,7 @@ class MindMapPlannerDialog(Adw.Window):
         banner_text_box.append(title_lbl)
 
         subtitle_lbl = Gtk.Label(
-            label=_("Responda as perguntas abaixo. O TAC vai organizar suas ideias visualmente.")
+            label=_("Responda as perguntas abaixo. Tac Writer vai organizar suas ideias visualmente.")
         )
         subtitle_lbl.set_xalign(0)
         subtitle_lbl.set_wrap(True)
@@ -4644,33 +4778,40 @@ class MindMapPlannerDialog(Adw.Window):
             )
             return
 
-        # Build image
+        # ── Generate BOTH themes ──────────────────────────────────────────
         images_dir = self.config.data_dir / 'images' / self.project.id
         images_dir.mkdir(parents=True, exist_ok=True)
-        filename = f"mindmap_{uuid.uuid4().hex[:8]}.png"
-        filepath = images_dir / filename
 
-        self._generate_mind_map_image(
-            filepath, theme, questions, arguments, sources, goal
-        )
+        hex_id = uuid.uuid4().hex[:8]
+        path_dark  = images_dir / f"mindmap_{hex_id}_dark.png"
+        path_light = images_dir / f"mindmap_{hex_id}_light.png"
 
-        # Empacota metadados e emite — sem criar parágrafo
-        meta = {
+        self._generate_mind_map_image(path_dark,  theme, questions, arguments, sources, goal, map_theme='dark')
+        self._generate_mind_map_image(path_light, theme, questions, arguments, sources, goal, map_theme='light')
+
+        base_meta = {
             'theme':      theme,
             'questions':  questions,
             'arguments':  arguments,
             'sources':    sources,
             'goal':       goal,
-            'image_path': str(filepath),
         }
 
-        self.emit('mindmap-generated', meta)
-        self.destroy()
+        # ── Open preview dialog ───────────────────────────────────────────
+        preview = MindMapPreviewDialog(
+            parent       = self,
+            path_dark    = path_dark,
+            path_light   = path_light,
+            base_meta    = base_meta,
+            planner_dialog = self,
+        )
+        preview.present()
 
     # ── Matplotlib rendering ───────────────────────────────────────────────
 
     def _generate_mind_map_image(
-        self, filepath, theme, questions, arguments, sources, goal
+        self, filepath, theme, questions, arguments, sources, goal,
+        map_theme: str = 'dark'
     ):
         """
         Draw a radial mind map with matplotlib:
@@ -4679,6 +4820,8 @@ class MindMapPlannerDialog(Adw.Window):
                ── Argumentos
                ── Fontes
                ── Objetivo
+
+        map_theme: 'dark' (default) or 'light'
         """
         import math
 
@@ -4686,19 +4829,29 @@ class MindMapPlannerDialog(Adw.Window):
         fig, ax = plt.subplots(figsize=(14, 10))
         ax.set_aspect('equal')
         ax.axis('off')
-        fig.patch.set_facecolor('#1e1e2e')  # dark background
 
-        # ── Colour palette (GNOME-inspired) ──
+        # ── Colour palette ──
         BRANCH_COLORS = [
             '#3584e4',  # blue  – questions
             '#e5a50a',  # amber – arguments
             '#2ec27e',  # green – sources
             '#e01b24',  # red   – goal
         ]
-        CENTER_COLOR   = '#9141ac'  # purple
-        NODE_BG        = '#313244'
-        TEXT_COLOR     = '#cdd6f4'
-        DIM_COLOR      = '#a6adc8'
+
+        if map_theme == 'light':
+            fig.patch.set_facecolor('#ffffff')
+            ax.set_facecolor('#ffffff')
+            CENTER_COLOR = '#9141ac'
+            NODE_BG      = '#e0e0f0'
+            TEXT_COLOR   = '#1c1c2e'
+            DIM_COLOR    = '#555577'
+        else:
+            fig.patch.set_facecolor('#1e1e2e')
+            ax.set_facecolor('#1e1e2e')
+            CENTER_COLOR = '#9141ac'
+            NODE_BG      = '#313244'
+            TEXT_COLOR   = '#cdd6f4'
+            DIM_COLOR    = '#a6adc8'
 
         # ── Helpers ──────────────────────────────────────────────────────
 
