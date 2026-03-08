@@ -12,10 +12,18 @@ import os
 import sqlite3
 import threading
 import subprocess
+import random
 from pathlib import Path
 from datetime import datetime
 from typing import Dict, List, Any
 import uuid
+try:
+    import matplotlib
+    matplotlib.use('Agg') # Modo 'Agg' gera a imagem em background sem abrir janela
+    import matplotlib.pyplot as plt
+    MATPLOTLIB_AVAILABLE = True
+except ImportError:
+    MATPLOTLIB_AVAILABLE = False
 
 from core.models import Project, DEFAULT_TEMPLATES
 from core.services import ProjectManager, ExportService
@@ -24,6 +32,7 @@ from utils.helpers import ValidationHelper, FileHelper
 from utils.i18n import _
 
 import webbrowser
+
 
 # Try to import Dropbox SDK
 try:
@@ -508,53 +517,61 @@ class ExportDialog(Adw.Window):
         self.location_row.set_subtitle(str(default_location))
 
     def _get_documents_directory(self) -> Path:
-        """Get user's Documents directory in a language-aware way"""
+        """Get user's Documents directory — OneDrive-aware on Windows."""
+        import platform, os
         home = Path.home()
-        
-        # Try XDG user dirs first (Linux)
+
+        # ── Windows: OneDrive tem prioridade ─────────────────────────────
+        if platform.system() == 'Windows':
+            onedrive = os.environ.get('OneDrive', '')
+            if onedrive:
+                for name in ('Documentos', 'Documents'):
+                    candidate = Path(onedrive) / name
+                    if candidate.exists():
+                        return candidate
+            # Fallback: ctypes SHGetFolderPathW
+            try:
+                import ctypes
+                from ctypes import wintypes
+                buf = ctypes.create_unicode_buffer(wintypes.MAX_PATH)
+                ctypes.windll.shell32.SHGetFolderPathW(None, 0x0005, None, 0, buf)
+                if buf.value:
+                    p = Path(buf.value)
+                    if p.exists():
+                        return p
+            except Exception:
+                pass
+            # Last resort
+            for name in ('Documentos', 'Documents'):
+                candidate = home / name
+                if candidate.exists():
+                    return candidate
+            return home
+
+        # ── Linux / macOS ─────────────────────────────────────────────────
         try:
-            result = subprocess.run(['xdg-user-dir', 'DOCUMENTS'], 
-                                capture_output=True, text=True, timeout=5)
+            result = subprocess.run(['xdg-user-dir', 'DOCUMENTS'],
+                                    capture_output=True, text=True, timeout=5)
             if result.returncode == 0:
                 documents_path = Path(result.stdout.strip())
                 if documents_path.exists():
                     return documents_path
         except (subprocess.SubprocessError, subprocess.TimeoutExpired, FileNotFoundError):
             pass
-        
-        # Try common localized directory names
+
         possible_names = [
-            'Documents',    # English, French
-            'Documentos',   # Portuguese, Spanish
-            'Dokumente',    # German
-            'Documenti',    # Italian
-            'Документы',    # Russian
-            'Документи',    # Bulgarian, Ukrainian
-            'Dokumenty',    # Czech, Polish, Slovak
-            'Dokumenter',   # Danish, Norwegian
-            'Έγγραφα',      # Greek
-            'Dokumendid',   # Estonian
-            'Asiakirjat',   # Finnish
-            'מסמכים',       # Hebrew
-            'Dokumenti',    # Croatian
-            'Dokumentumok', # Hungarian
-            'Skjöl',        # Icelandic
-            'ドキュメント',     # Japanese
-            '문서',          # Korean
-            'Documenten',   # Dutch
-            'Documente',    # Romanian
-            'Dokument',     # Swedish
-            'Belgeler',     # Turkish
-            '文档',          # Chinese
+            'Documentos', 'Documents', 'Dokumente', 'Documenti',
+            'Документы', 'Документи', 'Dokumenty', 'Dokumenter',
+            'Έγγραφα', 'Dokumendid', 'Asiakirjat', 'מסמכים',
+            'Dokumentumok', 'Skjöl', 'ドキュメント', '문서',
+            'Documenten', 'Documente', 'Dokument', 'Belgeler', '文档',
         ]
-        
         for name in possible_names:
             candidate = home / name
             if candidate.exists() and candidate.is_dir():
                 return candidate
-        
-        # Fallback: create Documents if none exist
-        documents_dir = home / 'Documentos'  # Default to Portuguese
+
+        documents_dir = home / 'Documentos'
         try:
             documents_dir.mkdir(exist_ok=True)
         except OSError:
@@ -1173,16 +1190,12 @@ class PreferencesDialog(Adw.PreferencesWindow):
     # Color scheme methods
 
     def _create_color_picker_button(self):
-        """Cria um botão seletor de cor nativo do GTK"""
-        try:
-            color_dialog = Gtk.ColorDialog()
-            btn = Gtk.ColorDialogButton(dialog=color_dialog)
-        except (AttributeError, TypeError):
-            # Fallback para versões mais antigas do GTK4
-            btn = Gtk.ColorButton()
-            btn.set_use_alpha(False)
-            
+        """Cria um botão seletor de cor customizado e redimensionável"""
+        # Utiliza nossa classe recém-criada
+        btn = TacColorPickerButton(parent_window=self)
         btn.set_valign(Gtk.Align.CENTER)
+        
+        # Conecta o sinal mantendo a mesma lógica que você já tinha construído
         btn.connect('notify::rgba', self._on_color_picker_changed)
         return btn
 
@@ -1192,61 +1205,6 @@ class PreferencesDialog(Adw.PreferencesWindow):
         if not rgba.parse(hex_color):
             rgba.parse('#888888')
         btn.set_rgba(rgba)
-
-    def _on_color_picker_changed(self, btn, pspec):
-        """Chamado quando qualquer cor é alterada pelo usuário"""
-        if not self.color_scheme_row.get_active():
-            return
-        self._save_current_colors()
-        self._push_color_scheme_to_window()
-
-    def _set_color_btn(self, btn, hex_color):
-        """Define a cor de um botão a partir de string hex"""
-        rgba = Gdk.RGBA()
-        if not rgba.parse(hex_color):
-            rgba.parse('#888888')
-        btn.set_rgba(rgba)
-
-    def _update_color_btn_css(self, btn, hex_color):
-        """Workaround para garantir que a miniatura da cor renderize corretamente no Windows"""
-        provider = getattr(btn, '_windows_css_provider', None)
-        if not provider:
-            provider = Gtk.CssProvider()
-            btn.get_style_context().add_provider(provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
-            btn._windows_css_provider = provider
-            
-        # Adicionamos colordialogbutton e as tags !important
-        css = f"""
-        colordialogbutton swatch,
-        colorbutton swatch,
-        button.color {{
-            background-image: none !important;
-            background-color: {hex_color} !important;
-            min-height: 24px !important;
-            min-width: 48px !important;
-            border-radius: 8px !important;
-        }}
-        """
-        provider.load_from_data(css.encode('utf-8'), -1)
-
-    def _set_color_btn(self, btn, hex_color):
-        """Define a cor de um botão a partir de string hex"""
-        rgba = Gdk.RGBA()
-        if not rgba.parse(hex_color):
-            rgba.parse('#888888')
-        btn.set_rgba(rgba)
-        self._update_color_btn_css(btn, hex_color) # Aplica a correção de CSS
-
-    def _on_color_picker_changed(self, btn, pspec):
-        """Chamado quando qualquer cor é alterada pelo usuário"""
-        if not self.color_scheme_row.get_active():
-            return
-            
-        hex_color = self._rgba_to_hex(btn.get_rgba())
-        self._update_color_btn_css(btn, hex_color) # Garante que atualiza visualmente em tempo real
-        
-        self._save_current_colors()
-        self._push_color_scheme_to_window()
 
     def _on_color_scheme_toggled(self, switch, pspec):
         """Ativa/desativa o esquema de cores personalizado"""
@@ -1419,7 +1377,7 @@ class WelcomeDialog(Adw.Window):
         wiki_button = Gtk.Button()
         wiki_button.set_label(_("Saiba Mais - Documentação Online"))
         wiki_button.set_icon_name('tac-help-browser-symbolic')
-        wiki_button.add_css_class("suggested-action")
+        wiki_button.add_css_class("flat")
         wiki_button.add_css_class("wiki-help-button")
         wiki_button.set_tooltip_text(_("Acesse o guia completo e tutoriais"))
         wiki_button.connect('clicked', self._on_wiki_clicked)
@@ -1514,7 +1472,7 @@ def AboutDialog(parent):
     # Application information
     dialog.set_application_name(config.APP_NAME)
     dialog.set_application_icon("tac-writer")
-    dialog.set_version("1.3.1")
+    dialog.set_version("1.4.1")
     dialog.set_developer_name(_(config.APP_DESCRIPTION))
     dialog.set_website(config.APP_WEBSITE)
 
@@ -3260,3 +3218,2770 @@ class ReferencesDialog(Adw.Window):
     def _show_toast(self, message):
         toast = Adw.Toast.new(message)
         self.toast_overlay.add_toast(toast)
+
+class SupporterDialog(Adw.Window):
+    """Dialog para ativação da Versão do Apoiador (Infinitepay)"""
+
+    __gtype_name__ = 'TacSupporterDialog'
+
+    def __init__(self, parent, config: Config, **kwargs):
+        super().__init__(**kwargs)
+        self.set_title(_("Versão do Apoiador"))
+        self.set_transient_for(parent)
+        self.set_modal(True)
+        self.set_default_size(500, 600)
+        self.set_resizable(False)
+
+        self.config = config
+        self.parent_window = parent
+
+        self._create_ui()
+
+    def _create_ui(self):
+        # Toast Overlay para notificações
+        self.toast_overlay = Adw.ToastOverlay()
+        self.set_content(self.toast_overlay)
+
+        # Caixa principal
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.toast_overlay.set_child(box)
+
+        # Header Bar
+        header_bar = Adw.HeaderBar()
+        box.append(header_bar)
+
+        # Status Page 
+        status_page = Adw.StatusPage()
+        status_page.set_icon_name("tac-emblem-favorite-symbolic")
+        status_page.set_title(_("Apoie o Tac Writer"))
+        status_page.set_description(
+            _("Apoie o Tac Writer e desbloqueie RECURSOS EXCLUSIVOS. "
+              "Além de aproveitar funções adicionais você ajuda a manter o projeto vivo. "
+              "Apoie no Infinitepay com uma colaboração única.")
+        )
+        status_page.add_css_class("compact")
+        
+        # Container rolável para telas menores
+        scrolled = Gtk.ScrolledWindow()
+        scrolled.set_vexpand(True)
+        scrolled.set_child(status_page)
+        box.append(scrolled)
+
+        # Box para o conteúdo abaixo do StatusPage
+        content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=16)
+        content_box.set_margin_start(32)
+        content_box.set_margin_end(32)
+        content_box.set_margin_bottom(32)
+        status_page.set_child(content_box)
+
+        # Botão do Infitnitepay
+        catarse_btn = Gtk.Button(label=_("Apoiar no Infinitepay 💖"))
+        catarse_btn.add_css_class("suggested-action")
+        catarse_btn.add_css_class("pill")
+        catarse_btn.set_size_request(-1, 45)
+        catarse_btn.connect("clicked", self._on_catarse_clicked)
+        content_box.append(catarse_btn)
+
+        # Lista de Benefícios (Mockup visual)
+        benefits_group = Adw.PreferencesGroup()
+        benefits_group.set_title(_("Recursos Desbloqueados:"))
+        
+        benefits =[
+            _("Metas e Estatísticas Avançadas"),
+            _("Criação de Tabelas nativas"),
+            _("Geração de Gráficos integrados"),
+            _("Mapa Mental e Planner Guiado"),
+            _("Criação de Mapa"),
+            
+        ]
+        
+        for benefit in benefits:
+            row = Adw.ActionRow()
+            row.set_title(benefit)
+            row.add_prefix(Gtk.Image.new_from_icon_name("tac-object-select-symbolic"))
+            benefits_group.add(row)
+            
+        content_box.append(benefits_group)
+
+        # Área para inserir o código de ativação
+        activation_group = Adw.PreferencesGroup()
+        activation_group.set_title(_("Já é um apoiador?"))
+        activation_group.set_description(_("Use o e-mail cadastrado no Infinitepay e o código recebido após o pagamento."))
+
+        self.email_row = Adw.EntryRow()
+        self.email_row.set_title(_("E-mail no Infinitepay"))
+        self.email_row.set_input_purpose(Gtk.InputPurpose.EMAIL)
+        activation_group.add(self.email_row)
+
+        self.code_row = Adw.EntryRow()
+        self.code_row.set_title(_("Código de Ativação"))
+        self.code_row.set_show_apply_button(True)
+        self.code_row.connect("apply", self._on_activate_clicked)
+        activation_group.add(self.code_row)
+
+        content_box.append(activation_group)
+
+        self._update_ui_state()
+
+    def _update_ui_state(self):
+        """Muda a tela se o usuário já estiver ativado"""
+        if self.config.get_is_supporter():
+            self.email_row.set_text(_("ATIVADO"))
+            self.email_row.set_sensitive(False)
+            self.code_row.set_text(_("ATIVADO"))
+            self.code_row.set_sensitive(False)
+
+            # Mostra um toast agradecendo
+            toast = Adw.Toast.new(_("Obrigado pelo seu apoio! 💖"))
+            self.toast_overlay.add_toast(toast)
+
+    def _on_catarse_clicked(self, btn):
+        """Abre o navegador no link do seu Infinitepay"""
+        url = "https://loja.infinitepay.io/narayan-lima/rts5410-tac-writer---versao-de-apoiador"
+        try:
+            launcher = Gtk.UriLauncher.new(uri=url)
+            launcher.launch(self, None, None)
+        except AttributeError:
+            Gio.AppInfo.launch_default_for_uri(url, None)
+
+
+    def _on_activate_clicked(self, entry_row):
+        email = self.email_row.get_text().strip()
+        code  = entry_row.get_text().strip()
+
+        if not email:
+            self.email_row.add_css_class("error")
+            toast = Adw.Toast.new(_("Informe o e-mail cadastrado no Infinitepay."))
+            self.toast_overlay.add_toast(toast)
+            return
+
+        self.email_row.remove_css_class("error")
+        entry_row.remove_css_class("error")
+
+        if self.config.verify_supporter_code(email, code):   
+            self.config.set_supporter_credentials(email, code) 
+            self._update_ui_state()
+
+            success_dialog = Adw.MessageDialog.new(
+                self,
+                _("Ativação Concluída!"),
+                _("Muito obrigado por apoiar o Tac Writer! Todos os recursos extras foram desbloqueados para você.")
+            )
+            success_dialog.add_response("ok", _("Vamos escrever!"))
+            success_dialog.present()
+
+            if hasattr(self.parent_window, 'refresh_supporter_ui'):
+                self.parent_window.refresh_supporter_ui()
+        else:
+            entry_row.add_css_class("error")
+            toast = Adw.Toast.new(_("Código inválido. Verifique o e-mail e o código enviado."))
+            self.toast_overlay.add_toast(toast)
+
+class GoalsDialog(Adw.Window):
+    """
+    Dialog de Metas e Estatísticas Avançadas — exclusivo para Apoiadores.
+
+    Aba 1 · Estatísticas: palavras, caracteres, parágrafos, dias consecutivos
+            de uso e sessões Pomodoro concluídas.
+    Aba 2 · Metas: cria metas por projeto (parágrafos ou palavras novas
+            até uma data escolhida), acompanha progresso e exibe frases
+            de incentivo.
+
+    Persistência:
+      - config.get('usage_dates', [])          → lista de datas ISO usadas
+      - config.get('pomodoro_completed', 0)    → total de sessões work concluídas
+      - config.get(f'goals_{project.id}', [])  → metas do projeto
+    """
+
+    __gtype_name__ = 'TacGoalsDialog'
+
+    def __init__(self, parent, project, config: Config, **kwargs):
+        super().__init__(**kwargs)
+        self.set_title(_("Metas e Estatísticas"))
+        self.set_transient_for(parent)
+        self.set_modal(True)
+        self.set_default_size(580, 720)
+        self.set_resizable(True)
+
+        self.project = project
+        self.config = config
+        self._selected_deadline = None   # objeto datetime.date escolhido no calendário
+
+        self._create_ui()
+
+    # =========================================================================
+    # Estrutura principal
+    # =========================================================================
+
+    def _create_ui(self):
+        # Toast overlay envolve tudo para notificações internas
+        self.toast_overlay = Adw.ToastOverlay()
+        self.set_content(self.toast_overlay)
+
+        content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.toast_overlay.set_child(content_box)
+
+        # Header bar com botão fechar
+        header_bar = Adw.HeaderBar()
+        close_btn = Gtk.Button(label=_("Fechar"))
+        close_btn.connect('clicked', lambda b: self.destroy())
+        header_bar.pack_start(close_btn)
+        content_box.append(header_bar)
+
+        # ViewStack com duas abas
+        self.view_stack = Adw.ViewStack()
+        self.view_stack.set_vexpand(True)
+
+        stats_page = self._build_stats_page()
+        self.view_stack.add_titled_with_icon(
+            stats_page, 'stats', _("Estatísticas"), 'tac-office-chart-bar-symbolic'
+        )
+
+        goals_page = self._build_goals_page()
+        self.view_stack.add_titled_with_icon(
+            goals_page, 'goals', _("Metas"), 'tac-task-due-date-symbolic'
+        )
+
+        content_box.append(self.view_stack)
+
+        # Barra de navegação inferior (substitui abas no topo)
+        switcher_bar = Adw.ViewSwitcherBar()
+        switcher_bar.set_stack(self.view_stack)
+        switcher_bar.set_reveal(True)
+        content_box.append(switcher_bar)
+
+    # =========================================================================
+    # Aba 1 — Estatísticas Avançadas
+    # =========================================================================
+
+    def _build_stats_page(self):
+        scrolled = Gtk.ScrolledWindow()
+        scrolled.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=24)
+        box.set_margin_top(24)
+        box.set_margin_bottom(24)
+        box.set_margin_start(24)
+        box.set_margin_end(24)
+        scrolled.set_child(box)
+
+        # Coleta os dados
+        stats            = self.project.get_statistics()
+        total_words      = stats.get('total_words', 0)
+        total_paragraphs = stats.get('total_paragraphs', 0)
+        total_chars      = self._count_total_chars()
+        consecutive_days = self._calc_consecutive_days()
+        pomodoro_sessions= self.config.get('pomodoro_completed', 0)
+
+        # ── Grupo: Progresso da Escrita ───────────────────────────
+        writing_group = Adw.PreferencesGroup()
+        writing_group.set_title(_("Progresso da Escrita"))
+        writing_group.set_description(self.project.name)
+        box.append(writing_group)
+
+        self._add_stat_row(writing_group,
+                           _("Total de Palavras"),
+                           str(total_words),
+                           'tac-format-text-symbolic')
+        self._add_stat_row(writing_group,
+                           _("Total de Caracteres"),
+                           str(total_chars),
+                           'tac-format-text-symbolic')
+        self._add_stat_row(writing_group,
+                           _("Total de Parágrafos"),
+                           str(total_paragraphs),
+                           'tac-view-list-symbolic')
+
+        # ── Grupo: Hábito de Escrita ──────────────────────────────
+        habit_group = Adw.PreferencesGroup()
+        habit_group.set_title(_("Hábito de Escrita"))
+        box.append(habit_group)
+
+        # Linha de dias consecutivos — com frase surpresa proporcional ao streak
+        streak_row = Adw.ActionRow()
+        streak_row.set_title(_("Dias Consecutivos no App"))
+        try:
+            streak_row.add_prefix(Gtk.Image.new_from_icon_name('tac-appointment-soon-symbolic'))
+        except Exception:
+            pass
+
+        streak_val = Gtk.Label(label=str(consecutive_days))
+        streak_val.add_css_class('title-2')
+        streak_val.set_valign(Gtk.Align.CENTER)
+        streak_row.add_suffix(streak_val)
+
+        if consecutive_days >= 30:
+            streak_sub = _("🏆 {} dias consecutivos! Disciplina de campeão — você é um exemplo!").format(consecutive_days)
+        elif consecutive_days >= 14:
+            streak_sub = _("🔥 Duas semanas seguidas! {} dias de dedicação real. Fantástico!").format(consecutive_days)
+        elif consecutive_days >= 7:
+            streak_sub = _("⭐ Uma semana inteira de escrita consistente. Continue assim!")
+        elif consecutive_days >= 3:
+            streak_sub = _("📈 {} dias seguidos — você está construindo um hábito forte!").format(consecutive_days)
+        elif consecutive_days == 1:
+            streak_sub = _("Hoje você abriu o app. Tente abri-lo amanhã também para começar sua sequência!")
+        else:
+            streak_sub = _("Abra o app e um projeto todos os dias para acompanhar sua sequência aqui.")
+
+        streak_row.set_subtitle(streak_sub)
+        habit_group.add(streak_row)
+
+        # Linha de sessões Pomodoro
+        pom_row = self._add_stat_row(habit_group,
+                                     _("Sessões Pomodoro Concluídas"),
+                                     str(pomodoro_sessions),
+                                     'tac-alarm-symbolic')
+        if pomodoro_sessions > 0:
+            hours = round(pomodoro_sessions * 25 / 60, 1)
+            pom_row.set_subtitle(
+                _("Aproximadamente {} hora(s) de foco dedicadas à sua escrita.").format(hours)
+            )
+        else:
+            pom_row.set_subtitle(_("Use o Temporizador Pomodoro durante a escrita para registrar aqui."))
+
+        return scrolled
+
+    def _add_stat_row(self, group, title, value, icon_name=None):
+        """Cria e adiciona uma linha de estatística ao grupo."""
+        row = Adw.ActionRow()
+        row.set_title(title)
+        if icon_name:
+            try:
+                row.add_prefix(Gtk.Image.new_from_icon_name(icon_name))
+            except Exception:
+                pass
+        val_label = Gtk.Label(label=value)
+        val_label.add_css_class('title-2')
+        val_label.set_valign(Gtk.Align.CENTER)
+        row.add_suffix(val_label)
+        group.add(row)
+        return row
+
+    # =========================================================================
+    # Aba 2 — Metas
+    # =========================================================================
+
+    def _build_goals_page(self):
+        scrolled = Gtk.ScrolledWindow()
+        scrolled.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+
+        self.goals_page_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=20)
+        self.goals_page_box.set_margin_top(24)
+        self.goals_page_box.set_margin_bottom(24)
+        self.goals_page_box.set_margin_start(24)
+        self.goals_page_box.set_margin_end(24)
+        scrolled.set_child(self.goals_page_box)
+
+        self._build_new_goal_section()
+        self._build_goals_list_section()
+
+        return scrolled
+
+    # ── Formulário de nova meta ───────────────────────────────────
+
+    def _build_new_goal_section(self):
+        new_group = Adw.PreferencesGroup()
+        new_group.set_title(_("Nova Meta"))
+        new_group.set_description(
+            _("A baseline é tirada agora — só novos itens escritos a partir de hoje contam.")
+        )
+        self.goals_page_box.append(new_group)
+
+        # Métrica: parágrafos ou palavras
+        self.metric_combo = Adw.ComboRow()
+        self.metric_combo.set_title(_("Métrica"))
+        self.metric_combo.set_model(Gtk.StringList.new([_("Parágrafos"), _("Palavras")]))
+        new_group.add(self.metric_combo)
+
+        # Quantidade alvo
+        target_row = Adw.ActionRow()
+        target_row.set_title(_("Quantidade Alvo"))
+        target_row.set_subtitle(_("Quantos novos itens você quer escrever"))
+        self.target_spin = Gtk.SpinButton.new_with_range(1, 99999, 1)
+        self.target_spin.set_value(10)
+        self.target_spin.set_valign(Gtk.Align.CENTER)
+        target_row.add_suffix(self.target_spin)
+        new_group.add(target_row)
+
+        # Data limite (abre popover com Gtk.Calendar)
+        self.deadline_row = Adw.ActionRow()
+        self.deadline_row.set_title(_("Data Limite"))
+        self.deadline_row.set_subtitle(_("Nenhuma data escolhida"))
+        deadline_btn = Gtk.Button(label=_("Escolher Data"))
+        deadline_btn.add_css_class('flat')
+        deadline_btn.set_valign(Gtk.Align.CENTER)
+        deadline_btn.connect('clicked', self._on_choose_deadline)
+        self.deadline_row.add_suffix(deadline_btn)
+        new_group.add(self.deadline_row)
+
+        # Botão criar
+        create_btn = Gtk.Button(label=_("✍️  Criar Meta"))
+        create_btn.add_css_class('suggested-action')
+        create_btn.add_css_class('pill')
+        create_btn.set_halign(Gtk.Align.CENTER)
+        create_btn.set_size_request(180, 42)
+        create_btn.set_margin_top(4)
+        create_btn.connect('clicked', self._on_create_goal)
+        self.goals_page_box.append(create_btn)
+
+    # ── Lista de metas ────────────────────────────────────────────
+
+    def _build_goals_list_section(self):
+        """Cria o grupo e popula pela primeira vez."""
+        self.goals_list_group = Adw.PreferencesGroup()
+        self.goals_list_group.set_title(_("Metas do Projeto"))
+        self.goals_page_box.append(self.goals_list_group)
+        self._populate_goals_list()
+
+    def _populate_goals_list(self):
+        """Adiciona linhas de meta ao grupo existente."""
+        goals = self.config.get(f'goals_{self.project.id}', [])
+
+        if not goals:
+            empty_row = Adw.ActionRow()
+            empty_row.set_title(_("Nenhuma meta criada ainda"))
+            empty_row.set_subtitle(_("Use o formulário acima para criar sua primeira meta."))
+            self.goals_list_group.add(empty_row)
+            return
+
+        stats         = self.project.get_statistics()
+        cur_paragraphs= stats.get('total_paragraphs', 0)
+        cur_words     = stats.get('total_words', 0)
+
+        from datetime import date
+        today = date.today()
+
+        for goal in reversed(goals):          # mais recente no topo
+            self._add_goal_row(goal, cur_paragraphs, cur_words, today)
+
+    def _refresh_goals_ui(self):
+        """Remove e recria a seção de metas (após criar ou deletar)."""
+        self.goals_page_box.remove(self.goals_list_group)
+        self.goals_list_group = Adw.PreferencesGroup()
+        self.goals_list_group.set_title(_("Metas do Projeto"))
+        self.goals_page_box.append(self.goals_list_group)
+        self._populate_goals_list()
+
+    def _add_goal_row(self, goal, cur_paragraphs, cur_words, today):
+        """Renderiza uma meta como ExpanderRow com barra de progresso."""
+        from datetime import date
+
+        metric   = goal['metric']
+        target   = goal['target']
+        deadline = date.fromisoformat(goal['deadline'])
+        baseline = (goal['baseline_paragraphs'] if metric == 'paragraphs'
+                    else goal['baseline_words'])
+        current  = cur_paragraphs if metric == 'paragraphs' else cur_words
+
+        progress = max(0, current - baseline)
+        pct      = min(1.0, progress / target) if target > 0 else 0.0
+        m_label  = _("parágrafos") if metric == 'paragraphs' else _("palavras")
+
+        is_achieved = progress >= target
+        is_expired  = (today > deadline) and not is_achieved
+
+        # ── Header do ExpanderRow ─────────────────────────────────
+        exp_row = Adw.ExpanderRow()
+        exp_row.set_title(_("{} novos {}").format(target, m_label))
+
+        deadline_str = deadline.strftime('%d/%m/%Y')
+        remaining    = (deadline - today).days
+
+        if is_achieved:
+            exp_row.set_subtitle(_("✅ Meta alcançada! Prazo era {}").format(deadline_str))
+        elif is_expired:
+            exp_row.set_subtitle(_("⏰ Prazo encerrado em {}").format(deadline_str))
+        elif remaining == 0:
+            exp_row.set_subtitle(_("🔔 Prazo é hoje! ({})").format(deadline_str))
+        elif remaining == 1:
+            exp_row.set_subtitle(_("📅 Amanhã é o último dia — Prazo: {}").format(deadline_str))
+        else:
+            exp_row.set_subtitle(_("📅 {} dias restantes — Prazo: {}").format(remaining, deadline_str))
+
+        # ── Conteúdo interno ──────────────────────────────────────
+        inner_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        inner_box.set_margin_top(10)
+        inner_box.set_margin_bottom(14)
+        inner_box.set_margin_start(16)
+        inner_box.set_margin_end(16)
+
+        # Barra de progresso
+        prog_bar = Gtk.ProgressBar()
+        prog_bar.set_fraction(pct)
+        prog_bar.set_show_text(True)
+        prog_bar.set_text(
+            "{} / {} {}  ({}%)".format(progress, target, m_label, int(pct * 100))
+        )
+        inner_box.append(prog_bar)
+
+        # Frase de incentivo
+        phrase = self._get_encouragement(is_achieved, is_expired, pct,
+                                          progress, target, m_label)
+        phrase_lbl = Gtk.Label(label=phrase)
+        phrase_lbl.set_wrap(True)
+        phrase_lbl.set_xalign(0)
+        phrase_lbl.add_css_class('dim-label')
+        inner_box.append(phrase_lbl)
+
+        # Botão remover
+        del_btn = Gtk.Button(label=_("Remover Meta"))
+        del_btn.add_css_class('destructive-action')
+        del_btn.add_css_class('flat')
+        del_btn.set_halign(Gtk.Align.END)
+        del_btn.set_margin_top(4)
+        del_btn.connect('clicked', self._on_delete_goal, goal['id'])
+        inner_box.append(del_btn)
+
+        inner_row = Adw.ActionRow()
+        inner_row.set_child(inner_box)
+        exp_row.add_row(inner_row)
+
+        self.goals_list_group.add(exp_row)
+
+    def _get_encouragement(self, is_achieved, is_expired, pct,
+                            progress, target, m_label):
+        """Retorna uma frase de incentivo adequada ao estado da meta."""
+        if is_achieved:
+            options = [
+                _("Parabéns pela conquista! O foco é um fator determinante "
+                  "para a conclusão de um trabalho."),
+                _("Incrível! Você provou para si mesmo que é capaz. "
+                  "A constância é a chave do sucesso acadêmico."),
+                _("Meta cumprida! Cada parágrafo escrito é um passo a mais "
+                  "em direção à sua obra finalizada."),
+            ]
+
+        elif is_expired:
+            if pct >= 0.5:
+                options = [
+                    _("Apesar de não ter concluído a meta, você escreveu {} de {} {}. "
+                      "Não desanime — o progresso real não tem prazo!").format(
+                        progress, target, m_label),
+                    _("Você chegou a {} de {} {}. Crie uma nova meta e supere este marco!").format(
+                        progress, target, m_label),
+                ]
+            else:
+                options = [
+                    _("Apesar do prazo, {} {} escritos já conta! "
+                      "Tente uma meta menor e vá aumentando gradualmente.").format(
+                        progress, m_label),
+                    _("Recomeçar faz parte do processo. "
+                      "Defina uma nova meta e encontre o ritmo que funciona para você."),
+                ]
+
+        elif pct >= 0.75:
+            options = [
+                _("Você está quase lá! Faltam apenas {} {} para alcançar a meta. "
+                  "Não pare agora!").format(target - progress, m_label),
+                _("Impressionante ritmo! {} de {} {} concluídos. "
+                  "A reta final é a mais especial.").format(progress, target, m_label),
+            ]
+
+        elif pct >= 0.4:
+            options = [
+                _("Bom andamento! Você já está a {}% da meta. "
+                  "Siga escrevendo!").format(int(pct * 100)),
+                _("Cada sessão conta. Você já tem {} {} — continue!").format(
+                    progress, m_label),
+            ]
+
+        else:
+            options = [
+                _("Todo começo é um ato de coragem. "
+                  "Você já escreveu {} {}. Continue!").format(progress, m_label),
+                _("A escrita acadêmica é uma maratona, não uma corrida. "
+                  "Vá no seu ritmo e não desista."),
+            ]
+
+        return random.choice(options)
+
+    # =========================================================================
+    # Popover do Calendário
+    # =========================================================================
+
+    def _on_choose_deadline(self, btn):
+        """Abre um popover com Gtk.Calendar para o usuário escolher a data."""
+        popover = Gtk.Popover()
+        popover.set_parent(btn)
+        popover.set_autohide(True)
+
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        box.set_margin_top(12)
+        box.set_margin_bottom(12)
+        box.set_margin_start(12)
+        box.set_margin_end(12)
+
+        calendar = Gtk.Calendar()
+
+        # Pré-seleciona a data já escolhida (se houver)
+        if self._selected_deadline:
+            gdt = GLib.DateTime.new_local(
+                self._selected_deadline.year,
+                self._selected_deadline.month,
+                self._selected_deadline.day,
+                0, 0, 0.0
+            )
+            calendar.select_day(gdt)
+
+        box.append(calendar)
+
+        confirm_btn = Gtk.Button(label=_("Confirmar Data"))
+        confirm_btn.add_css_class('suggested-action')
+        confirm_btn.connect('clicked', self._on_deadline_confirmed, calendar, popover)
+        box.append(confirm_btn)
+
+        popover.set_child(box)
+        popover.popup()
+
+    def _on_deadline_confirmed(self, btn, calendar, popover):
+        """Lê a data do calendário e atualiza a linha de prazo."""
+        gdt = calendar.get_date()
+        from datetime import date
+        self._selected_deadline = date(
+            gdt.get_year(), gdt.get_month(), gdt.get_day_of_month()
+        )
+        self.deadline_row.set_subtitle(self._selected_deadline.strftime('%d/%m/%Y'))
+        popover.popdown()
+
+    # =========================================================================
+    # CRUD das Metas
+    # =========================================================================
+
+    def _on_create_goal(self, btn):
+        """Valida e persiste uma nova meta no config."""
+        from datetime import date
+
+        if not self._selected_deadline:
+            self._show_toast(_("Escolha uma data limite para a meta."))
+            return
+
+        today = date.today()
+        if self._selected_deadline <= today:
+            self._show_toast(_("A data limite deve ser uma data futura."))
+            return
+
+        stats      = self.project.get_statistics()
+        metric_idx = self.metric_combo.get_selected()
+        metric     = 'paragraphs' if metric_idx == 0 else 'words'
+        target     = int(self.target_spin.get_value())
+
+        goal = {
+            'id':                   str(uuid.uuid4())[:8],
+            'metric':               metric,
+            'target':               target,
+            'deadline':             self._selected_deadline.isoformat(),
+            'created_at':           today.isoformat(),
+            'baseline_paragraphs':  stats.get('total_paragraphs', 0),
+            'baseline_words':       stats.get('total_words', 0),
+        }
+
+        goals = self.config.get(f'goals_{self.project.id}', [])
+        goals.append(goal)
+        self.config.set(f'goals_{self.project.id}', goals)
+        self.config.save()
+
+        # Resetar formulário
+        self._selected_deadline = None
+        self.deadline_row.set_subtitle(_("Nenhuma data escolhida"))
+        self.target_spin.set_value(10)
+        self.metric_combo.set_selected(0)
+
+        self._show_toast(_("Meta criada com sucesso! Boa escrita! ✍️"))
+        self._refresh_goals_ui()
+
+    def _on_delete_goal(self, btn, goal_id):
+        """Remove a meta pelo id e atualiza a lista."""
+        goals = self.config.get(f'goals_{self.project.id}', [])
+        goals = [g for g in goals if g['id'] != goal_id]
+        self.config.set(f'goals_{self.project.id}', goals)
+        self.config.save()
+        self._refresh_goals_ui()
+        self._show_toast(_("Meta removida."))
+
+    # =========================================================================
+    # Helpers
+    # =========================================================================
+
+    def _count_total_chars(self):
+        """Conta todos os caracteres do conteúdo do projeto."""
+        total = 0
+        for para in self.project.paragraphs:
+            if hasattr(para, 'content') and para.content:
+                total += len(para.content)
+        return total
+
+    def _calc_consecutive_days(self):
+        """
+        Calcula quantos dias consecutivos (até hoje) o usuário abriu o app.
+        Lê a lista 'usage_dates' do config — será populada pela Alteração 2
+        em main_window.py.
+        """
+        from datetime import date, timedelta
+        raw = self.config.get('usage_dates', [])
+        if not raw:
+            return 0
+        try:
+            dates = set(date.fromisoformat(d) for d in raw)
+        except (ValueError, TypeError):
+            return 0
+
+        today  = date.today()
+        streak = 0
+        check  = today
+        while check in dates:
+            streak += 1
+            check  -= timedelta(days=1)
+        return streak
+
+    def _show_toast(self, message):
+        """Exibe uma notificação toast dentro do dialog."""
+        toast = Adw.Toast.new(message)
+        toast.set_timeout(3)
+        self.toast_overlay.add_toast(toast)
+
+class TableDialog(Adw.Window):
+    """Dialog for creating and editing tables (Premium)"""
+
+    __gtype_name__ = 'TacTableDialog'
+
+    __gsignals__ = {
+        'table-added': (GObject.SIGNAL_RUN_FIRST, None, (object, int)),
+        'table-updated': (GObject.SIGNAL_RUN_FIRST, None, (object, object)),
+    }
+
+    def __init__(self, parent, project, insert_after_index: int = -1, edit_paragraph=None, **kwargs):
+        super().__init__(**kwargs)
+
+        self.edit_mode = edit_paragraph is not None
+        self.edit_paragraph = edit_paragraph
+        self.project = project
+        self.insert_after_index = insert_after_index
+
+        self.set_title(_("Editar Tabela") if self.edit_mode else _("Inserir Tabela"))
+        self.set_transient_for(parent)
+        self.set_modal(True)
+        self.set_default_size(700, 500)
+        self.set_resizable(True)
+
+        # Dados iniciais
+        self.rows = 3
+        self.cols = 3
+        self.table_data =[]
+        self.caption = ""
+        self.has_header = True
+
+        self.entries =[]  # Para guardar as referências dos Gtk.Entry
+
+        if self.edit_mode and hasattr(self.edit_paragraph, 'metadata'):
+            meta = self.edit_paragraph.metadata.get('table_data', {})
+            self.rows = meta.get('rows', 3)
+            self.cols = meta.get('cols', 3)
+            self.table_data = meta.get('data',[])
+            self.caption = meta.get('caption', '')
+            self.has_header = meta.get('has_header', True)
+
+        self._create_ui()
+        self._build_grid()
+
+    def _create_ui(self):
+        content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.set_content(content_box)
+
+        # Header bar
+        header_bar = Adw.HeaderBar()
+        cancel_button = Gtk.Button(label=_("Cancelar"))
+        cancel_button.connect('clicked', lambda b: self.destroy())
+        header_bar.pack_start(cancel_button)
+
+        save_button = Gtk.Button(label=_("Atualizar") if self.edit_mode else _("Inserir"))
+        save_button.add_css_class('suggested-action')
+        save_button.connect('clicked', self._on_save_clicked)
+        header_bar.pack_end(save_button)
+        content_box.append(header_bar)
+
+        # Controls (Linhas, Colunas, Legenda)
+        controls_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        controls_box.set_margin_top(12)
+        controls_box.set_margin_bottom(12)
+        controls_box.set_margin_start(16)
+        controls_box.set_margin_end(16)
+        content_box.append(controls_box)
+
+        # Spinners
+        controls_box.append(Gtk.Label(label=_("Linhas:")))
+        self.spin_rows = Gtk.SpinButton.new_with_range(1, 20, 1)
+        self.spin_rows.set_value(self.rows)
+        self.spin_rows.connect("value-changed", self._on_dimensions_changed)
+        controls_box.append(self.spin_rows)
+
+        controls_box.append(Gtk.Label(label=_("Colunas:"), margin_start=12))
+        self.spin_cols = Gtk.SpinButton.new_with_range(1, 10, 1)
+        self.spin_cols.set_value(self.cols)
+        self.spin_cols.connect("value-changed", self._on_dimensions_changed)
+        controls_box.append(self.spin_cols)
+
+        # Header Checkbox
+        self.check_header = Gtk.CheckButton(label=_("Primeira linha é cabeçalho"))
+        self.check_header.set_active(self.has_header)
+        self.check_header.set_margin_start(12)
+        controls_box.append(self.check_header)
+
+        # Legenda
+        cap_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        cap_box.set_margin_start(16)
+        cap_box.set_margin_end(16)
+        cap_box.set_margin_bottom(12)
+        cap_box.append(Gtk.Label(label=_("Legenda:")))
+        self.entry_caption = Gtk.Entry(hexpand=True)
+        self.entry_caption.set_text(self.caption)
+        self.entry_caption.set_placeholder_text(_("Ex: Tabela 1 - Resultados da pesquisa..."))
+        cap_box.append(self.entry_caption)
+        content_box.append(cap_box)
+
+        # Scrollable Grid Area
+        scrolled = Gtk.ScrolledWindow(hexpand=True, vexpand=True)
+        scrolled.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
+        scrolled.set_margin_start(16)
+        scrolled.set_margin_end(16)
+        scrolled.set_margin_bottom(16)
+
+        # Usamos um Viewport para permitir rolagem de um grid grande
+        viewport = Gtk.Viewport()
+        self.grid = Gtk.Grid()
+        self.grid.set_row_spacing(4)
+        self.grid.set_column_spacing(4)
+        self.grid.set_halign(Gtk.Align.CENTER)
+        
+        viewport.set_child(self.grid)
+        scrolled.set_child(viewport)
+        content_box.append(scrolled)
+
+    def _on_dimensions_changed(self, spin):
+        """Reconstrói a grade se as dimensões mudarem preservando os dados possíveis"""
+        # Salva o estado atual antes de mudar a grade
+        self._extract_current_data()
+        self.rows = int(self.spin_rows.get_value())
+        self.cols = int(self.spin_cols.get_value())
+        self._build_grid()
+
+    def _extract_current_data(self):
+        """Puxa os dados atuais dos campos Gtk.Entry para a memória"""
+        new_data =[]
+        for r, row_entries in enumerate(self.entries):
+            row_data =[]
+            for c, entry in enumerate(row_entries):
+                row_data.append(entry.get_text())
+            new_data.append(row_data)
+        self.table_data = new_data
+
+    def _build_grid(self):
+        """Constrói a grade de campos de texto"""
+        # Limpar grid
+        child = self.grid.get_first_child()
+        while child:
+            next_child = child.get_next_sibling()
+            self.grid.remove(child)
+            child = next_child
+
+        self.entries =[]
+        for r in range(self.rows):
+            row_entries =[]
+            for c in range(self.cols):
+                entry = Gtk.Entry()
+                entry.set_width_chars(15)
+                
+                # Destaca a primeira linha se for cabeçalho
+                if r == 0 and self.check_header.get_active():
+                    entry.add_css_class("heading")
+
+                # Preencher com dados existentes (se houver)
+                if r < len(self.table_data) and c < len(self.table_data[r]):
+                    entry.set_text(self.table_data[r][c])
+
+                self.grid.attach(entry, c, r, 1, 1)
+                row_entries.append(entry)
+            self.entries.append(row_entries)
+
+    def _on_save_clicked(self, btn):
+        """Salva a tabela no documento"""
+        self._extract_current_data()
+        
+        from core.models import Paragraph, ParagraphType
+        
+        meta = {
+            'rows': self.rows,
+            'cols': self.cols,
+            'data': self.table_data,
+            'caption': self.entry_caption.get_text().strip(),
+            'has_header': self.check_header.get_active()
+        }
+
+        if self.edit_mode:
+            new_para = Paragraph(ParagraphType.TABLE)
+            new_para.formatting = {'table_data': meta}
+            new_para.content = f"[Tabela: {meta['caption']}]"
+            
+            self.emit('table-updated', new_para, self.edit_paragraph)
+        else:
+            new_para = Paragraph(ParagraphType.TABLE)
+            new_para.formatting = {'table_data': meta}
+            new_para.content = f"[Tabela: {meta['caption']}]"
+            
+            self.emit('table-added', new_para, self.insert_after_index)
+
+        self.destroy()
+
+class ChartDialog(Adw.Window):
+    """Dialog for creating and editing charts (Premium)"""
+
+    __gtype_name__ = 'TacChartDialog'
+
+    __gsignals__ = {
+        'chart-added': (GObject.SIGNAL_RUN_FIRST, None, (object, int)),
+        'chart-updated': (GObject.SIGNAL_RUN_FIRST, None, (object, object)),
+    }
+
+    def __init__(self, parent, project, insert_after_index: int = -1, edit_paragraph=None, **kwargs):
+        super().__init__(**kwargs)
+
+        self.edit_mode = edit_paragraph is not None
+        self.edit_paragraph = edit_paragraph
+        self.project = project
+        self.insert_after_index = insert_after_index
+        self.config = parent.config
+
+        self.set_title(_("Editar Gráfico") if self.edit_mode else _("Inserir Gráfico"))
+        self.set_transient_for(parent)
+        self.set_modal(True)
+        self.set_default_size(600, 500)
+        self.set_resizable(True)
+
+        # Paletas de cores disponíveis: (nome, cor_primária, lista_pizza)
+        self.PALETTES = [
+            (_("TAC (Padrão)"),     '#3584e4', ['#3584e4','#e5a50a','#e01b24','#2ec27e','#9141ac','#986a44']),
+            (_("Quente"),           '#e01b24', ['#e01b24','#e5a50a','#ff7800','#c061cb','#986a44','#f9f06b']),
+            (_("Frio"),             '#1c71d8', ['#1c71d8','#2ec27e','#26a269','#613583','#1a5fb4','#4a708b']),
+            (_("Pastel"),           '#99c1f1', ['#99c1f1','#f9f06b','#8ff0a4','#f8d8b0','#dc8add','#cdab8f']),
+            (_("Monocromático"),    '#3584e4', ['#3584e4','#4a90d9','#5c9bd4','#6ea6cf','#80b2ca','#92bdc5']),
+        ]
+
+        # Dados iniciais
+        self.chart_title = ""
+        self.chart_type = "bar"
+        self.chart_data = [["Categoria 1", "10"], ["Categoria 2", "20"]]
+        self.image_path = ""
+        self.palette_index = 0  # TAC Padrão
+
+        if self.edit_mode:
+            # Dados salvos ficam em 'formatting', não em 'metadata'
+            formatting = getattr(self.edit_paragraph, 'formatting', {})
+            if not isinstance(formatting, dict):
+                formatting = {}
+            meta = formatting.get('chart_data', {})
+            self.chart_title  = meta.get('title', '')
+            self.chart_type   = meta.get('type', 'bar')
+            self.chart_data   = meta.get('data', self.chart_data)
+            self.image_path   = meta.get('image_path', '')
+            self.palette_index = meta.get('palette_index', 0)
+
+        self.row_boxes =[] 
+
+        self._create_ui()
+
+        if not MATPLOTLIB_AVAILABLE:
+            self._show_error_overlay()
+
+    def _create_ui(self):
+        content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.set_content(content_box)
+
+        # Header bar
+        header_bar = Adw.HeaderBar()
+        cancel_btn = Gtk.Button(label=_("Cancelar"))
+        cancel_btn.connect('clicked', lambda b: self.destroy())
+        header_bar.pack_start(cancel_btn)
+
+        save_btn = Gtk.Button(label=_("Gerar e Salvar"))
+        save_btn.add_css_class('suggested-action')
+        save_btn.connect('clicked', self._on_save_clicked)
+        header_bar.pack_end(save_btn)
+        content_box.append(header_bar)
+
+        main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=16)
+        main_box.set_margin_top(16); main_box.set_margin_bottom(16)
+        main_box.set_margin_start(24); main_box.set_margin_end(24)
+        content_box.append(main_box)
+
+        # Controles Iniciais (Título e Tipo)
+        group_settings = Adw.PreferencesGroup(title=_("Configurações do Gráfico"))
+        main_box.append(group_settings)
+
+        self.entry_title = Adw.EntryRow(title=_("Título do Gráfico"))
+        self.entry_title.set_text(self.chart_title)
+        group_settings.add(self.entry_title)
+
+        self.combo_type = Adw.ComboRow(title=_("Tipo de Gráfico"))
+        model = Gtk.StringList.new([_("Barras"), _("Pizza"), _("Linha")])
+        self.combo_type.set_model(model)
+        
+        type_map = {"bar": 0, "pie": 1, "line": 2}
+        self.combo_type.set_selected(type_map.get(self.chart_type, 0))
+        group_settings.add(self.combo_type)
+
+        self.combo_palette = Adw.ComboRow(title=_("Paleta de Cores"))
+        palette_model = Gtk.StringList.new([p[0] for p in self.PALETTES])
+        self.combo_palette.set_model(palette_model)
+        self.combo_palette.set_selected(self.palette_index)
+        group_settings.add(self.combo_palette)
+
+        # Dados do Gráfico
+        group_data = Adw.PreferencesGroup(title=_("Dados"))
+        main_box.append(group_data)
+
+        # Cabeçalho dos dados
+        header_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        lbl_cat = Gtk.Label(label=_("Categoria / Rótulo"), hexpand=True, xalign=0)
+        lbl_cat.add_css_class("dim-label")
+        lbl_val = Gtk.Label(label=_("Valor Numérico"), hexpand=True, xalign=0)
+        lbl_val.add_css_class("dim-label")
+        header_box.append(lbl_cat)
+        header_box.append(lbl_val)
+        
+        # Spacer para alinhar com o botão de deletar
+        spacer = Gtk.Box(width_request=40)
+        header_box.append(spacer)
+        
+        # Box que vai conter as linhas, usando ScrolledWindow se ficar grande
+        scroll = Gtk.ScrolledWindow(vexpand=True)
+        scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        scroll.set_min_content_height(150)
+        
+        self.data_list_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        self.data_list_box.append(header_box)
+        scroll.set_child(self.data_list_box)
+        main_box.append(scroll)
+
+        # Popular com dados existentes
+        for row in self.chart_data:
+            self._add_data_row(row[0], str(row[1]))
+
+        # Botão de Adicionar Linha
+        add_btn = Gtk.Button(label=_("Adicionar Novo Dado"), icon_name="list-add-symbolic")
+        add_btn.set_halign(Gtk.Align.CENTER)
+        add_btn.add_css_class("flat")
+        add_btn.connect("clicked", lambda b: self._add_data_row("", ""))
+        main_box.append(add_btn)
+
+    def _add_data_row(self, label_text, value_text):
+        row_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        
+        entry_label = Gtk.Entry(hexpand=True)
+        entry_label.set_text(label_text)
+        entry_label.set_placeholder_text(_("Ex: Ano 2024"))
+        
+        entry_value = Gtk.Entry(hexpand=True)
+        entry_value.set_text(value_text)
+        entry_value.set_placeholder_text(_("Ex: 150.5"))
+        
+        del_btn = Gtk.Button(icon_name="user-trash-symbolic")
+        del_btn.add_css_class("destructive-action")
+        del_btn.add_css_class("flat")
+        del_btn.connect("clicked", lambda b: self._remove_data_row(row_box))
+
+        row_box.append(entry_label)
+        row_box.append(entry_value)
+        row_box.append(del_btn)
+
+        # Armazena as referências para podermos extrair os dados depois
+        row_box.entry_label = entry_label
+        row_box.entry_value = entry_value
+
+        self.row_boxes.append(row_box)
+        self.data_list_box.append(row_box)
+
+    def _remove_data_row(self, row_box):
+        self.data_list_box.remove(row_box)
+        if row_box in self.row_boxes:
+            self.row_boxes.remove(row_box)
+
+    def _show_error_overlay(self):
+        """Se o matplotlib não estiver instalado, mostra um aviso"""
+        dialog = Adw.MessageDialog.new(
+            self, _("Biblioteca Ausente"), 
+            _("A biblioteca 'matplotlib' é necessária para gerar gráficos.\nInstale via terminal: pip install matplotlib")
+        )
+        dialog.add_response("ok", _("Entendi"))
+        dialog.connect("response", lambda d, r: self.destroy())
+        dialog.present()
+
+    def _on_save_clicked(self, btn):
+        if not MATPLOTLIB_AVAILABLE:
+            return
+
+        # 1. Coletar e limpar os dados
+        labels = []
+        values = []
+        raw_data =[]
+
+        for row in self.row_boxes:
+            lbl = row.entry_label.get_text().strip()
+            val_str = row.entry_value.get_text().strip().replace(',', '.')
+            
+            if not lbl or not val_str:
+                continue
+                
+            try:
+                val = float(val_str)
+                labels.append(lbl)
+                values.append(val)
+                raw_data.append([lbl, val])
+            except ValueError:
+                continue # Ignora linhas com valores não numéricos
+
+        if not labels:
+            return # Não faz nada se não tiver dados válidos
+
+        # 2. Gerar o gráfico com matplotlib
+        title = self.entry_title.get_text().strip()
+        type_idx = self.combo_type.get_selected()
+        type_map = {0: "bar", 1: "pie", 2: "line"}
+        chart_type = type_map.get(type_idx, "bar")
+
+        palette_idx = self.combo_palette.get_selected()
+        _, primary_color, pie_colors = self.PALETTES[palette_idx]
+
+        # Gerar nome de arquivo e criar pasta se não existir
+        images_dir = self.config.data_dir / 'images' / self.project.id
+        images_dir.mkdir(parents=True, exist_ok=True)
+        
+        filename = f"chart_{uuid.uuid4().hex[:8]}.png"
+        filepath = images_dir / filename
+
+        self._generate_matplotlib_image(filepath, title, chart_type, labels, values,
+                                        primary_color, pie_colors)
+
+        # 3. Empacotar os metadados
+        meta = {
+            'title': title,
+            'type': chart_type,
+            'data': raw_data,
+            'image_path': str(filepath),
+            'palette_index': palette_idx,
+        }
+
+        from core.models import Paragraph, ParagraphType
+        new_para = Paragraph(ParagraphType.CHART)
+        new_para.formatting = {'chart_data': meta} # CORRIGIDO
+        new_para.content = f"[Gráfico: {title}]"
+
+        if self.edit_mode:
+            if self.image_path and os.path.exists(self.image_path) and self.image_path != str(filepath):
+                try: os.remove(self.image_path)
+                except: pass
+
+            self.emit('chart-updated', new_para, self.edit_paragraph)
+        else:
+            self.emit('chart-added', new_para, self.insert_after_index)
+
+        self.destroy()
+
+    def _generate_matplotlib_image(self, filepath, title, chart_type, labels, values,
+                                    primary_color='#3584e4',
+                                    pie_colors=None):
+        """Gera a imagem do gráfico e salva no disco"""
+        if pie_colors is None:
+            pie_colors = ['#3584e4', '#e5a50a', '#e01b24', '#2ec27e', '#9141ac', '#986a44']
+
+        plt.figure(figsize=(7, 4.5))
+
+        if chart_type == 'bar':
+            plt.bar(labels, values, color=primary_color)
+            plt.grid(axis='y', linestyle='--', alpha=0.7)
+        elif chart_type == 'pie':
+            plt.pie(values, labels=labels, autopct='%1.1f%%', colors=pie_colors, startangle=140)
+        elif chart_type == 'line':
+            plt.plot(labels, values, marker='o', color=primary_color, linewidth=2, markersize=8)
+            plt.grid(True, linestyle='--', alpha=0.7)
+
+        if title:
+            plt.title(title, pad=15, fontweight='bold')
+
+        # Ajusta as margens para não cortar os nomes
+        plt.tight_layout()
+        
+        # Salva a imagem
+        plt.savefig(str(filepath), dpi=150, bbox_inches='tight')
+        plt.close() # Limpa a memória do matplotlib
+
+class MapDataRow(Gtk.Box):
+    """Single data row for MapDialog: region name + numeric value."""
+
+    def __init__(self, region="", value="", **kwargs):
+        super().__init__(orientation=Gtk.Orientation.HORIZONTAL, spacing=6, **kwargs)
+
+        self.entry_region = Gtk.Entry()
+        self.entry_region.set_placeholder_text(_("Região / Código"))
+        self.entry_region.set_hexpand(True)
+        self.entry_region.set_text(region)
+        self.append(self.entry_region)
+
+        self.entry_value = Gtk.Entry()
+        self.entry_value.set_placeholder_text(_("Valor"))
+        self.entry_value.set_width_chars(12)
+        self.entry_value.set_text(value)
+        self.append(self.entry_value)
+
+        del_btn = Gtk.Button.new_from_icon_name("user-trash-symbolic")
+        del_btn.add_css_class("destructive-action")
+        del_btn.add_css_class("flat")
+        del_btn.connect("clicked", self._on_delete)
+        self.append(del_btn)
+
+    def _on_delete(self, _btn):
+        parent = self.get_parent()
+        if parent:
+            parent.remove(self)
+
+
+class MapDialog(Adw.Window):
+    """Dialog for creating choropleth maps (Premium).
+
+    Uses matplotlib + GeoJSON polygon rendering — no geopandas required.
+    GeoJSON files are downloaded once and cached in ~/.tac-writer/geodata/.
+
+    Cartographic elements rendered automatically:
+      - Título estruturado  (Local · Tema · Ano)
+      - Rosa dos ventos     (seta Norte)
+      - Barra de escala     (calculada via Haversine dos limites do mapa)
+      - Meridianos/paralelos (grade de coordenadas)
+      - Legenda / colorbar  (com campo de fonte)
+    """
+
+    __gtype_name__ = "TacMapDialog"
+
+    __gsignals__ = {
+        "map-added":   (GObject.SIGNAL_RUN_FIRST, None, (object, int)),
+        "map-updated": (GObject.SIGNAL_RUN_FIRST, None, (object, object)),
+    }
+
+    # ── GeoJSON sources ───────────────────────────────────────────────────
+    GEODATA_URLS = {
+        "world":  "https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson",
+        "brazil": "https://raw.githubusercontent.com/codeforamerica/click_that_hood/master/public/data/brazil-states.geojson",
+    }
+    GEODATA_FILES = {
+        "world":  "countries_110m.geojson",
+        "brazil": "brazil_states.geojson",
+    }
+    GEODATA_NAME_PROP = {
+        "world":  "ADMIN",
+        "brazil": "name",
+    }
+
+    COLORMAPS = [
+        ("Blues",    _("Azul (sequencial)")),
+        ("Reds",     _("Vermelho (sequencial)")),
+        ("Greens",   _("Verde (sequencial)")),
+        ("YlOrRd",   _("Amarelo → Vermelho")),
+        ("RdYlGn",   _("Vermelho → Verde (divergente)")),
+        ("Purples",  _("Roxo (sequencial)")),
+        ("viridis",  _("Viridis")),
+        ("plasma",   _("Plasma")),
+        ("coolwarm", _("Frio → Quente (divergente)")),
+    ]
+
+    BR_ALIASES: dict = {
+        "AC": "Acre", "AL": "Alagoas", "AP": "Amapá", "AM": "Amazonas",
+        "BA": "Bahia", "CE": "Ceará", "DF": "Distrito Federal",
+        "ES": "Espírito Santo", "GO": "Goiás", "MA": "Maranhão",
+        "MT": "Mato Grosso", "MS": "Mato Grosso do Sul", "MG": "Minas Gerais",
+        "PA": "Pará", "PB": "Paraíba", "PR": "Paraná", "PE": "Pernambuco",
+        "PI": "Piauí", "RJ": "Rio de Janeiro", "RN": "Rio Grande do Norte",
+        "RS": "Rio Grande do Sul", "RO": "Rondônia", "RR": "Roraima",
+        "SC": "Santa Catarina", "SP": "São Paulo", "SE": "Sergipe",
+        "TO": "Tocantins",
+        "AMAPA": "Amapá", "CEARA": "Ceará", "ESPIRITO SANTO": "Espírito Santo",
+        "GOIAS": "Goiás", "MARANHAO": "Maranhão", "PARA": "Pará",
+        "PARAIBA": "Paraíba", "PARANA": "Paraná", "PIAUI": "Piauí",
+        "RONDONIA": "Rondônia", "SAO PAULO": "São Paulo",
+        "SERGIPE": "Sergipe", "TOCANTINS": "Tocantins",
+    }
+
+    COUNTRY_ALIASES: dict = {
+        "BRASIL": "Brazil", "ALEMANHA": "Germany", "FRANCA": "France",
+        "ESPANHA": "Spain", "ITALIA": "Italy", "PORTUGAL": "Portugal",
+        "ESTADOS UNIDOS": "United States of America", "EUA": "United States of America",
+        "USA": "United States of America", "UK": "United Kingdom",
+        "REINO UNIDO": "United Kingdom", "RUSSIA": "Russia",
+        "CHINA": "China", "JAPAO": "Japan", "INDIA": "India",
+        "ARGENTINA": "Argentina", "CHILE": "Chile", "COLOMBIA": "Colombia",
+        "MEXICO": "Mexico", "PERU": "Peru", "VENEZUELA": "Venezuela",
+        "CANADA": "Canada", "AUSTRALIA": "Australia",
+        "AFRICA DO SUL": "South Africa", "NIGERIA": "Nigeria",
+        "EGITO": "Egypt", "MARROCOS": "Morocco", "ANGOLA": "Angola",
+        "TURQUIA": "Turkey", "COREIA DO SUL": "South Korea",
+        "INDONESIA": "Indonesia", "ARABIA SAUDITA": "Saudi Arabia",
+        "HOLANDA": "Netherlands", "BELGICA": "Belgium", "SUECIA": "Sweden",
+        "NORUEGA": "Norway", "DINAMARCA": "Denmark", "FINLANDIA": "Finland",
+        "SUICA": "Switzerland", "AUSTRIA": "Austria", "POLONIA": "Poland",
+        "UCRANIA": "Ukraine", "ROMENIA": "Romania", "GRECIA": "Greece",
+        "HUNGRIA": "Hungary", "REPUBLICA TCHECA": "Czech Republic",
+        "NOVA ZELANDIA": "New Zealand", "IRLANDA": "Ireland",
+        "ISRAEL": "Israel", "IRAQUE": "Iraq", "IRA": "Iran",
+        "PAQUISTAO": "Pakistan", "BANGLADESH": "Bangladesh",
+        "TAILANDIA": "Thailand", "VIETNA": "Vietnam", "FILIPINAS": "Philippines",
+        "MALAISIA": "Malaysia", "MYANMAR": "Myanmar", "CAMBODJA": "Cambodia",
+    }
+
+    def __init__(self, parent, project, insert_after_index: int = -1,
+                 edit_paragraph=None, **kwargs):
+        super().__init__(**kwargs)
+
+        self.edit_mode          = edit_paragraph is not None
+        self.edit_paragraph     = edit_paragraph
+        self.project            = project
+        self.insert_after_index = insert_after_index
+        self.config             = parent.config
+        self.image_path         = ""
+
+        self.set_title(_("Editar Mapa") if self.edit_mode else _("Inserir Mapa"))
+        self.set_transient_for(parent)
+        self.set_modal(True)
+        self.set_default_size(820, 640)
+        self.set_resizable(True)
+
+        # ── State ─────────────────────────────────────────────────────────
+        self._map_level      = "brazil"
+        self._cmap_index     = 0
+        # Título estruturado
+        self._title_local    = ""   # ex: "Brasil"
+        self._title_tema     = ""   # ex: "IDH por Estado"
+        self._title_ano      = ""   # ex: "2023"
+        # Legenda e fonte
+        self._legend_label   = ""   # label acima da colorbar
+        self._source_text    = ""   # "Fonte: IBGE, 2023"
+        # Elementos cartográficos automáticos
+        self._show_labels    = True
+        self._show_graticule = True   # meridianos/paralelos
+        self._show_north     = True   # rosa dos ventos
+        self._show_scalebar  = True   # barra de escala
+        self._show_legend    = True   # colorbar
+
+        if self.edit_mode:
+            fmt  = getattr(self.edit_paragraph, "formatting", {}) or {}
+            meta = fmt.get("map_data", {})
+            self._map_level      = meta.get("level",       "brazil")
+            self._cmap_index     = meta.get("cmap_index",  0)
+            self._title_local    = meta.get("title_local", "")
+            self._title_tema     = meta.get("title_tema",  "")
+            self._title_ano      = meta.get("title_ano",   "")
+            self._legend_label   = meta.get("legend_label","")
+            self._source_text    = meta.get("source_text", "")
+            self._show_labels    = meta.get("show_labels",    True)
+            self._show_graticule = meta.get("show_graticule", True)
+            self._show_north     = meta.get("show_north",     True)
+            self._show_scalebar  = meta.get("show_scalebar",  True)
+            self._show_legend    = meta.get("show_legend",    True)
+            self.image_path      = meta.get("image_path",    "")
+            self._initial_data   = meta.get("data", [])
+        else:
+            self._initial_data = []
+
+        self._create_ui()
+
+    # ── UI ────────────────────────────────────────────────────────────────
+
+    def _create_ui(self):
+        root = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.set_content(root)
+
+        hbar = Adw.HeaderBar()
+        cancel_btn = Gtk.Button(label=_("Cancelar"))
+        cancel_btn.connect("clicked", lambda _: self.destroy())
+        hbar.pack_start(cancel_btn)
+        self._save_btn = Gtk.Button(label=_("Gerar e Salvar"))
+        self._save_btn.add_css_class("suggested-action")
+        self._save_btn.connect("clicked", self._on_save_clicked)
+        hbar.pack_end(self._save_btn)
+        root.append(hbar)
+
+        if not MATPLOTLIB_AVAILABLE:
+            self._show_error_overlay(root)
+            return
+
+        body = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
+        body.set_vexpand(True)
+        root.append(body)
+
+        # ── Left panel ────────────────────────────────────────────────────
+        left_scroll = Gtk.ScrolledWindow()
+        left_scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        left_scroll.set_size_request(350, -1)
+        left_scroll.set_vexpand(True)
+        left_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        left_box.set_margin_top(12); left_box.set_margin_bottom(12)
+        left_box.set_margin_start(12); left_box.set_margin_end(12)
+        left_scroll.set_child(left_box)
+        body.append(left_scroll)
+
+        body.append(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL))
+
+        # ── Right panel ───────────────────────────────────────────────────
+        right_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        right_box.set_vexpand(True); right_box.set_hexpand(True)
+        right_box.set_margin_top(12); right_box.set_margin_bottom(12)
+        right_box.set_margin_start(12); right_box.set_margin_end(12)
+        body.append(right_box)
+
+        lbl = Gtk.Label(label=_("Pré-visualização"))
+        lbl.add_css_class("heading"); lbl.set_halign(Gtk.Align.START)
+        right_box.append(lbl)
+
+        scroll_img = Gtk.ScrolledWindow()
+        scroll_img.set_vexpand(True)
+        scroll_img.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
+        self._preview_picture = Gtk.Picture()
+        self._preview_picture.set_can_shrink(True)
+        self._preview_picture.set_content_fit(Gtk.ContentFit.CONTAIN)
+        scroll_img.set_child(self._preview_picture)
+        right_box.append(scroll_img)
+
+        preview_btn = Gtk.Button(label=_("Atualizar pré-visualização"))
+        preview_btn.connect("clicked", self._on_preview_clicked)
+        right_box.append(preview_btn)
+
+        self._status_label = Gtk.Label(label="")
+        self._status_label.set_halign(Gtk.Align.START)
+        self._status_label.add_css_class("dim-label")
+        right_box.append(self._status_label)
+
+        # ══════════════════════════════════════════════════════════════════
+        # LEFT: settings groups
+        # ══════════════════════════════════════════════════════════════════
+
+        # ── Grupo 1: Título cartográfico ──────────────────────────────────
+        titulo_group = Adw.PreferencesGroup(title=_("Título"))
+        titulo_group.set_description(
+            _("O título será composto como: Local: Tema (Ano)")
+        )
+        left_box.append(titulo_group)
+
+        local_row = Adw.EntryRow(title=_("Local"))
+        local_row.set_text(self._title_local)
+        local_row.set_show_apply_button(False)
+        local_row.connect("changed", lambda r: setattr(self, "_title_local", r.get_text()))
+        titulo_group.add(local_row)
+
+        tema_row = Adw.EntryRow(title=_("Tema"))
+        tema_row.set_text(self._title_tema)
+        tema_row.set_show_apply_button(False)
+        tema_row.connect("changed", lambda r: setattr(self, "_title_tema", r.get_text()))
+        titulo_group.add(tema_row)
+
+        ano_row = Adw.EntryRow(title=_("Ano"))
+        ano_row.set_text(self._title_ano)
+        ano_row.set_show_apply_button(False)
+        ano_row.connect("changed", lambda r: setattr(self, "_title_ano", r.get_text()))
+        titulo_group.add(ano_row)
+
+        # ── Grupo 2: Configurações visuais ───────────────────────────────
+        cfg_group = Adw.PreferencesGroup(title=_("Configurações"))
+        left_box.append(cfg_group)
+
+        level_row = Adw.ComboRow(title=_("Nível geográfico"))
+        level_model = Gtk.StringList()
+        level_model.append(_("Brasil (estados)"))
+        level_model.append(_("Mundo (países)"))
+        level_row.set_model(level_model)
+        level_row.set_selected(0 if self._map_level == "brazil" else 1)
+        level_row.connect("notify::selected", self._on_level_changed)
+        self._level_row = level_row
+        cfg_group.add(level_row)
+
+        cmap_row = Adw.ComboRow(title=_("Escala de cor"))
+        cmap_model = Gtk.StringList()
+        for cmap_key, label in self.COLORMAPS:
+            cmap_model.append(label)
+        cmap_row.set_model(cmap_model)
+        cmap_row.set_selected(self._cmap_index)
+        cmap_row.connect("notify::selected",
+                         lambda r, _: setattr(self, "_cmap_index", r.get_selected()))
+        cfg_group.add(cmap_row)
+
+        # ── Grupo 3: Elementos cartográficos ─────────────────────────────
+        cart_group = Adw.PreferencesGroup(title=_("Elementos Cartográficos"))
+        cart_group.set_description(_("Gerados automaticamente a partir dos dados geográficos"))
+        left_box.append(cart_group)
+
+        def _switch(title, attr, active):
+            row = Adw.SwitchRow(title=title)
+            row.set_active(active)
+            row.connect("notify::active", lambda r, _: setattr(self, attr, r.get_active()))
+            return row
+
+        cart_group.add(_switch(_("Rótulos das regiões"),     "_show_labels",    self._show_labels))
+        cart_group.add(_switch(_("Rosa dos ventos (Norte)"), "_show_north",      self._show_north))
+        cart_group.add(_switch(_("Barra de escala"),         "_show_scalebar",   self._show_scalebar))
+        cart_group.add(_switch(_("Meridianos e paralelos"),  "_show_graticule",  self._show_graticule))
+        cart_group.add(_switch(_("Legenda (colorbar)"),      "_show_legend",     self._show_legend))
+
+        # ── Grupo 4: Legenda e fonte ──────────────────────────────────────
+        leg_group = Adw.PreferencesGroup(title=_("Legenda e Fonte"))
+        left_box.append(leg_group)
+
+        legend_label_row = Adw.EntryRow(title=_("Rótulo da legenda"))
+        legend_label_row.set_text(self._legend_label)
+        legend_label_row.set_show_apply_button(False)
+        legend_label_row.connect("changed",
+                                 lambda r: setattr(self, "_legend_label", r.get_text()))
+        leg_group.add(legend_label_row)
+
+        source_row = Adw.EntryRow(title=_("Fonte dos dados"))
+        source_row.set_text(self._source_text)
+        source_row.set_show_apply_button(False)
+        source_row.connect("changed",
+                           lambda r: setattr(self, "_source_text", r.get_text()))
+        leg_group.add(source_row)
+
+        # ── Grupo 5: Dados ────────────────────────────────────────────────
+        data_group = Adw.PreferencesGroup(title=_("Dados"))
+        left_box.append(data_group)
+
+        self._hint_label = Gtk.Label()
+        self._hint_label.set_wrap(True)
+        self._hint_label.set_xalign(0)
+        self._hint_label.add_css_class("dim-label")
+        self._update_hint()
+        left_box.append(self._hint_label)
+
+        self._rows_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+        left_box.append(self._rows_box)
+
+        hdr = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        hdr_r = Gtk.Label(label=_("Região")); hdr_r.set_hexpand(True)
+        hdr_r.set_xalign(0); hdr_r.add_css_class("caption-heading")
+        hdr.append(hdr_r)
+        hdr_v = Gtk.Label(label=_("Valor")); hdr_v.set_width_chars(12)
+        hdr_v.set_xalign(0); hdr_v.add_css_class("caption-heading")
+        hdr.append(hdr_v)
+        hdr_sp = Gtk.Label(label=""); hdr_sp.set_size_request(34, -1)
+        hdr.append(hdr_sp)
+        self._rows_box.append(hdr)
+
+        if self._initial_data:
+            for region, value in self._initial_data:
+                self._add_data_row(str(region), str(value))
+        else:
+            self._add_data_row("", "")
+            self._add_data_row("", "")
+
+        add_btn = Gtk.Button(label=_("+ Adicionar linha"))
+        add_btn.add_css_class("flat")
+        add_btn.connect("clicked", lambda _: self._add_data_row())
+        left_box.append(add_btn)
+
+    # ── Helpers ───────────────────────────────────────────────────────────
+
+    def _composed_title(self):
+        """Returns 'Local: Tema (Ano)' from the three fields."""
+        parts = []
+        local = self._title_local.strip()
+        tema  = self._title_tema.strip()
+        ano   = self._title_ano.strip()
+        if local and tema:
+            parts.append(f"{local}: {tema}")
+        elif local:
+            parts.append(local)
+        elif tema:
+            parts.append(tema)
+        if ano:
+            parts.append(f"({ano})")
+        return " ".join(parts)
+
+    def _update_hint(self):
+        if self._map_level == "brazil":
+            self._hint_label.set_text(
+                _("Use o nome do estado (ex: São Paulo) ou sigla (ex: SP).")
+            )
+        else:
+            self._hint_label.set_text(
+                _("Use o nome do país em português ou inglês (ex: Brasil ou Brazil).")
+            )
+
+    def _on_level_changed(self, row, _):
+        self._map_level = "brazil" if row.get_selected() == 0 else "world"
+        self._update_hint()
+
+    def _add_data_row(self, region="", value=""):
+        self._rows_box.append(MapDataRow(region=region, value=value))
+
+    def _collect_data(self):
+        result = []
+        child = self._rows_box.get_first_child()
+        while child:
+            if isinstance(child, MapDataRow):
+                region  = child.entry_region.get_text().strip()
+                val_str = child.entry_value.get_text().strip().replace(",", ".")
+                if region and val_str:
+                    try:
+                        result.append((region, float(val_str)))
+                    except ValueError:
+                        pass
+            child = child.get_next_sibling()
+        return result
+
+    # ── GeoJSON download / cache ──────────────────────────────────────────
+
+    def _geodata_cache_dir(self):
+        d = Path.home() / ".tac-writer" / "geodata"
+        d.mkdir(parents=True, exist_ok=True)
+        return d
+
+    def _get_geodata(self, level: str):
+        import json, urllib.request, ssl
+        cache_path = self._geodata_cache_dir() / self.GEODATA_FILES[level]
+        if cache_path.exists():
+            try:
+                with open(cache_path, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            except Exception:
+                cache_path.unlink(missing_ok=True)
+        url = self.GEODATA_URLS[level]
+        try:
+            ctx = ssl.create_default_context()
+            req = urllib.request.Request(url)
+            req.add_header("User-Agent", "TAC-Writer/1.0")
+            with urllib.request.urlopen(req, timeout=30, context=ctx) as resp:
+                raw = resp.read()
+            with open(cache_path, "wb") as f:
+                f.write(raw)
+            return json.loads(raw.decode("utf-8"))
+        except Exception as e:
+            print(f"[MapDialog] GeoJSON download failed: {e}")
+            return None
+
+    # ── Region name normalisation ─────────────────────────────────────────
+
+    @staticmethod
+    def _normalise(s: str) -> str:
+        import unicodedata
+        s = unicodedata.normalize("NFD", s.upper())
+        return "".join(c for c in s if unicodedata.category(c) != "Mn")
+
+    def _resolve_region(self, user_input: str, level: str):
+        key = self._normalise(user_input)
+        if level == "brazil":
+            if key in self.BR_ALIASES:
+                return self.BR_ALIASES[key]
+            for canonical in self.BR_ALIASES.values():
+                if self._normalise(canonical) == key:
+                    return canonical
+        else:
+            if key in self.COUNTRY_ALIASES:
+                return self.COUNTRY_ALIASES[key]
+            for canonical in self.COUNTRY_ALIASES.values():
+                if self._normalise(canonical) == key:
+                    return canonical
+            return user_input
+        return user_input
+
+    # ── Cartographic helpers ───────────────────────────────────────────────
+
+    @staticmethod
+    def _haversine_km(lon1, lat1, lon2, lat2):
+        """Great-circle distance in km between two lon/lat points."""
+        import math
+        R = 6371.0
+        dlon = math.radians(lon2 - lon1)
+        dlat = math.radians(lat2 - lat1)
+        a = math.sin(dlat/2)**2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon/2)**2
+        return R * 2 * math.asin(math.sqrt(a))
+
+    @staticmethod
+    def _draw_north_arrow(ax, x=0.97, y=0.97):
+        """Draw a simple N-arrow in axes fraction coordinates (top-right)."""
+        import matplotlib.patheffects as pe
+        ax.annotate(
+            "", xy=(x, y), xytext=(x, y - 0.07),
+            xycoords="axes fraction", textcoords="axes fraction",
+            arrowprops=dict(arrowstyle="-|>", color="black", lw=1.5),
+        )
+        ax.text(x, y + 0.01, "N", ha="center", va="bottom",
+                fontsize=9, fontweight="bold", transform=ax.transAxes,
+                path_effects=[pe.withStroke(linewidth=2, foreground="white")])
+
+    @staticmethod
+    def _draw_scale_bar(ax, x0_data, y0_data, km_length, x_frac=0.05, y_frac=0.05):
+        """Draw a horizontal scale bar at bottom-left of axes."""
+        import matplotlib.patheffects as pe
+        # Convert km_length to degrees longitude at the given latitude
+        import math
+        deg_per_km = 1.0 / (111.32 * math.cos(math.radians(abs(y0_data))))
+        bar_deg = km_length * deg_per_km
+
+        # Draw bar
+        ax.plot([x0_data, x0_data + bar_deg], [y0_data, y0_data],
+                color="black", lw=2, solid_capstyle="butt",
+                transform=ax.transData)
+        # Ticks at ends
+        tick_h = (ax.get_ylim()[1] - ax.get_ylim()[0]) * 0.008
+        for xp in (x0_data, x0_data + bar_deg):
+            ax.plot([xp, xp], [y0_data - tick_h, y0_data + tick_h],
+                    color="black", lw=1.5)
+
+        # Label
+        label = f"{int(km_length)} km" if km_length >= 1 else f"{int(km_length*1000)} m"
+        ax.text(x0_data + bar_deg / 2, y0_data - tick_h * 3,
+                label, ha="center", va="top", fontsize=7,
+                path_effects=[pe.withStroke(linewidth=2, foreground="white")])
+
+    @staticmethod
+    def _nice_interval(span: float, target_lines: int = 5) -> float:
+        """Return a 'nice' graticule interval for the given coordinate span."""
+        raw = span / target_lines
+        for nice in (0.5, 1, 2, 5, 10, 15, 20, 30, 45, 60, 90):
+            if raw <= nice:
+                return nice
+        return 60.0
+
+    # ── Map generation ────────────────────────────────────────────────────
+
+    def _generate_map_image(self, filepath, level, data, title,
+                            cmap_name, show_labels, show_legend,
+                            show_graticule, show_north, show_scalebar,
+                            legend_label, source_text, geojson) -> bool:
+        import matplotlib.pyplot as plt
+        import matplotlib.cm as cm
+        import matplotlib.colors as mcolors
+        import matplotlib.patches as mpatches
+        from matplotlib.collections import PatchCollection
+        import numpy as np
+
+        name_prop = self.GEODATA_NAME_PROP[level]
+
+        # Build value map
+        value_map: dict = {}
+        for (user_region, value) in data:
+            canonical = self._resolve_region(user_region, level)
+            if canonical:
+                value_map[canonical] = value
+
+        if not value_map:
+            return False
+
+        vals = list(value_map.values())
+        vmin, vmax = min(vals), max(vals)
+        if vmin == vmax:
+            vmin -= 1
+
+        cmap = cm.get_cmap(cmap_name)
+        norm = mcolors.Normalize(vmin=vmin, vmax=vmax)
+
+        fig, ax = plt.subplots(1, 1, figsize=(11, 7.5))
+        ax.set_aspect("equal")
+
+        patches_with_color = []
+        no_data_patches    = []
+        centroids: dict    = {}
+        all_x, all_y       = [], []
+
+        for feature in geojson.get("features", []):
+            props    = feature.get("properties", {})
+            geo_name = props.get(name_prop, "")
+            geom     = feature.get("geometry", {})
+            gtype    = geom.get("type", "")
+
+            feat_val = value_map.get(geo_name)
+            if feat_val is None:
+                norm_geo = self._normalise(geo_name)
+                for k, v in value_map.items():
+                    if self._normalise(k) == norm_geo:
+                        feat_val = v
+                        break
+
+            color = cmap(norm(feat_val)) if feat_val is not None else "#e0e0e0"
+
+            def process_polygon(coords):
+                ring = np.array(coords[0])
+                all_x.extend(ring[:, 0]); all_y.extend(ring[:, 1])
+                return mpatches.Polygon(ring, closed=True)
+
+            polys = []
+            if gtype == "Polygon":
+                polys.append(process_polygon(geom["coordinates"]))
+            elif gtype == "MultiPolygon":
+                for part in geom["coordinates"]:
+                    polys.append(process_polygon(part))
+
+            if not polys:
+                continue
+
+            try:
+                xy = np.array(geom["coordinates"][0][0]) if gtype == "Polygon" \
+                     else np.array(geom["coordinates"][0][0][0])
+                centroids[geo_name] = (xy[:, 0].mean(), xy[:, 1].mean())
+            except Exception:
+                pass
+
+            for p in polys:
+                if feat_val is not None:
+                    patches_with_color.append((p, color))
+                else:
+                    no_data_patches.append(p)
+
+        if no_data_patches:
+            pc_nd = PatchCollection(no_data_patches, facecolor="#e0e0e0",
+                                    edgecolor="#aaaaaa", linewidth=0.4)
+            ax.add_collection(pc_nd)
+
+        if patches_with_color:
+            pc = PatchCollection([p for p, _ in patches_with_color],
+                                 facecolor=[c for _, c in patches_with_color],
+                                 edgecolor="#555555", linewidth=0.5)
+            ax.add_collection(pc)
+
+        ax.autoscale_view()
+        xlim = ax.get_xlim()
+        ylim = ax.get_ylim()
+
+        # ── Meridianos e paralelos ────────────────────────────────────────
+        if show_graticule and all_x and all_y:
+            x_span = xlim[1] - xlim[0]
+            y_span = ylim[1] - ylim[0]
+            dx = self._nice_interval(x_span)
+            dy = self._nice_interval(y_span)
+
+            import math
+            x_start = math.floor(xlim[0] / dx) * dx
+            y_start = math.floor(ylim[0] / dy) * dy
+
+            grat_kw = dict(color="#888888", linewidth=0.4,
+                           linestyle="--", alpha=0.6, zorder=0)
+
+            xm = x_start
+            while xm <= xlim[1] + dx:
+                if xlim[0] <= xm <= xlim[1]:
+                    ax.axvline(xm, **grat_kw)
+                    label = f"{abs(xm):.0f}°{'L' if xm >= 0 else 'O'}"
+                    ax.text(xm, ylim[0] + y_span * 0.01, label,
+                            ha="center", va="bottom", fontsize=5,
+                            color="#666666", alpha=0.8)
+                xm += dx
+
+            ym = y_start
+            while ym <= ylim[1] + dy:
+                if ylim[0] <= ym <= ylim[1]:
+                    ax.axhline(ym, **grat_kw)
+                    label = f"{abs(ym):.0f}°{'N' if ym >= 0 else 'S'}"
+                    ax.text(xlim[0] + x_span * 0.01, ym, label,
+                            ha="left", va="center", fontsize=5,
+                            color="#666666", alpha=0.8)
+                ym += dy
+
+        # ── Rótulos das regiões ───────────────────────────────────────────
+        if show_labels:
+            for geo_name, (cx, cy) in centroids.items():
+                has_data = any(self._normalise(k) == self._normalise(geo_name)
+                               for k in value_map)
+                if not has_data and level == "world":
+                    continue
+                label = geo_name
+                if level == "brazil":
+                    for sigla, full in self.BR_ALIASES.items():
+                        if len(sigla) == 2 and full == geo_name:
+                            label = sigla; break
+                fontsize = 5 if level == "world" else 6
+                ax.text(cx, cy, label, ha="center", va="center",
+                        fontsize=fontsize, color="#222222",
+                        fontweight="bold" if has_data else "normal",
+                        alpha=0.85)
+
+        # ── Rosa dos ventos ───────────────────────────────────────────────
+        if show_north:
+            self._draw_north_arrow(ax)
+
+        # ── Barra de escala ───────────────────────────────────────────────
+        if show_scalebar and all_x and all_y:
+            x_span  = xlim[1] - xlim[0]
+            y_span  = ylim[1] - ylim[0]
+            mid_lat = (ylim[0] + ylim[1]) / 2
+            total_km = self._haversine_km(xlim[0], mid_lat, xlim[1], mid_lat)
+            # Aim for ~15 % of map width
+            target_km = total_km * 0.15
+            # Round to nice number
+            for nice in (10, 25, 50, 100, 200, 250, 500, 1000, 2000, 5000):
+                if nice >= target_km * 0.5:
+                    km_bar = nice; break
+            else:
+                km_bar = round(target_km / 100) * 100 or 100
+
+            bar_x = xlim[0] + x_span * 0.04
+            bar_y = ylim[0] + y_span * 0.04
+            self._draw_scale_bar(ax, bar_x, bar_y, km_bar)
+
+        # ── Colorbar / legenda ────────────────────────────────────────────
+        if show_legend and value_map:
+            sm = cm.ScalarMappable(cmap=cmap, norm=norm)
+            sm.set_array([])
+            cbar = fig.colorbar(sm, ax=ax, fraction=0.03, pad=0.02, shrink=0.65)
+            cbar.ax.tick_params(labelsize=8)
+            if legend_label:
+                cbar.set_label(legend_label, fontsize=9)
+
+        # ── Título e fonte ────────────────────────────────────────────────
+        if title:
+            ax.set_title(title, fontsize=13, fontweight="bold", pad=12)
+
+        if source_text:
+            fig.text(0.5, 0.01, source_text, ha="center", va="bottom",
+                     fontsize=7, color="#555555", style="italic")
+
+        # ── Remove eixos mas mantém borda ────────────────────────────────
+        for spine in ax.spines.values():
+            spine.set_visible(True)
+            spine.set_linewidth(0.5)
+            spine.set_color("#aaaaaa")
+        ax.set_xticks([]); ax.set_yticks([])
+
+        plt.tight_layout(rect=[0, 0.03 if source_text else 0, 1, 1])
+        plt.savefig(str(filepath), dpi=150, bbox_inches="tight")
+        plt.close()
+        return True
+
+    # ── Callbacks ─────────────────────────────────────────────────────────
+
+    def _build_generate_kwargs(self, data):
+        """Collect all generation parameters into a dict."""
+        return dict(
+            level        = self._map_level,
+            data         = data,
+            title        = self._composed_title(),
+            cmap_name    = self.COLORMAPS[self._cmap_index][0],
+            show_labels  = self._show_labels,
+            show_legend  = self._show_legend,
+            show_graticule = self._show_graticule,
+            show_north   = self._show_north,
+            show_scalebar= self._show_scalebar,
+            legend_label = self._legend_label,
+            source_text  = self._source_text,
+        )
+
+    def _on_preview_clicked(self, _btn):
+        self._status_label.set_text(_("Baixando/carregando dados geográficos…"))
+        self._save_btn.set_sensitive(False)
+        data  = self._collect_data()
+        level = self._map_level
+
+        def worker():
+            geojson = self._get_geodata(level)
+            GLib.idle_add(self._preview_done, geojson, data)
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _preview_done(self, geojson, data):
+        self._save_btn.set_sensitive(True)
+        if geojson is None:
+            self._status_label.set_text(
+                _("Erro ao baixar dados geográficos. Verifique sua conexão."))
+            return
+        tmp_path = self._geodata_cache_dir() / f"map_preview_{uuid.uuid4().hex[:6]}.png"
+        kw = self._build_generate_kwargs(data)
+        ok = self._generate_map_image(tmp_path, geojson=geojson, **kw)
+        if ok and tmp_path.exists():
+            self._preview_picture.set_filename(str(tmp_path))
+            self._status_label.set_text(_("Pré-visualização atualizada."))
+        else:
+            self._status_label.set_text(
+                _("Nenhum dado reconhecido. Verifique os nomes das regiões."))
+
+    def _on_save_clicked(self, _btn):
+        if not MATPLOTLIB_AVAILABLE:
+            return
+        data = self._collect_data()
+        if not data:
+            self._status_label.set_text(
+                _("Adicione pelo menos um dado válido antes de salvar."))
+            return
+        self._save_btn.set_sensitive(False)
+        self._status_label.set_text(_("Gerando mapa…"))
+        level = self._map_level
+
+        def worker():
+            geojson = self._get_geodata(level)
+            GLib.idle_add(self._save_done, geojson, data)
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _save_done(self, geojson, data):
+        self._save_btn.set_sensitive(True)
+        if geojson is None:
+            self._status_label.set_text(
+                _("Erro ao baixar dados geográficos. Verifique sua conexão."))
+            return
+
+        images_dir = self.config.data_dir / "images" / self.project.id
+        images_dir.mkdir(parents=True, exist_ok=True)
+        filepath = images_dir / f"map_{uuid.uuid4().hex[:8]}.png"
+
+        kw = self._build_generate_kwargs(data)
+        ok = self._generate_map_image(filepath, geojson=geojson, **kw)
+        if not ok:
+            self._status_label.set_text(
+                _("Nenhum dado reconhecido. Verifique os nomes das regiões."))
+            return
+
+        cmap_name = self.COLORMAPS[self._cmap_index][0]
+        meta = {
+            "level":         self._map_level,
+            "title_local":   self._title_local,
+            "title_tema":    self._title_tema,
+            "title_ano":     self._title_ano,
+            "legend_label":  self._legend_label,
+            "source_text":   self._source_text,
+            "data":          [[r, v] for r, v in data],
+            "cmap_index":    self._cmap_index,
+            "cmap_name":     cmap_name,
+            "show_labels":   self._show_labels,
+            "show_graticule":self._show_graticule,
+            "show_north":    self._show_north,
+            "show_scalebar": self._show_scalebar,
+            "show_legend":   self._show_legend,
+            "image_path":    str(filepath),
+        }
+
+        from core.models import Paragraph, ParagraphType
+        new_para = Paragraph(ParagraphType.MAP)
+        new_para.formatting = {"map_data": meta}
+        new_para.content    = f"[Mapa: {self._composed_title() or self._map_level}]"
+
+        if self.edit_mode:
+            if (self.image_path and os.path.exists(self.image_path)
+                    and self.image_path != str(filepath)):
+                try: os.remove(self.image_path)
+                except OSError: pass
+            self.emit("map-updated", new_para, self.edit_paragraph)
+        else:
+            self.emit("map-added", new_para, self.insert_after_index)
+
+        self.destroy()
+
+    def _show_error_overlay(self, root):
+        label = Gtk.Label(
+            label=_("A biblioteca \'matplotlib\' é necessária para gerar mapas.\\n"
+                    "Instale via terminal: pip install matplotlib")
+        )
+        label.set_margin_top(40)
+        label.set_justify(Gtk.Justification.CENTER)
+        root.append(label)
+
+
+class MindMapPreviewDialog(Adw.Window):
+    """
+    Shows both dark and light versions of a generated mind map so the user
+    can compare and choose which one to insert into the document.
+    """
+
+    def __init__(self, parent, path_dark, path_light, base_meta, planner_dialog, **kwargs):
+        super().__init__(**kwargs)
+
+        self._path_dark      = path_dark
+        self._path_light     = path_light
+        self._base_meta      = base_meta
+        self._planner        = planner_dialog   # MindMapPlannerDialog instance
+        self._current_theme  = 'dark'           # starts showing dark
+
+        self.set_title(_("Pré-visualização do Mapa Mental"))
+        self.set_transient_for(parent)
+        self.set_modal(True)
+        self.set_default_size(900, 660)
+        self.set_resizable(True)
+
+        self._create_ui()
+
+    # ── UI ────────────────────────────────────────────────────────────────
+
+    def _create_ui(self):
+        root = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.set_content(root)
+
+        # ── Header bar ──────────────────────────────────────────────────
+        header = Adw.HeaderBar()
+        header.set_show_end_title_buttons(False)
+
+        cancel_btn = Gtk.Button(label=_("Cancelar"))
+        cancel_btn.connect('clicked', self._on_cancel)
+        header.pack_start(cancel_btn)
+
+        # Theme toggle (icon + label inside a box)
+        insert_btn = Gtk.Button(label=_("Inserir este tema"))
+        insert_btn.add_css_class('suggested-action')
+        insert_btn.connect('clicked', self._on_insert)
+        header.pack_end(insert_btn)
+
+        self._toggle_btn = Gtk.Button()
+        self._toggle_btn.set_tooltip_text(_("Alternar entre tema escuro e claro"))
+        self._toggle_btn.connect('clicked', self._on_toggle_theme)
+        header.pack_end(self._toggle_btn)
+        self._update_toggle_btn()          # set initial icon + label
+
+        root.append(header)
+
+        # ── Theme badge label ────────────────────────────────────────────
+        self._badge = Gtk.Label()
+        self._badge.set_margin_top(8)
+        self._badge.set_margin_bottom(4)
+        self._update_badge()
+        root.append(self._badge)
+
+        # ── Image viewer ────────────────────────────────────────────────
+        scroll = Gtk.ScrolledWindow(vexpand=True, hexpand=True)
+        scroll.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
+
+        self._picture = Gtk.Picture()
+        self._picture.set_can_shrink(True)
+        self._picture.set_content_fit(Gtk.ContentFit.CONTAIN)
+        self._picture.set_margin_start(12)
+        self._picture.set_margin_end(12)
+        self._picture.set_margin_bottom(12)
+        scroll.set_child(self._picture)
+        root.append(scroll)
+
+        self._load_current_image()
+
+    # ── Helpers ───────────────────────────────────────────────────────────
+
+    def _current_path(self):
+        return self._path_dark if self._current_theme == 'dark' else self._path_light
+
+    def _load_current_image(self):
+        self._picture.set_filename(str(self._current_path()))
+
+    def _update_toggle_btn(self):
+        if self._current_theme == 'dark':
+            self._toggle_btn.set_icon_name('tac-weather-clear-night-symbolic')
+            self._toggle_btn.set_tooltip_text(_("Ver versão com fundo claro"))
+        else:
+            self._toggle_btn.set_icon_name('tac-weather-clear-symbolic')
+            self._toggle_btn.set_tooltip_text(_("Ver versão com fundo escuro"))
+
+    def _update_badge(self):
+        if self._current_theme == 'dark':
+            self._badge.set_markup(
+                f"<b>{_('Tema atual:')}</b>  🌙 {_('Escuro')}"
+            )
+        else:
+            self._badge.set_markup(
+                f"<b>{_('Tema atual:')}</b>  ☀️ {_('Claro')}"
+            )
+
+    # ── Callbacks ─────────────────────────────────────────────────────────
+
+    def _on_toggle_theme(self, _btn):
+        self._current_theme = 'light' if self._current_theme == 'dark' else 'dark'
+        self._update_toggle_btn()
+        self._update_badge()
+        self._load_current_image()
+
+    def _on_insert(self, _btn):
+        chosen  = self._current_path()
+        discard = self._path_light if self._current_theme == 'dark' else self._path_dark
+
+        # Delete the unused image file
+        try:
+            if discard.exists():
+                discard.unlink()
+        except OSError:
+            pass
+
+        meta = dict(self._base_meta)
+        meta['image_path'] = str(chosen)
+
+        self._planner.emit('mindmap-generated', meta)
+        self._planner.destroy()
+        self.destroy()
+
+    def _on_cancel(self, _btn):
+        # Delete both generated images since the user cancelled
+        for p in (self._path_dark, self._path_light):
+            try:
+                if p.exists():
+                    p.unlink()
+            except OSError:
+                pass
+        self.destroy()
+
+class MindMapPlannerDialog(Adw.Window):
+    """
+    Dialog for creating a guided Mind Map / Project Planner (Premium).
+    The user answers 5 structured questions about their research/writing
+    project and the app generates a visual mind map as an image paragraph.
+    """
+
+    __gtype_name__ = 'TacMindMapPlannerDialog'
+
+    __gsignals__ = {
+        'mindmap-generated': (GObject.SIGNAL_RUN_FIRST, None, (object,)),
+    }
+
+    # Labels and placeholder text for each question (index → dict)
+    QUESTIONS = [
+        {
+            'label':       _("1. Tema principal / Objeto da pesquisa"),
+            'placeholder': _("Ex: O impacto das redes sociais na política contemporânea"),
+            'hint':        _("Este será o nó central do mapa. Seja objetivo."),
+            'key':         'theme',
+            'multiline':   False,
+        },
+        {
+            'label':       _("2. Perguntas que o texto pretende responder"),
+            'placeholder': _("Separe cada pergunta com ENTER\nEx:\nComo as redes sociais influenciam eleições?\nQuais grupos são mais afetados?"),
+            'hint':        _("Use uma linha por pergunta."),
+            'key':         'questions',
+            'multiline':   True,
+        },
+        {
+            'label':       _("3. Principais argumentos / respostas"),
+            'placeholder': _("Separe cada argumento com ENTER\nEx:\nAlgoritmos criam bolhas de informação\nDesinformação acelera polarização"),
+            'hint':        _("Use uma linha por argumento."),
+            'key':         'arguments',
+            'multiline':   True,
+        },
+        {
+            'label':       _("4. Autores / dados / fontes de apoio"),
+            'placeholder': _("Separe cada fonte com ENTER\nEx:\nFilterBubble – Eli Pariser (2011)\nIBGE – Pesquisa TIC Domicílios 2023"),
+            'hint':        _("Use uma linha por fonte."),
+            'key':         'sources',
+            'multiline':   True,
+        },
+        {
+            'label':       _("5. O que espera obter no final deste trabalho?"),
+            'placeholder': _("Ex: Demonstrar que o consumo passivo de redes sociais reduz o senso crítico do eleitor"),
+            'hint':        _("Descreva o objetivo ou contribuição esperada."),
+            'key':         'goal',
+            'multiline':   False,
+        },
+    ]
+
+    def __init__(self, parent, project, **kwargs):
+        super().__init__(**kwargs)
+
+        self.project = project
+        self.config = parent.config
+
+        self.set_title(_("Mapa Mental e Plano Guiado"))
+        self.set_transient_for(parent)
+        self.set_modal(True)
+        self.set_default_size(640, 680)
+        self.set_resizable(True)
+
+        # Will hold the Gtk.TextView widgets keyed by question 'key'
+        self._text_widgets: dict = {}
+
+        self._create_ui()
+
+        if not MATPLOTLIB_AVAILABLE:
+            self._warn_missing_matplotlib()
+
+    # ── UI Construction ────────────────────────────────────────────────────
+
+    def _create_ui(self):
+        content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.set_content(content_box)
+
+        # ── Header bar ──
+        header_bar = Adw.HeaderBar()
+        header_bar.set_show_end_title_buttons(False)
+
+        cancel_btn = Gtk.Button(label=_("Cancelar"))
+        cancel_btn.connect('clicked', lambda _b: self.destroy())
+        header_bar.pack_start(cancel_btn)
+
+        generate_btn = Gtk.Button(label=_("Gerar Mapa Mental"))
+        generate_btn.add_css_class('suggested-action')
+        generate_btn.connect('clicked', self._on_generate_clicked)
+        header_bar.pack_end(generate_btn)
+
+        content_box.append(header_bar)
+
+        # ── Scrollable main area ──
+        scrolled = Gtk.ScrolledWindow(vexpand=True)
+        scrolled.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        content_box.append(scrolled)
+
+        main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=20)
+        main_box.set_margin_top(20)
+        main_box.set_margin_bottom(24)
+        main_box.set_margin_start(24)
+        main_box.set_margin_end(24)
+        scrolled.set_child(main_box)
+
+        # ── Introductory banner ──
+        banner_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        banner_box.add_css_class('card')
+        banner_box.set_margin_bottom(4)
+
+        icon = Gtk.Image.new_from_icon_name('tac-find-location-symbolic')
+        icon.set_pixel_size(32)
+        icon.set_margin_start(16)
+        icon.set_margin_top(12)
+        icon.set_margin_bottom(12)
+        banner_box.append(icon)
+
+        banner_text_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+        banner_text_box.set_margin_top(12)
+        banner_text_box.set_margin_bottom(12)
+        banner_text_box.set_margin_end(16)
+
+        title_lbl = Gtk.Label()
+        title_lbl.set_markup(f"<b>{_('Plano Guiado do Projeto')}</b>")
+        title_lbl.set_xalign(0)
+        banner_text_box.append(title_lbl)
+
+        subtitle_lbl = Gtk.Label(
+            label=_("Responda as perguntas abaixo. Tac Writer vai organizar suas ideias visualmente.")
+        )
+        subtitle_lbl.set_xalign(0)
+        subtitle_lbl.set_wrap(True)
+        subtitle_lbl.add_css_class('dim-label')
+        banner_text_box.append(subtitle_lbl)
+
+        banner_box.append(banner_text_box)
+        main_box.append(banner_box)
+
+        # ── One group per question ──
+        for q in self.QUESTIONS:
+            group = Adw.PreferencesGroup(title=q['label'])
+            group.set_description(q['hint'])
+
+            if q['multiline']:
+                # Multi-line: use a Frame + TextView
+                frame = Gtk.Frame()
+                frame.set_margin_start(12)
+                frame.set_margin_end(12)
+                frame.set_margin_top(4)
+                frame.set_margin_bottom(8)
+
+                sw = Gtk.ScrolledWindow()
+                sw.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+                sw.set_min_content_height(90)
+                sw.set_max_content_height(160)
+
+                tv = Gtk.TextView()
+                tv.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
+                tv.set_top_margin(8)
+                tv.set_bottom_margin(8)
+                tv.set_left_margin(10)
+                tv.set_right_margin(10)
+
+                # Placeholder: escreve em cinza, limpa ao focar (GTK4)
+                buf = tv.get_buffer()
+                placeholder = q['placeholder']
+
+                buf.set_text(placeholder)
+                ph_tag = buf.create_tag('placeholder', foreground='gray')
+                buf.apply_tag(ph_tag, buf.get_start_iter(), buf.get_end_iter())
+
+                focus_ctrl = Gtk.EventControllerFocus()
+
+                def _on_focus_enter(fc, b=buf, ph=placeholder):
+                    start, end = b.get_bounds()
+                    if b.get_text(start, end, False) == ph:
+                        b.set_text('')
+
+                focus_ctrl.connect('enter', _on_focus_enter)
+                tv.add_controller(focus_ctrl)
+
+                sw.set_child(tv)
+                frame.set_child(sw)
+                group.add(frame)
+                self._text_widgets[q['key']] = tv
+            else:
+                # Single-line: use Adw.EntryRow
+                entry_row = Adw.EntryRow(title='')
+                entry_row.set_show_apply_button(False)
+                group.add(entry_row)
+                self._text_widgets[q['key']] = entry_row
+
+            main_box.append(group)
+
+    # ── Helpers ──────────────────────────────────────────────────────────
+
+    def _get_text(self, key: str) -> str:
+        """Retrieve and clean user text from a widget."""
+        widget = self._text_widgets.get(key)
+        if widget is None:
+            return ''
+
+        if isinstance(widget, Gtk.TextView):
+            buf = widget.get_buffer()
+            start, end = buf.get_bounds()
+            raw = buf.get_text(start, end, False).strip()
+            # Discard placeholder text
+            for q in self.QUESTIONS:
+                if q['key'] == key and raw == q['placeholder'].strip():
+                    return ''
+            return raw
+        elif isinstance(widget, Adw.EntryRow):
+            return widget.get_text().strip()
+        return ''
+
+    def _split_lines(self, text: str) -> list:
+        """Split multi-line text into a clean list of non-empty items."""
+        return [line.strip() for line in text.splitlines() if line.strip()]
+
+    # ── Generation ────────────────────────────────────────────────────────
+
+    def _on_generate_clicked(self, _btn):
+        if not MATPLOTLIB_AVAILABLE:
+            self._warn_missing_matplotlib()
+            return
+
+        theme     = self._get_text('theme')
+        questions = self._split_lines(self._get_text('questions'))
+        arguments = self._split_lines(self._get_text('arguments'))
+        sources   = self._split_lines(self._get_text('sources'))
+        goal      = self._get_text('goal')
+
+        if not theme:
+            self._show_validation_error(
+                _("Campo obrigatório"),
+                _("Por favor, preencha ao menos o Tema Principal (pergunta 1).")
+            )
+            return
+
+        # ── Generate BOTH themes ──────────────────────────────────────────
+        images_dir = self.config.data_dir / 'images' / self.project.id
+        images_dir.mkdir(parents=True, exist_ok=True)
+
+        hex_id = uuid.uuid4().hex[:8]
+        path_dark  = images_dir / f"mindmap_{hex_id}_dark.png"
+        path_light = images_dir / f"mindmap_{hex_id}_light.png"
+
+        self._generate_mind_map_image(path_dark,  theme, questions, arguments, sources, goal, map_theme='dark')
+        self._generate_mind_map_image(path_light, theme, questions, arguments, sources, goal, map_theme='light')
+
+        base_meta = {
+            'theme':      theme,
+            'questions':  questions,
+            'arguments':  arguments,
+            'sources':    sources,
+            'goal':       goal,
+        }
+
+        # ── Open preview dialog ───────────────────────────────────────────
+        preview = MindMapPreviewDialog(
+            parent       = self,
+            path_dark    = path_dark,
+            path_light   = path_light,
+            base_meta    = base_meta,
+            planner_dialog = self,
+        )
+        preview.present()
+
+    # ── Matplotlib rendering ───────────────────────────────────────────────
+
+    def _generate_mind_map_image(
+        self, filepath, theme, questions, arguments, sources, goal,
+        map_theme: str = 'dark'
+    ):
+        """
+        Draw a radial mind map with matplotlib:
+
+        Centre ── Perguntas
+               ── Argumentos
+               ── Fontes
+               ── Objetivo
+
+        map_theme: 'dark' (default) or 'light'
+        """
+        import math
+
+        # ── Figure setup ──
+        fig, ax = plt.subplots(figsize=(14, 10))
+        ax.set_aspect('equal')
+        ax.axis('off')
+
+        # ── Colour palette ──
+        BRANCH_COLORS = [
+            '#3584e4',  # blue  – questions
+            '#e5a50a',  # amber – arguments
+            '#2ec27e',  # green – sources
+            '#e01b24',  # red   – goal
+        ]
+
+        if map_theme == 'light':
+            fig.patch.set_facecolor('#ffffff')
+            ax.set_facecolor('#ffffff')
+            CENTER_COLOR = '#9141ac'
+            NODE_BG      = '#e0e0f0'
+            TEXT_COLOR   = '#1c1c2e'
+            DIM_COLOR    = '#555577'
+        else:
+            fig.patch.set_facecolor('#1e1e2e')
+            ax.set_facecolor('#1e1e2e')
+            CENTER_COLOR = '#9141ac'
+            NODE_BG      = '#313244'
+            TEXT_COLOR   = '#cdd6f4'
+            DIM_COLOR    = '#a6adc8'
+
+        # ── Helpers ──────────────────────────────────────────────────────
+
+        def wrap(text: str, max_len: int = 28) -> str:
+            """Naïve word-wrap for node labels."""
+            words = text.split()
+            lines, line = [], ''
+            for w in words:
+                if len(line) + len(w) + 1 <= max_len:
+                    line = (line + ' ' + w).strip()
+                else:
+                    if line:
+                        lines.append(line)
+                    line = w
+            if line:
+                lines.append(line)
+            return '\n'.join(lines)
+
+        def draw_node(x, y, text, color, fontsize=9, alpha=1.0, bold=False):
+            bbox_props = dict(
+                boxstyle='round,pad=0.4',
+                facecolor=color,
+                edgecolor='none',
+                alpha=alpha,
+            )
+            weight = 'bold' if bold else 'normal'
+            ax.text(
+                x, y, wrap(text),
+                ha='center', va='center',
+                fontsize=fontsize, color=TEXT_COLOR,
+                fontweight=weight,
+                bbox=bbox_props, zorder=3,
+            )
+
+        def draw_edge(x0, y0, x1, y1, color):
+            ax.annotate(
+                '', xy=(x1, y1), xytext=(x0, y0),
+                arrowprops=dict(
+                    arrowstyle='->', color=color,
+                    lw=1.5, connectionstyle='arc3,rad=0.08'
+                ),
+                zorder=2,
+            )
+
+        # ── Layout ───────────────────────────────────────────────────────
+        cx, cy = 0.0, 0.0  # centre
+
+        branches = [
+            (_("Perguntas"),   questions, BRANCH_COLORS[0]),
+            (_("Argumentos"),  arguments, BRANCH_COLORS[1]),
+            (_("Fontes"),      sources,   BRANCH_COLORS[2]),
+            (_("Objetivo"),    [goal] if goal else [], BRANCH_COLORS[3]),
+        ]
+
+        # Angles for each branch (evenly distributed)
+        n_branches = len(branches)
+        branch_angles = [
+            math.radians(90 + i * (360 / n_branches))
+            for i in range(n_branches)
+        ]
+        branch_radius = 2.8   # distance from centre to branch label
+        leaf_radius   = 4.6   # distance from centre to leaf nodes
+
+        # ── Draw centre ──
+        draw_node(cx, cy, theme, CENTER_COLOR, fontsize=11, bold=True)
+
+        # ── Draw branches and leaves ──
+        for (label, items, color), angle in zip(branches, branch_angles):
+            bx = cx + branch_radius * math.cos(angle)
+            by = cy + branch_radius * math.sin(angle)
+
+            draw_edge(cx, cy, bx * 0.7, by * 0.7, color)
+            draw_node(bx, by, label, color, fontsize=10, bold=True)
+
+            if not items:
+                continue
+
+            # Spread leaves around the branch angle
+            half_spread = math.radians(30)
+            if len(items) == 1:
+                leaf_angles = [angle]
+            else:
+                step = (2 * half_spread) / max(len(items) - 1, 1)
+                leaf_angles = [
+                    angle - half_spread + i * step
+                    for i in range(len(items))
+                ]
+
+            for la, item in zip(leaf_angles, items[:6]):  # cap at 6 per branch
+                lx = cx + leaf_radius * math.cos(la)
+                ly = cy + leaf_radius * math.sin(la)
+                draw_edge(bx, by, lx, ly, color)
+                draw_node(lx, ly, item, NODE_BG, fontsize=8)
+
+        # ── Title ──
+        ax.set_title(
+            theme, fontsize=13, color=TEXT_COLOR,
+            fontweight='bold', pad=14
+        )
+
+        ax.set_xlim(-6.5, 6.5)
+        ax.set_ylim(-6.5, 6.5)
+
+        plt.tight_layout()
+        plt.savefig(str(filepath), dpi=150, bbox_inches='tight',
+                    facecolor=fig.get_facecolor())
+        plt.close()
+
+    # ── Error helpers ─────────────────────────────────────────────────────
+
+    def _warn_missing_matplotlib(self):
+        dialog = Adw.MessageDialog.new(
+            self,
+            _("Biblioteca ausente"),
+            _("A biblioteca 'matplotlib' é necessária para gerar o Mapa Mental.\n"
+              "Instale via terminal: pip install matplotlib")
+        )
+        dialog.add_response("ok", _("Entendi"))
+        dialog.connect("response", lambda d, _r: self.destroy())
+        dialog.present()
+
+    def _show_validation_error(self, title: str, message: str):
+        dialog = Adw.MessageDialog.new(self, title, message)
+        dialog.add_response("ok", _("OK"))
+        dialog.connect("response", lambda d, _r: d.destroy())
+        dialog.present()
+
+class MindMapPreviewDialog(Adw.Window):
+    """
+    Shows both dark and light versions of a generated mind map so the user
+    can compare and choose which one to insert into the document.
+    """
+
+    def __init__(self, parent, path_dark, path_light, base_meta, planner_dialog, **kwargs):
+        super().__init__(**kwargs)
+
+        self._path_dark      = path_dark
+        self._path_light     = path_light
+        self._base_meta      = base_meta
+        self._planner        = planner_dialog   # MindMapPlannerDialog instance
+        self._current_theme  = 'dark'           # starts showing dark
+
+        self.set_title(_("Pré-visualização do Mapa Mental"))
+        self.set_transient_for(parent)
+        self.set_modal(True)
+        self.set_default_size(900, 660)
+        self.set_resizable(True)
+
+        self._create_ui()
+
+    # ── UI ────────────────────────────────────────────────────────────────
+
+    def _create_ui(self):
+        root = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.set_content(root)
+
+        # ── Header bar ──────────────────────────────────────────────────
+        header = Adw.HeaderBar()
+        header.set_show_end_title_buttons(False)
+
+        cancel_btn = Gtk.Button(label=_("Cancelar"))
+        cancel_btn.connect('clicked', self._on_cancel)
+        header.pack_start(cancel_btn)
+
+        # Theme toggle (icon + label inside a box)
+        insert_btn = Gtk.Button(label=_("Inserir este tema"))
+        insert_btn.add_css_class('suggested-action')
+        insert_btn.connect('clicked', self._on_insert)
+        header.pack_end(insert_btn)
+
+        self._toggle_btn = Gtk.Button()
+        self._toggle_btn.set_tooltip_text(_("Alternar entre tema escuro e claro"))
+        self._toggle_btn.connect('clicked', self._on_toggle_theme)
+        header.pack_end(self._toggle_btn)
+        self._update_toggle_btn()          # set initial icon + label
+
+        root.append(header)
+
+        # ── Theme badge label ────────────────────────────────────────────
+        self._badge = Gtk.Label()
+        self._badge.set_margin_top(8)
+        self._badge.set_margin_bottom(4)
+        self._update_badge()
+        root.append(self._badge)
+
+        # ── Image viewer ────────────────────────────────────────────────
+        scroll = Gtk.ScrolledWindow(vexpand=True, hexpand=True)
+        scroll.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
+
+        self._picture = Gtk.Picture()
+        self._picture.set_can_shrink(True)
+        self._picture.set_content_fit(Gtk.ContentFit.CONTAIN)
+        self._picture.set_margin_start(12)
+        self._picture.set_margin_end(12)
+        self._picture.set_margin_bottom(12)
+        scroll.set_child(self._picture)
+        root.append(scroll)
+
+        self._load_current_image()
+
+    # ── Helpers ───────────────────────────────────────────────────────────
+
+    def _current_path(self):
+        return self._path_dark if self._current_theme == 'dark' else self._path_light
+
+    def _load_current_image(self):
+        self._picture.set_filename(str(self._current_path()))
+
+    def _update_toggle_btn(self):
+        if self._current_theme == 'dark':
+            self._toggle_btn.set_icon_name('tac-weather-clear-night-symbolic')
+            self._toggle_btn.set_tooltip_text(_("Ver versão com fundo claro"))
+        else:
+            self._toggle_btn.set_icon_name('tac-weather-clear-symbolic')
+            self._toggle_btn.set_tooltip_text(_("Ver versão com fundo escuro"))
+
+    def _update_badge(self):
+        if self._current_theme == 'dark':
+            self._badge.set_markup(
+                f"<b>{_('Tema atual:')}</b>  🌙 {_('Escuro')}"
+            )
+        else:
+            self._badge.set_markup(
+                f"<b>{_('Tema atual:')}</b>  ☀️ {_('Claro')}"
+            )
+
+    # ── Callbacks ─────────────────────────────────────────────────────────
+
+    def _on_toggle_theme(self, _btn):
+        self._current_theme = 'light' if self._current_theme == 'dark' else 'dark'
+        self._update_toggle_btn()
+        self._update_badge()
+        self._load_current_image()
+
+    def _on_insert(self, _btn):
+        chosen  = self._current_path()
+        discard = self._path_light if self._current_theme == 'dark' else self._path_dark
+
+        # Delete the unused image file
+        try:
+            if discard.exists():
+                discard.unlink()
+        except OSError:
+            pass
+
+        meta = dict(self._base_meta)
+        meta['image_path'] = str(chosen)
+
+        self._planner.emit('mindmap-generated', meta)
+        self._planner.destroy()
+        self.destroy()
+
+    def _on_cancel(self, _btn):
+        # Delete both generated images since the user cancelled
+        for p in (self._path_dark, self._path_light):
+            try:
+                if p.exists():
+                    p.unlink()
+            except OSError:
+                pass
+        self.destroy()
+

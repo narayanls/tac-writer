@@ -27,6 +27,7 @@ class ParagraphType(Enum):
     TABLE = "table"
     CHART = "chart"
     MIND_MAP = "mind_map"
+    MAP   = "map"
 
 class Paragraph:
     """Represents a single paragraph in a document"""

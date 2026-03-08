@@ -3289,7 +3289,7 @@ class SupporterDialog(Adw.Window):
         for benefit in benefits:
             row = Adw.ActionRow()
             row.set_title(benefit)
-            row.add_prefix(Gtk.Image.new_from_icon_name("object-select-symbolic"))
+            row.add_prefix(Gtk.Image.new_from_icon_name("tac-object-select-symbolic"))
             benefits_group.add(row)
             
         content_box.append(benefits_group)
@@ -3904,7 +3904,7 @@ class GoalsDialog(Adw.Window):
     def _calc_consecutive_days(self):
         """
         Calcula quantos dias consecutivos (até hoje) o usuário abriu o app.
-        Lê a lista 'usage_dates' do config — será populada
+        Lê a lista 'usage_dates' do config — será populada pela Alteração 2
         em main_window.py.
         """
         from datetime import date, timedelta
@@ -4403,6 +4403,870 @@ class ChartDialog(Adw.Window):
         # Salva a imagem
         plt.savefig(str(filepath), dpi=150, bbox_inches='tight')
         plt.close() # Limpa a memória do matplotlib
+
+
+
+class MapDataRow(Gtk.Box):
+    """Single data row for MapDialog: region name + numeric value."""
+
+    def __init__(self, region="", value="", **kwargs):
+        super().__init__(orientation=Gtk.Orientation.HORIZONTAL, spacing=6, **kwargs)
+
+        self.entry_region = Gtk.Entry()
+        self.entry_region.set_placeholder_text(_("Região / Código"))
+        self.entry_region.set_hexpand(True)
+        self.entry_region.set_text(region)
+        self.append(self.entry_region)
+
+        self.entry_value = Gtk.Entry()
+        self.entry_value.set_placeholder_text(_("Valor"))
+        self.entry_value.set_width_chars(12)
+        self.entry_value.set_text(value)
+        self.append(self.entry_value)
+
+        del_btn = Gtk.Button.new_from_icon_name("user-trash-symbolic")
+        del_btn.add_css_class("destructive-action")
+        del_btn.add_css_class("flat")
+        del_btn.connect("clicked", self._on_delete)
+        self.append(del_btn)
+
+    def _on_delete(self, _btn):
+        parent = self.get_parent()
+        if parent:
+            parent.remove(self)
+
+
+class MapDialog(Adw.Window):
+    """Dialog for creating choropleth maps (Premium).
+
+    Uses matplotlib + GeoJSON polygon rendering — no geopandas required.
+    GeoJSON files are downloaded once and cached in ~/.tac-writer/geodata/.
+
+    Cartographic elements rendered automatically:
+      - Título estruturado  (Local · Tema · Ano)
+      - Rosa dos ventos     (seta Norte)
+      - Barra de escala     (calculada via Haversine dos limites do mapa)
+      - Meridianos/paralelos (grade de coordenadas)
+      - Legenda / colorbar  (com campo de fonte)
+    """
+
+    __gtype_name__ = "TacMapDialog"
+
+    __gsignals__ = {
+        "map-added":   (GObject.SIGNAL_RUN_FIRST, None, (object, int)),
+        "map-updated": (GObject.SIGNAL_RUN_FIRST, None, (object, object)),
+    }
+
+    # ── GeoJSON sources ───────────────────────────────────────────────────
+    GEODATA_URLS = {
+        "world":  "https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson",
+        "brazil": "https://raw.githubusercontent.com/codeforamerica/click_that_hood/master/public/data/brazil-states.geojson",
+    }
+    GEODATA_FILES = {
+        "world":  "countries_110m.geojson",
+        "brazil": "brazil_states.geojson",
+    }
+    GEODATA_NAME_PROP = {
+        "world":  "ADMIN",
+        "brazil": "name",
+    }
+
+    COLORMAPS = [
+        ("Blues",    _("Azul (sequencial)")),
+        ("Reds",     _("Vermelho (sequencial)")),
+        ("Greens",   _("Verde (sequencial)")),
+        ("YlOrRd",   _("Amarelo → Vermelho")),
+        ("RdYlGn",   _("Vermelho → Verde (divergente)")),
+        ("Purples",  _("Roxo (sequencial)")),
+        ("viridis",  _("Viridis")),
+        ("plasma",   _("Plasma")),
+        ("coolwarm", _("Frio → Quente (divergente)")),
+    ]
+
+    BR_ALIASES: dict = {
+        "AC": "Acre", "AL": "Alagoas", "AP": "Amapá", "AM": "Amazonas",
+        "BA": "Bahia", "CE": "Ceará", "DF": "Distrito Federal",
+        "ES": "Espírito Santo", "GO": "Goiás", "MA": "Maranhão",
+        "MT": "Mato Grosso", "MS": "Mato Grosso do Sul", "MG": "Minas Gerais",
+        "PA": "Pará", "PB": "Paraíba", "PR": "Paraná", "PE": "Pernambuco",
+        "PI": "Piauí", "RJ": "Rio de Janeiro", "RN": "Rio Grande do Norte",
+        "RS": "Rio Grande do Sul", "RO": "Rondônia", "RR": "Roraima",
+        "SC": "Santa Catarina", "SP": "São Paulo", "SE": "Sergipe",
+        "TO": "Tocantins",
+        "AMAPA": "Amapá", "CEARA": "Ceará", "ESPIRITO SANTO": "Espírito Santo",
+        "GOIAS": "Goiás", "MARANHAO": "Maranhão", "PARA": "Pará",
+        "PARAIBA": "Paraíba", "PARANA": "Paraná", "PIAUI": "Piauí",
+        "RONDONIA": "Rondônia", "SAO PAULO": "São Paulo",
+        "SERGIPE": "Sergipe", "TOCANTINS": "Tocantins",
+    }
+
+    COUNTRY_ALIASES: dict = {
+        "BRASIL": "Brazil", "ALEMANHA": "Germany", "FRANCA": "France",
+        "ESPANHA": "Spain", "ITALIA": "Italy", "PORTUGAL": "Portugal",
+        "ESTADOS UNIDOS": "United States of America", "EUA": "United States of America",
+        "USA": "United States of America", "UK": "United Kingdom",
+        "REINO UNIDO": "United Kingdom", "RUSSIA": "Russia",
+        "CHINA": "China", "JAPAO": "Japan", "INDIA": "India",
+        "ARGENTINA": "Argentina", "CHILE": "Chile", "COLOMBIA": "Colombia",
+        "MEXICO": "Mexico", "PERU": "Peru", "VENEZUELA": "Venezuela",
+        "CANADA": "Canada", "AUSTRALIA": "Australia",
+        "AFRICA DO SUL": "South Africa", "NIGERIA": "Nigeria",
+        "EGITO": "Egypt", "MARROCOS": "Morocco", "ANGOLA": "Angola",
+        "TURQUIA": "Turkey", "COREIA DO SUL": "South Korea",
+        "INDONESIA": "Indonesia", "ARABIA SAUDITA": "Saudi Arabia",
+        "HOLANDA": "Netherlands", "BELGICA": "Belgium", "SUECIA": "Sweden",
+        "NORUEGA": "Norway", "DINAMARCA": "Denmark", "FINLANDIA": "Finland",
+        "SUICA": "Switzerland", "AUSTRIA": "Austria", "POLONIA": "Poland",
+        "UCRANIA": "Ukraine", "ROMENIA": "Romania", "GRECIA": "Greece",
+        "HUNGRIA": "Hungary", "REPUBLICA TCHECA": "Czech Republic",
+        "NOVA ZELANDIA": "New Zealand", "IRLANDA": "Ireland",
+        "ISRAEL": "Israel", "IRAQUE": "Iraq", "IRA": "Iran",
+        "PAQUISTAO": "Pakistan", "BANGLADESH": "Bangladesh",
+        "TAILANDIA": "Thailand", "VIETNA": "Vietnam", "FILIPINAS": "Philippines",
+        "MALAISIA": "Malaysia", "MYANMAR": "Myanmar", "CAMBODJA": "Cambodia",
+    }
+
+    def __init__(self, parent, project, insert_after_index: int = -1,
+                 edit_paragraph=None, **kwargs):
+        super().__init__(**kwargs)
+
+        self.edit_mode          = edit_paragraph is not None
+        self.edit_paragraph     = edit_paragraph
+        self.project            = project
+        self.insert_after_index = insert_after_index
+        self.config             = parent.config
+        self.image_path         = ""
+
+        self.set_title(_("Editar Mapa") if self.edit_mode else _("Inserir Mapa"))
+        self.set_transient_for(parent)
+        self.set_modal(True)
+        self.set_default_size(820, 640)
+        self.set_resizable(True)
+
+        # ── State ─────────────────────────────────────────────────────────
+        self._map_level      = "brazil"
+        self._cmap_index     = 0
+        # Título estruturado
+        self._title_local    = ""   # ex: "Brasil"
+        self._title_tema     = ""   # ex: "IDH por Estado"
+        self._title_ano      = ""   # ex: "2023"
+        # Legenda e fonte
+        self._legend_label   = ""   # label acima da colorbar
+        self._source_text    = ""   # "Fonte: IBGE, 2023"
+        # Elementos cartográficos automáticos
+        self._show_labels    = True
+        self._show_graticule = True   # meridianos/paralelos
+        self._show_north     = True   # rosa dos ventos
+        self._show_scalebar  = True   # barra de escala
+        self._show_legend    = True   # colorbar
+
+        if self.edit_mode:
+            fmt  = getattr(self.edit_paragraph, "formatting", {}) or {}
+            meta = fmt.get("map_data", {})
+            self._map_level      = meta.get("level",       "brazil")
+            self._cmap_index     = meta.get("cmap_index",  0)
+            self._title_local    = meta.get("title_local", "")
+            self._title_tema     = meta.get("title_tema",  "")
+            self._title_ano      = meta.get("title_ano",   "")
+            self._legend_label   = meta.get("legend_label","")
+            self._source_text    = meta.get("source_text", "")
+            self._show_labels    = meta.get("show_labels",    True)
+            self._show_graticule = meta.get("show_graticule", True)
+            self._show_north     = meta.get("show_north",     True)
+            self._show_scalebar  = meta.get("show_scalebar",  True)
+            self._show_legend    = meta.get("show_legend",    True)
+            self.image_path      = meta.get("image_path",    "")
+            self._initial_data   = meta.get("data", [])
+        else:
+            self._initial_data = []
+
+        self._create_ui()
+
+    # ── UI ────────────────────────────────────────────────────────────────
+
+    def _create_ui(self):
+        root = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.set_content(root)
+
+        hbar = Adw.HeaderBar()
+        cancel_btn = Gtk.Button(label=_("Cancelar"))
+        cancel_btn.connect("clicked", lambda _: self.destroy())
+        hbar.pack_start(cancel_btn)
+        self._save_btn = Gtk.Button(label=_("Gerar e Salvar"))
+        self._save_btn.add_css_class("suggested-action")
+        self._save_btn.connect("clicked", self._on_save_clicked)
+        hbar.pack_end(self._save_btn)
+        root.append(hbar)
+
+        if not MATPLOTLIB_AVAILABLE:
+            self._show_error_overlay(root)
+            return
+
+        body = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
+        body.set_vexpand(True)
+        root.append(body)
+
+        # ── Left panel ────────────────────────────────────────────────────
+        left_scroll = Gtk.ScrolledWindow()
+        left_scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        left_scroll.set_size_request(350, -1)
+        left_scroll.set_vexpand(True)
+        left_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        left_box.set_margin_top(12); left_box.set_margin_bottom(12)
+        left_box.set_margin_start(12); left_box.set_margin_end(12)
+        left_scroll.set_child(left_box)
+        body.append(left_scroll)
+
+        body.append(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL))
+
+        # ── Right panel ───────────────────────────────────────────────────
+        right_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        right_box.set_vexpand(True); right_box.set_hexpand(True)
+        right_box.set_margin_top(12); right_box.set_margin_bottom(12)
+        right_box.set_margin_start(12); right_box.set_margin_end(12)
+        body.append(right_box)
+
+        lbl = Gtk.Label(label=_("Pré-visualização"))
+        lbl.add_css_class("heading"); lbl.set_halign(Gtk.Align.START)
+        right_box.append(lbl)
+
+        scroll_img = Gtk.ScrolledWindow()
+        scroll_img.set_vexpand(True)
+        scroll_img.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
+        self._preview_picture = Gtk.Picture()
+        self._preview_picture.set_can_shrink(True)
+        self._preview_picture.set_content_fit(Gtk.ContentFit.CONTAIN)
+        scroll_img.set_child(self._preview_picture)
+        right_box.append(scroll_img)
+
+        preview_btn = Gtk.Button(label=_("Atualizar pré-visualização"))
+        preview_btn.connect("clicked", self._on_preview_clicked)
+        right_box.append(preview_btn)
+
+        self._status_label = Gtk.Label(label="")
+        self._status_label.set_halign(Gtk.Align.START)
+        self._status_label.add_css_class("dim-label")
+        right_box.append(self._status_label)
+
+        # ══════════════════════════════════════════════════════════════════
+        # LEFT: settings groups
+        # ══════════════════════════════════════════════════════════════════
+
+        # ── Grupo 1: Título cartográfico ──────────────────────────────────
+        titulo_group = Adw.PreferencesGroup(title=_("Título"))
+        titulo_group.set_description(
+            _("O título será composto como: Local: Tema (Ano)")
+        )
+        left_box.append(titulo_group)
+
+        local_row = Adw.EntryRow(title=_("Local"))
+        local_row.set_text(self._title_local)
+        local_row.set_show_apply_button(False)
+        local_row.connect("changed", lambda r: setattr(self, "_title_local", r.get_text()))
+        titulo_group.add(local_row)
+
+        tema_row = Adw.EntryRow(title=_("Tema"))
+        tema_row.set_text(self._title_tema)
+        tema_row.set_show_apply_button(False)
+        tema_row.connect("changed", lambda r: setattr(self, "_title_tema", r.get_text()))
+        titulo_group.add(tema_row)
+
+        ano_row = Adw.EntryRow(title=_("Ano"))
+        ano_row.set_text(self._title_ano)
+        ano_row.set_show_apply_button(False)
+        ano_row.connect("changed", lambda r: setattr(self, "_title_ano", r.get_text()))
+        titulo_group.add(ano_row)
+
+        # ── Grupo 2: Configurações visuais ───────────────────────────────
+        cfg_group = Adw.PreferencesGroup(title=_("Configurações"))
+        left_box.append(cfg_group)
+
+        level_row = Adw.ComboRow(title=_("Nível geográfico"))
+        level_model = Gtk.StringList()
+        level_model.append(_("Brasil (estados)"))
+        level_model.append(_("Mundo (países)"))
+        level_row.set_model(level_model)
+        level_row.set_selected(0 if self._map_level == "brazil" else 1)
+        level_row.connect("notify::selected", self._on_level_changed)
+        self._level_row = level_row
+        cfg_group.add(level_row)
+
+        cmap_row = Adw.ComboRow(title=_("Escala de cor"))
+        cmap_model = Gtk.StringList()
+        for cmap_key, label in self.COLORMAPS:
+            cmap_model.append(label)
+        cmap_row.set_model(cmap_model)
+        cmap_row.set_selected(self._cmap_index)
+        cmap_row.connect("notify::selected",
+                         lambda r, _: setattr(self, "_cmap_index", r.get_selected()))
+        cfg_group.add(cmap_row)
+
+        # ── Grupo 3: Elementos cartográficos ─────────────────────────────
+        cart_group = Adw.PreferencesGroup(title=_("Elementos Cartográficos"))
+        cart_group.set_description(_("Gerados automaticamente a partir dos dados geográficos"))
+        left_box.append(cart_group)
+
+        def _switch(title, attr, active):
+            row = Adw.SwitchRow(title=title)
+            row.set_active(active)
+            row.connect("notify::active", lambda r, _: setattr(self, attr, r.get_active()))
+            return row
+
+        cart_group.add(_switch(_("Rótulos das regiões"),     "_show_labels",    self._show_labels))
+        cart_group.add(_switch(_("Rosa dos ventos (Norte)"), "_show_north",      self._show_north))
+        cart_group.add(_switch(_("Barra de escala"),         "_show_scalebar",   self._show_scalebar))
+        cart_group.add(_switch(_("Meridianos e paralelos"),  "_show_graticule",  self._show_graticule))
+        cart_group.add(_switch(_("Legenda (colorbar)"),      "_show_legend",     self._show_legend))
+
+        # ── Grupo 4: Legenda e fonte ──────────────────────────────────────
+        leg_group = Adw.PreferencesGroup(title=_("Legenda e Fonte"))
+        left_box.append(leg_group)
+
+        legend_label_row = Adw.EntryRow(title=_("Rótulo da legenda"))
+        legend_label_row.set_text(self._legend_label)
+        legend_label_row.set_show_apply_button(False)
+        legend_label_row.connect("changed",
+                                 lambda r: setattr(self, "_legend_label", r.get_text()))
+        leg_group.add(legend_label_row)
+
+        source_row = Adw.EntryRow(title=_("Fonte dos dados"))
+        source_row.set_text(self._source_text)
+        source_row.set_show_apply_button(False)
+        source_row.connect("changed",
+                           lambda r: setattr(self, "_source_text", r.get_text()))
+        leg_group.add(source_row)
+
+        # ── Grupo 5: Dados ────────────────────────────────────────────────
+        data_group = Adw.PreferencesGroup(title=_("Dados"))
+        left_box.append(data_group)
+
+        self._hint_label = Gtk.Label()
+        self._hint_label.set_wrap(True)
+        self._hint_label.set_xalign(0)
+        self._hint_label.add_css_class("dim-label")
+        self._update_hint()
+        left_box.append(self._hint_label)
+
+        self._rows_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+        left_box.append(self._rows_box)
+
+        hdr = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        hdr_r = Gtk.Label(label=_("Região")); hdr_r.set_hexpand(True)
+        hdr_r.set_xalign(0); hdr_r.add_css_class("caption-heading")
+        hdr.append(hdr_r)
+        hdr_v = Gtk.Label(label=_("Valor")); hdr_v.set_width_chars(12)
+        hdr_v.set_xalign(0); hdr_v.add_css_class("caption-heading")
+        hdr.append(hdr_v)
+        hdr_sp = Gtk.Label(label=""); hdr_sp.set_size_request(34, -1)
+        hdr.append(hdr_sp)
+        self._rows_box.append(hdr)
+
+        if self._initial_data:
+            for region, value in self._initial_data:
+                self._add_data_row(str(region), str(value))
+        else:
+            self._add_data_row("", "")
+            self._add_data_row("", "")
+
+        add_btn = Gtk.Button(label=_("+ Adicionar linha"))
+        add_btn.add_css_class("flat")
+        add_btn.connect("clicked", lambda _: self._add_data_row())
+        left_box.append(add_btn)
+
+    # ── Helpers ───────────────────────────────────────────────────────────
+
+    def _composed_title(self):
+        """Returns 'Local: Tema (Ano)' from the three fields."""
+        parts = []
+        local = self._title_local.strip()
+        tema  = self._title_tema.strip()
+        ano   = self._title_ano.strip()
+        if local and tema:
+            parts.append(f"{local}: {tema}")
+        elif local:
+            parts.append(local)
+        elif tema:
+            parts.append(tema)
+        if ano:
+            parts.append(f"({ano})")
+        return " ".join(parts)
+
+    def _update_hint(self):
+        if self._map_level == "brazil":
+            self._hint_label.set_text(
+                _("Use o nome do estado (ex: São Paulo) ou sigla (ex: SP).")
+            )
+        else:
+            self._hint_label.set_text(
+                _("Use o nome do país em português ou inglês (ex: Brasil ou Brazil).")
+            )
+
+    def _on_level_changed(self, row, _):
+        self._map_level = "brazil" if row.get_selected() == 0 else "world"
+        self._update_hint()
+
+    def _add_data_row(self, region="", value=""):
+        self._rows_box.append(MapDataRow(region=region, value=value))
+
+    def _collect_data(self):
+        result = []
+        child = self._rows_box.get_first_child()
+        while child:
+            if isinstance(child, MapDataRow):
+                region  = child.entry_region.get_text().strip()
+                val_str = child.entry_value.get_text().strip().replace(",", ".")
+                if region and val_str:
+                    try:
+                        result.append((region, float(val_str)))
+                    except ValueError:
+                        pass
+            child = child.get_next_sibling()
+        return result
+
+    # ── GeoJSON download / cache ──────────────────────────────────────────
+
+    def _geodata_cache_dir(self):
+        d = Path.home() / ".tac-writer" / "geodata"
+        d.mkdir(parents=True, exist_ok=True)
+        return d
+
+    def _get_geodata(self, level: str):
+        import json, urllib.request, ssl
+        cache_path = self._geodata_cache_dir() / self.GEODATA_FILES[level]
+        if cache_path.exists():
+            try:
+                with open(cache_path, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            except Exception:
+                cache_path.unlink(missing_ok=True)
+        url = self.GEODATA_URLS[level]
+        try:
+            ctx = ssl.create_default_context()
+            req = urllib.request.Request(url)
+            req.add_header("User-Agent", "TAC-Writer/1.0")
+            with urllib.request.urlopen(req, timeout=30, context=ctx) as resp:
+                raw = resp.read()
+            with open(cache_path, "wb") as f:
+                f.write(raw)
+            return json.loads(raw.decode("utf-8"))
+        except Exception as e:
+            print(f"[MapDialog] GeoJSON download failed: {e}")
+            return None
+
+    # ── Region name normalisation ─────────────────────────────────────────
+
+    @staticmethod
+    def _normalise(s: str) -> str:
+        import unicodedata
+        s = unicodedata.normalize("NFD", s.upper())
+        return "".join(c for c in s if unicodedata.category(c) != "Mn")
+
+    def _resolve_region(self, user_input: str, level: str):
+        key = self._normalise(user_input)
+        if level == "brazil":
+            if key in self.BR_ALIASES:
+                return self.BR_ALIASES[key]
+            for canonical in self.BR_ALIASES.values():
+                if self._normalise(canonical) == key:
+                    return canonical
+        else:
+            if key in self.COUNTRY_ALIASES:
+                return self.COUNTRY_ALIASES[key]
+            for canonical in self.COUNTRY_ALIASES.values():
+                if self._normalise(canonical) == key:
+                    return canonical
+            return user_input
+        return user_input
+
+    # ── Cartographic helpers ───────────────────────────────────────────────
+
+    @staticmethod
+    def _haversine_km(lon1, lat1, lon2, lat2):
+        """Great-circle distance in km between two lon/lat points."""
+        import math
+        R = 6371.0
+        dlon = math.radians(lon2 - lon1)
+        dlat = math.radians(lat2 - lat1)
+        a = math.sin(dlat/2)**2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon/2)**2
+        return R * 2 * math.asin(math.sqrt(a))
+
+    @staticmethod
+    def _draw_north_arrow(ax, x=0.97, y=0.97):
+        """Draw a simple N-arrow in axes fraction coordinates (top-right)."""
+        import matplotlib.patheffects as pe
+        ax.annotate(
+            "", xy=(x, y), xytext=(x, y - 0.07),
+            xycoords="axes fraction", textcoords="axes fraction",
+            arrowprops=dict(arrowstyle="-|>", color="black", lw=1.5),
+        )
+        ax.text(x, y + 0.01, "N", ha="center", va="bottom",
+                fontsize=9, fontweight="bold", transform=ax.transAxes,
+                path_effects=[pe.withStroke(linewidth=2, foreground="white")])
+
+    @staticmethod
+    def _draw_scale_bar(ax, x0_data, y0_data, km_length, x_frac=0.05, y_frac=0.05):
+        """Draw a horizontal scale bar at bottom-left of axes."""
+        import matplotlib.patheffects as pe
+        # Convert km_length to degrees longitude at the given latitude
+        import math
+        deg_per_km = 1.0 / (111.32 * math.cos(math.radians(abs(y0_data))))
+        bar_deg = km_length * deg_per_km
+
+        # Draw bar
+        ax.plot([x0_data, x0_data + bar_deg], [y0_data, y0_data],
+                color="black", lw=2, solid_capstyle="butt",
+                transform=ax.transData)
+        # Ticks at ends
+        tick_h = (ax.get_ylim()[1] - ax.get_ylim()[0]) * 0.008
+        for xp in (x0_data, x0_data + bar_deg):
+            ax.plot([xp, xp], [y0_data - tick_h, y0_data + tick_h],
+                    color="black", lw=1.5)
+
+        # Label
+        label = f"{int(km_length)} km" if km_length >= 1 else f"{int(km_length*1000)} m"
+        ax.text(x0_data + bar_deg / 2, y0_data - tick_h * 3,
+                label, ha="center", va="top", fontsize=7,
+                path_effects=[pe.withStroke(linewidth=2, foreground="white")])
+
+    @staticmethod
+    def _nice_interval(span: float, target_lines: int = 5) -> float:
+        """Return a 'nice' graticule interval for the given coordinate span."""
+        raw = span / target_lines
+        for nice in (0.5, 1, 2, 5, 10, 15, 20, 30, 45, 60, 90):
+            if raw <= nice:
+                return nice
+        return 60.0
+
+    # ── Map generation ────────────────────────────────────────────────────
+
+    def _generate_map_image(self, filepath, level, data, title,
+                            cmap_name, show_labels, show_legend,
+                            show_graticule, show_north, show_scalebar,
+                            legend_label, source_text, geojson) -> bool:
+        import matplotlib.pyplot as plt
+        import matplotlib.cm as cm
+        import matplotlib.colors as mcolors
+        import matplotlib.patches as mpatches
+        from matplotlib.collections import PatchCollection
+        import numpy as np
+
+        name_prop = self.GEODATA_NAME_PROP[level]
+
+        # Build value map
+        value_map: dict = {}
+        for (user_region, value) in data:
+            canonical = self._resolve_region(user_region, level)
+            if canonical:
+                value_map[canonical] = value
+
+        if not value_map:
+            return False
+
+        vals = list(value_map.values())
+        vmin, vmax = min(vals), max(vals)
+        if vmin == vmax:
+            vmin -= 1
+
+        cmap = cm.get_cmap(cmap_name)
+        norm = mcolors.Normalize(vmin=vmin, vmax=vmax)
+
+        fig, ax = plt.subplots(1, 1, figsize=(11, 7.5))
+        ax.set_aspect("equal")
+
+        patches_with_color = []
+        no_data_patches    = []
+        centroids: dict    = {}
+        all_x, all_y       = [], []
+
+        for feature in geojson.get("features", []):
+            props    = feature.get("properties", {})
+            geo_name = props.get(name_prop, "")
+            geom     = feature.get("geometry", {})
+            gtype    = geom.get("type", "")
+
+            feat_val = value_map.get(geo_name)
+            if feat_val is None:
+                norm_geo = self._normalise(geo_name)
+                for k, v in value_map.items():
+                    if self._normalise(k) == norm_geo:
+                        feat_val = v
+                        break
+
+            color = cmap(norm(feat_val)) if feat_val is not None else "#e0e0e0"
+
+            def process_polygon(coords):
+                ring = np.array(coords[0])
+                all_x.extend(ring[:, 0]); all_y.extend(ring[:, 1])
+                return mpatches.Polygon(ring, closed=True)
+
+            polys = []
+            if gtype == "Polygon":
+                polys.append(process_polygon(geom["coordinates"]))
+            elif gtype == "MultiPolygon":
+                for part in geom["coordinates"]:
+                    polys.append(process_polygon(part))
+
+            if not polys:
+                continue
+
+            try:
+                xy = np.array(geom["coordinates"][0][0]) if gtype == "Polygon" \
+                     else np.array(geom["coordinates"][0][0][0])
+                centroids[geo_name] = (xy[:, 0].mean(), xy[:, 1].mean())
+            except Exception:
+                pass
+
+            for p in polys:
+                if feat_val is not None:
+                    patches_with_color.append((p, color))
+                else:
+                    no_data_patches.append(p)
+
+        if no_data_patches:
+            pc_nd = PatchCollection(no_data_patches, facecolor="#e0e0e0",
+                                    edgecolor="#aaaaaa", linewidth=0.4)
+            ax.add_collection(pc_nd)
+
+        if patches_with_color:
+            pc = PatchCollection([p for p, _ in patches_with_color],
+                                 facecolor=[c for _, c in patches_with_color],
+                                 edgecolor="#555555", linewidth=0.5)
+            ax.add_collection(pc)
+
+        ax.autoscale_view()
+        xlim = ax.get_xlim()
+        ylim = ax.get_ylim()
+
+        # ── Meridianos e paralelos ────────────────────────────────────────
+        if show_graticule and all_x and all_y:
+            x_span = xlim[1] - xlim[0]
+            y_span = ylim[1] - ylim[0]
+            dx = self._nice_interval(x_span)
+            dy = self._nice_interval(y_span)
+
+            import math
+            x_start = math.floor(xlim[0] / dx) * dx
+            y_start = math.floor(ylim[0] / dy) * dy
+
+            grat_kw = dict(color="#888888", linewidth=0.4,
+                           linestyle="--", alpha=0.6, zorder=0)
+
+            xm = x_start
+            while xm <= xlim[1] + dx:
+                if xlim[0] <= xm <= xlim[1]:
+                    ax.axvline(xm, **grat_kw)
+                    label = f"{abs(xm):.0f}°{'L' if xm >= 0 else 'O'}"
+                    ax.text(xm, ylim[0] + y_span * 0.01, label,
+                            ha="center", va="bottom", fontsize=5,
+                            color="#666666", alpha=0.8)
+                xm += dx
+
+            ym = y_start
+            while ym <= ylim[1] + dy:
+                if ylim[0] <= ym <= ylim[1]:
+                    ax.axhline(ym, **grat_kw)
+                    label = f"{abs(ym):.0f}°{'N' if ym >= 0 else 'S'}"
+                    ax.text(xlim[0] + x_span * 0.01, ym, label,
+                            ha="left", va="center", fontsize=5,
+                            color="#666666", alpha=0.8)
+                ym += dy
+
+        # ── Rótulos das regiões ───────────────────────────────────────────
+        if show_labels:
+            for geo_name, (cx, cy) in centroids.items():
+                has_data = any(self._normalise(k) == self._normalise(geo_name)
+                               for k in value_map)
+                if not has_data and level == "world":
+                    continue
+                label = geo_name
+                if level == "brazil":
+                    for sigla, full in self.BR_ALIASES.items():
+                        if len(sigla) == 2 and full == geo_name:
+                            label = sigla; break
+                fontsize = 5 if level == "world" else 6
+                ax.text(cx, cy, label, ha="center", va="center",
+                        fontsize=fontsize, color="#222222",
+                        fontweight="bold" if has_data else "normal",
+                        alpha=0.85)
+
+        # ── Rosa dos ventos ───────────────────────────────────────────────
+        if show_north:
+            self._draw_north_arrow(ax)
+
+        # ── Barra de escala ───────────────────────────────────────────────
+        if show_scalebar and all_x and all_y:
+            x_span  = xlim[1] - xlim[0]
+            y_span  = ylim[1] - ylim[0]
+            mid_lat = (ylim[0] + ylim[1]) / 2
+            total_km = self._haversine_km(xlim[0], mid_lat, xlim[1], mid_lat)
+            # Aim for ~15 % of map width
+            target_km = total_km * 0.15
+            # Round to nice number
+            for nice in (10, 25, 50, 100, 200, 250, 500, 1000, 2000, 5000):
+                if nice >= target_km * 0.5:
+                    km_bar = nice; break
+            else:
+                km_bar = round(target_km / 100) * 100 or 100
+
+            bar_x = xlim[0] + x_span * 0.04
+            bar_y = ylim[0] + y_span * 0.04
+            self._draw_scale_bar(ax, bar_x, bar_y, km_bar)
+
+        # ── Colorbar / legenda ────────────────────────────────────────────
+        if show_legend and value_map:
+            sm = cm.ScalarMappable(cmap=cmap, norm=norm)
+            sm.set_array([])
+            cbar = fig.colorbar(sm, ax=ax, fraction=0.03, pad=0.02, shrink=0.65)
+            cbar.ax.tick_params(labelsize=8)
+            if legend_label:
+                cbar.set_label(legend_label, fontsize=9)
+
+        # ── Título e fonte ────────────────────────────────────────────────
+        if title:
+            ax.set_title(title, fontsize=13, fontweight="bold", pad=12)
+
+        if source_text:
+            fig.text(0.5, 0.01, source_text, ha="center", va="bottom",
+                     fontsize=7, color="#555555", style="italic")
+
+        # ── Remove eixos mas mantém borda ────────────────────────────────
+        for spine in ax.spines.values():
+            spine.set_visible(True)
+            spine.set_linewidth(0.5)
+            spine.set_color("#aaaaaa")
+        ax.set_xticks([]); ax.set_yticks([])
+
+        plt.tight_layout(rect=[0, 0.03 if source_text else 0, 1, 1])
+        plt.savefig(str(filepath), dpi=150, bbox_inches="tight")
+        plt.close()
+        return True
+
+    # ── Callbacks ─────────────────────────────────────────────────────────
+
+    def _build_generate_kwargs(self, data):
+        """Collect all generation parameters into a dict."""
+        return dict(
+            level        = self._map_level,
+            data         = data,
+            title        = self._composed_title(),
+            cmap_name    = self.COLORMAPS[self._cmap_index][0],
+            show_labels  = self._show_labels,
+            show_legend  = self._show_legend,
+            show_graticule = self._show_graticule,
+            show_north   = self._show_north,
+            show_scalebar= self._show_scalebar,
+            legend_label = self._legend_label,
+            source_text  = self._source_text,
+        )
+
+    def _on_preview_clicked(self, _btn):
+        self._status_label.set_text(_("Baixando/carregando dados geográficos…"))
+        self._save_btn.set_sensitive(False)
+        data  = self._collect_data()
+        level = self._map_level
+
+        def worker():
+            geojson = self._get_geodata(level)
+            GLib.idle_add(self._preview_done, geojson, data)
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _preview_done(self, geojson, data):
+        self._save_btn.set_sensitive(True)
+        if geojson is None:
+            self._status_label.set_text(
+                _("Erro ao baixar dados geográficos. Verifique sua conexão."))
+            return
+        tmp_path = self._geodata_cache_dir() / f"map_preview_{uuid.uuid4().hex[:6]}.png"
+        kw = self._build_generate_kwargs(data)
+        ok = self._generate_map_image(tmp_path, geojson=geojson, **kw)
+        if ok and tmp_path.exists():
+            self._preview_picture.set_filename(str(tmp_path))
+            self._status_label.set_text(_("Pré-visualização atualizada."))
+        else:
+            self._status_label.set_text(
+                _("Nenhum dado reconhecido. Verifique os nomes das regiões."))
+
+    def _on_save_clicked(self, _btn):
+        if not MATPLOTLIB_AVAILABLE:
+            return
+        data = self._collect_data()
+        if not data:
+            self._status_label.set_text(
+                _("Adicione pelo menos um dado válido antes de salvar."))
+            return
+        self._save_btn.set_sensitive(False)
+        self._status_label.set_text(_("Gerando mapa…"))
+        level = self._map_level
+
+        def worker():
+            geojson = self._get_geodata(level)
+            GLib.idle_add(self._save_done, geojson, data)
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _save_done(self, geojson, data):
+        self._save_btn.set_sensitive(True)
+        if geojson is None:
+            self._status_label.set_text(
+                _("Erro ao baixar dados geográficos. Verifique sua conexão."))
+            return
+
+        images_dir = self.config.data_dir / "images" / self.project.id
+        images_dir.mkdir(parents=True, exist_ok=True)
+        filepath = images_dir / f"map_{uuid.uuid4().hex[:8]}.png"
+
+        kw = self._build_generate_kwargs(data)
+        ok = self._generate_map_image(filepath, geojson=geojson, **kw)
+        if not ok:
+            self._status_label.set_text(
+                _("Nenhum dado reconhecido. Verifique os nomes das regiões."))
+            return
+
+        cmap_name = self.COLORMAPS[self._cmap_index][0]
+        meta = {
+            "level":         self._map_level,
+            "title_local":   self._title_local,
+            "title_tema":    self._title_tema,
+            "title_ano":     self._title_ano,
+            "legend_label":  self._legend_label,
+            "source_text":   self._source_text,
+            "data":          [[r, v] for r, v in data],
+            "cmap_index":    self._cmap_index,
+            "cmap_name":     cmap_name,
+            "show_labels":   self._show_labels,
+            "show_graticule":self._show_graticule,
+            "show_north":    self._show_north,
+            "show_scalebar": self._show_scalebar,
+            "show_legend":   self._show_legend,
+            "image_path":    str(filepath),
+        }
+
+        from core.models import Paragraph, ParagraphType
+        new_para = Paragraph(ParagraphType.MAP)
+        new_para.formatting = {"map_data": meta}
+        new_para.content    = f"[Mapa: {self._composed_title() or self._map_level}]"
+
+        if self.edit_mode:
+            if (self.image_path and os.path.exists(self.image_path)
+                    and self.image_path != str(filepath)):
+                try: os.remove(self.image_path)
+                except OSError: pass
+            self.emit("map-updated", new_para, self.edit_paragraph)
+        else:
+            self.emit("map-added", new_para, self.insert_after_index)
+
+        self.destroy()
+
+    def _show_error_overlay(self, root):
+        label = Gtk.Label(
+            label=_("A biblioteca \'matplotlib\' é necessária para gerar mapas.\\n"
+                    "Instale via terminal: pip install matplotlib")
+        )
+        label.set_margin_top(40)
+        label.set_justify(Gtk.Justification.CENTER)
+        root.append(label)
+
 
 class MindMapPreviewDialog(Adw.Window):
     """

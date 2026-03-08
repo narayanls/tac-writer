@@ -1,3 +1,59 @@
+#!/usr/bin/env python3
+"""
+Gera o arquivo python3-requirements.yaml com wheels pré-compilados
+para Pillow e charset-normalizer, corrigindo o erro de pybind11.
+
+Uso: python3 gerar_yaml.py
+
+Nota: Assume Python 3.12 (GNOME 47 SDK) e arquitetura x86_64.
+Para aarch64, ajuste PILLOW_PLATFORM e CHARSET_PLATFORM abaixo.
+"""
+import json
+import urllib.request
+import sys
+
+# === Configuração de plataforma ===
+# Ajuste se sua arquitetura não for x86_64
+PYTHON_TAG = "cp312-cp312"
+PILLOW_PLATFORM = "manylinux_2_28_x86_64"
+CHARSET_PLATFORM = "manylinux_2_17_x86_64"
+
+
+def get_wheel_info(pkg_name, version, pytag, platform_substr):
+    """Busca URL e SHA256 de um wheel específico no PyPI."""
+    api_url = f"https://pypi.org/pypi/{pkg_name}/{version}/json"
+    try:
+        with urllib.request.urlopen(api_url) as response:
+            data = json.loads(response.read())
+    except Exception as e:
+        print(f"ERRO: Não foi possível acessar PyPI para {pkg_name}: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    for file_info in data["urls"]:
+        fn = file_info["filename"]
+        if fn.endswith(".whl") and pytag in fn and platform_substr in fn:
+            return file_info["url"], file_info["digests"]["sha256"]
+
+    print(f"ERRO: Wheel não encontrado para {pkg_name} {version} "
+          f"(python={pytag}, platform={platform_substr})", file=sys.stderr)
+    print("Verifique a versão do Python e a arquitetura.", file=sys.stderr)
+    sys.exit(1)
+
+
+def main():
+    print("Consultando PyPI para obter URLs dos wheels...")
+
+    pillow_url, pillow_sha = get_wheel_info(
+        "pillow", "12.1.0", PYTHON_TAG, PILLOW_PLATFORM
+    )
+    print(f"  ✓ Pillow: {pillow_url.split('/')[-1]}")
+
+    charset_url, charset_sha = get_wheel_info(
+        "charset-normalizer", "3.4.4", PYTHON_TAG, CHARSET_PLATFORM
+    )
+    print(f"  ✓ charset-normalizer: {charset_url.split('/')[-1]}")
+
+    yaml_template = """\
 # Generated - wheels for Pillow and charset-normalizer (fixes pybind11 build error)
 build-commands: []
 buildsystem: simple
@@ -10,12 +66,12 @@ modules:
     sources:
       - &id003
         type: file
-        url: https://files.pythonhosted.org/packages/c0/10/d20b513afe03acc89ec33948320a5544d31f21b05368436d580dec4e234d/charset_normalizer-3.4.4-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
-        sha256: 11d694519d7f29d6cd09f6ac70028dba10f92f6cdd059096db198c283794ac86
+        url: __CHARSET_URL__
+        sha256: __CHARSET_SHA__
       - &id002
         type: file
-        url: https://files.pythonhosted.org/packages/11/8f/48d0b77ab2200374c66d344459b8958c86693be99526450e7aee714e03e4/pillow-12.1.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
-        sha256: a6dfc2af5b082b635af6e08e0d1f9f1c4e04d17d4e2ca0ef96131e85eda6eb17
+        url: __PILLOW_URL__
+        sha256: __PILLOW_SHA__
       - type: file
         url: https://files.pythonhosted.org/packages/17/77/546e50edfaba6a0e58e8ec5fdc4446510227cec9e8f40172b60941d5a633/reportlab-4.4.9-py3-none-any.whl
         sha256: 68e2d103ae8041a37714e8896ec9b79a1c1e911d68c3bd2ea17546568cf17bfd
@@ -127,3 +183,23 @@ modules:
         sha256: e15866fad249c11a963cce3bdbed37758f2e88c8ff4898616bc0caeb1e216047
       - *id009
 name: python3-requirements
+"""
+
+    yaml_content = (yaml_template
+        .replace("__PILLOW_URL__", pillow_url)
+        .replace("__PILLOW_SHA__", pillow_sha)
+        .replace("__CHARSET_URL__", charset_url)
+        .replace("__CHARSET_SHA__", charset_sha)
+    )
+
+    output_file = "python3-requirements.yaml"
+    with open(output_file, "w") as f:
+        f.write(yaml_content)
+
+    print(f"\n✓ Arquivo '{output_file}' gerado com sucesso!")
+    print("Agora execute novamente:")
+    print("  flatpak-builder --repo=repo --force-clean build-dir com.github.narayanls.TacWriter.yml")
+
+
+if __name__ == "__main__":
+    main()#import os

@@ -7,3 +7,5 @@ pypdf
 pylatex
 PyGObject
 dropbox
+cryptography
+matplotlib

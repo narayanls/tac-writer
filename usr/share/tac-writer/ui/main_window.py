@@ -27,6 +27,9 @@ import subprocess
 import tempfile
 
 
+
+print("[DEBUG] main_window.py carregado de:", __file__)
+
 class MainWindow(Adw.ApplicationWindow):
     """Main application window"""
 
@@ -366,6 +369,7 @@ class MainWindow(Adw.ApplicationWindow):
             ('insert_image', self._action_insert_image),
             ('insert_table', self._action_insert_table),
             ('insert_chart', self._action_insert_chart),
+            ('insert_map',   self._action_insert_map),
             ('insert_mindmap', self._action_insert_mindmap),
             ('show_welcome', self._action_show_welcome),
             ('undo', self._action_undo),
@@ -551,7 +555,7 @@ class MainWindow(Adw.ApplicationWindow):
         data_menu = Gio.Menu()
         data_menu.append(_("📊 Inserir Gráfico (Premium)"), "win.insert_chart")
         data_menu.append(_("📋 Inserir Tabela (Premium)"), "win.insert_table")
-        data_menu.append(_("🗺️ Mapa Mental e Plano Guiado (Premium)"), "win.insert_mindmap")
+        data_menu.append(_("🗾 Inserir Mapa de Dados (Premium)"), "win.insert_map")
         
         data_button.set_menu_model(data_menu)
         toolbar_box.append(data_button)
@@ -696,9 +700,15 @@ class MainWindow(Adw.ApplicationWindow):
                     if not hasattr(editor_widget, 'paragraph'):
                         editor_widget.paragraph = paragraph
 
+                elif paragraph.type == ParagraphType.MAP or paragraph.type == "map":
+                    editor_widget = self._create_map_widget(paragraph)
+                    if not hasattr(editor_widget, 'paragraph'):
+                        editor_widget.paragraph = paragraph
+
 
                 else:
                     editor_widget = ParagraphEditor(paragraph, config=self.config)
+                    editor_widget.connect('remove-requested', self._on_paragraph_remove_requested)
                 
                 from ui.components import ReorderableParagraphRow 
                 row_widget = ReorderableParagraphRow(editor_widget)
@@ -897,6 +907,7 @@ class MainWindow(Adw.ApplicationWindow):
         return toolbar
     
     def _on_remove_image(self, paragraph):
+        print("[DEBUG] _on_remove_image chamado")
         """Handle image removal"""
         if not self.current_project:
             return
@@ -914,6 +925,7 @@ class MainWindow(Adw.ApplicationWindow):
         dialog.set_default_response("cancel")
         
         def on_response(d, response):
+            print(f"[DEBUG] on_response imagem: response={response!r}")
             if response == "remove":
                 try:
                     # Remove from project
@@ -1090,7 +1102,9 @@ class MainWindow(Adw.ApplicationWindow):
     def _on_paragraph_remove_requested(self, paragraph_editor, paragraph_id):
         """Handle paragraph removal request"""
         if self.current_project:
-            self.current_project.remove_paragraph(paragraph_id)
+            removed = self.current_project.remove_paragraph(paragraph_id)
+            if removed:
+                self.project_manager.save_project(self.current_project)
             self._refresh_paragraphs()
             self._update_header_for_view("editor")
             # Update sidebar project list in real-time with current statistics
@@ -1430,6 +1444,7 @@ class MainWindow(Adw.ApplicationWindow):
             pass
 
     def _on_remove_table(self, paragraph):
+        print("[DEBUG] _on_remove_table chamado")
         """Confirmação para deletar a tabela"""
         dialog = Adw.MessageDialog.new(self, _("Remover Tabela?"), _("Deseja realmente remover esta tabela?"))
         dialog.add_response("cancel", _("Cancelar"))
@@ -1437,6 +1452,7 @@ class MainWindow(Adw.ApplicationWindow):
         dialog.set_response_appearance("remove", Adw.ResponseAppearance.DESTRUCTIVE)
         
         def on_response(d, resp):
+            print(f"[DEBUG] on_response tabela: resp={resp!r}")
             d.destroy()
             if resp == "remove" and self.current_project:
                 self.current_project.paragraphs.remove(paragraph)
@@ -1689,12 +1705,14 @@ class MainWindow(Adw.ApplicationWindow):
             pass
 
     def _on_remove_chart(self, paragraph):
+        print("[DEBUG] _on_remove_chart chamado")
         dialog = Adw.MessageDialog.new(self, _("Remover Gráfico?"), _("Deseja realmente apagar este gráfico e seus dados?"))
         dialog.add_response("cancel", _("Cancelar"))
         dialog.add_response("remove", _("Remover"))
         dialog.set_response_appearance("remove", Adw.ResponseAppearance.DESTRUCTIVE)
         
         def on_response(d, resp):
+            print(f"[DEBUG] on_response gráfico: resp={resp!r}")
             d.destroy()
             if resp == "remove" and self.current_project:
                 # CORRIGIDO: Lendo do 'formatting'
@@ -1712,6 +1730,151 @@ class MainWindow(Adw.ApplicationWindow):
                     self._refresh_paragraphs()
                     self._show_toast(_("Gráfico removido."))
                     
+        dialog.connect('response', on_response)
+        dialog.present()
+
+    # ── Mapa de Dados (Premium) ────────────────────────────────────────────
+
+    def _action_insert_map(self, action, param):
+        """Handle insert map action (Premium)"""
+        if not self.config.get_is_supporter():
+            self._show_supporter_lock_dialog(_("Mapa de Dados"))
+            return
+        if not self.current_project:
+            self._show_toast(_("Nenhum projeto aberto"), Adw.ToastPriority.HIGH)
+            return
+        current_index = len(self.current_project.paragraphs) - 1 if self.current_project.paragraphs else -1
+        from ui.dialogs import MapDialog
+        dialog = MapDialog(
+            parent=self,
+            project=self.current_project,
+            insert_after_index=current_index,
+        )
+        dialog.connect('map-added', self._on_map_added)
+        dialog.present()
+
+    def _on_map_added(self, dialog, paragraph, position):
+        if not self.current_project:
+            return
+        try:
+            from datetime import datetime
+            if position == -1 or position >= len(self.current_project.paragraphs):
+                self.current_project.paragraphs.append(paragraph)
+            else:
+                self.current_project.paragraphs.insert(position + 1, paragraph)
+            self.current_project.update_paragraph_order()
+            self.current_project.modified_at = datetime.now()
+            if self.project_manager.save_project(self.current_project):
+                self._refresh_paragraphs()
+                self._update_header_for_view("editor")
+                self._show_toast(_("Mapa gerado com sucesso!"))
+        except Exception as e:
+            print(f"Erro ao adicionar mapa: {e}")
+            self._show_toast(_("Erro ao salvar mapa."), Adw.ToastPriority.HIGH)
+
+    def _create_map_widget(self, paragraph):
+        """Renderiza o mapa de dados no editor"""
+        formatting = getattr(paragraph, 'formatting', {})
+        if not isinstance(formatting, dict):
+            formatting = {}
+        meta       = formatting.get('map_data', {})
+        image_path = meta.get('image_path', '')
+        title      = meta.get('title', '') or meta.get('level', 'Mapa')
+
+        container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        container.set_margin_top(12); container.set_margin_bottom(12)
+        container.set_margin_start(24); container.set_margin_end(24)
+        container.add_css_class("card")
+        container.paragraph = paragraph
+
+        if image_path and os.path.exists(image_path):
+            try:
+                texture = Gdk.Texture.new_from_filename(image_path)
+                picture = Gtk.Picture(paintable=texture, can_shrink=True)
+                picture.set_content_fit(Gtk.ContentFit.CONTAIN)
+                picture.set_size_request(-1, 360)
+                container.append(picture)
+            except Exception as e:
+                lbl = Gtk.Label(label=_("Erro ao carregar mapa: {}").format(e))
+                lbl.add_css_class("error")
+                container.append(lbl)
+        else:
+            lbl = Gtk.Label(label=_("Imagem do mapa não encontrada."))
+            lbl.add_css_class("error")
+            container.append(lbl)
+
+        toolbar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6,
+                          halign=Gtk.Align.CENTER, margin_bottom=8)
+        edit_btn = Gtk.Button(icon_name='tac-edit-symbolic',
+                              tooltip_text=_("Editar Dados do Mapa"))
+        edit_btn.connect('clicked', lambda b: self._on_edit_map(paragraph))
+        toolbar.append(edit_btn)
+
+        remove_btn = Gtk.Button(icon_name='tac-user-trash-symbolic',
+                                tooltip_text=_("Remover Mapa"))
+        remove_btn.add_css_class('destructive-action')
+        remove_btn.connect('clicked', lambda b: self._on_remove_map(paragraph))
+        toolbar.append(remove_btn)
+
+        container.append(toolbar)
+        return container
+
+    def _on_edit_map(self, paragraph):
+        if not self.current_project:
+            return
+        try:
+            para_index = self.current_project.paragraphs.index(paragraph)
+            from ui.dialogs import MapDialog
+            dialog = MapDialog(
+                parent=self, project=self.current_project,
+                insert_after_index=para_index, edit_paragraph=paragraph,
+            )
+            dialog.connect('map-updated', self._on_map_updated)
+            dialog.present()
+        except ValueError:
+            pass
+
+    def _on_map_updated(self, dialog, updated_paragraph, original_paragraph):
+        if not self.current_project:
+            return
+        try:
+            index = self.current_project.paragraphs.index(original_paragraph)
+            self.current_project.paragraphs[index] = updated_paragraph
+            updated_paragraph.order = original_paragraph.order
+            if self.project_manager.save_project(self.current_project):
+                self._refresh_paragraphs()
+                self._show_toast(_("Mapa atualizado com sucesso."))
+        except ValueError:
+            pass
+
+    def _on_remove_map(self, paragraph):
+        print("[DEBUG] _on_remove_map chamado")
+        dialog = Adw.MessageDialog.new(
+            self, _("Remover Mapa?"),
+            _("Deseja realmente apagar este mapa e seus dados?")
+        )
+        dialog.add_response("cancel", _("Cancelar"))
+        dialog.add_response("remove", _("Remover"))
+        dialog.set_response_appearance("remove", Adw.ResponseAppearance.DESTRUCTIVE)
+
+        def on_response(d, resp):
+            print(f"[DEBUG] on_response mapa: resp={resp!r}")
+            d.destroy()
+            if resp == "remove" and self.current_project:
+                formatting = getattr(paragraph, 'formatting', {})
+                meta       = formatting.get('map_data', {})
+                img_path   = meta.get('image_path', '')
+                if img_path and os.path.exists(img_path):
+                    try:
+                        os.remove(img_path)
+                    except OSError:
+                        pass
+                self.current_project.paragraphs.remove(paragraph)
+                self.current_project.update_paragraph_order()
+                if self.project_manager.save_project(self.current_project):
+                    self._refresh_paragraphs()
+                    self._show_toast(_("Mapa removido."))
+
         dialog.connect('response', on_response)
         dialog.present()
 
