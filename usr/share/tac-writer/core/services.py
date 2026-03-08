@@ -1415,6 +1415,13 @@ class ExportService:
                             shutil.copy2(image_path, temp_dir / "Pictures" / dest_name)
                             if dest_name not in image_files:
                                 image_files.append(dest_name)
+                    elif paragraph.type in (ParagraphType.MAP, 'map'):
+                        image_path, title = self._get_map_meta(paragraph)
+                        if image_path and Path(image_path).exists():
+                            dest_name = Path(image_path).name
+                            shutil.copy2(image_path, temp_dir / "Pictures" / dest_name)
+                            if dest_name not in image_files:
+                                image_files.append(dest_name)
                 
                 self._create_manifest(temp_dir / "META-INF" / "manifest.xml", image_files)
                 self._create_styles(temp_dir / "styles.xml")
@@ -1575,6 +1582,16 @@ class ExportService:
                         else:
                             f.write(f"*[Gráfico: {title}]*\n\n")
 
+                    elif paragraph.type in (ParagraphType.MAP, 'map'):
+                        image_path, title = self._get_map_meta(paragraph)
+                        if title:
+                            f.write(f"**Mapa: {title}**\n\n")
+                        if image_path and Path(image_path).exists():
+                            filename = Path(image_path).name
+                            f.write(f"![{title}]({filename})\n\n")
+                        else:
+                            f.write(f"*[Mapa: {title}]*\n\n")
+
                     else:
                         f.write(f"{content}\n\n")
 
@@ -1696,6 +1713,21 @@ class ExportService:
                 image_path, title = self._get_chart_meta(paragraph)
                 grouped_odt.append({
                     'type': 'chart',
+                    'image_path': image_path,
+                    'title': title,
+                })
+                last_was_quote = False
+
+            elif paragraph.type in (ParagraphType.MAP, 'map'):
+                if current_paragraph_content:
+                    combined = " ".join(current_paragraph_content)
+                    style = "Introduction" if paragraph_starts_with_introduction else "Normal"
+                    grouped_odt.append({'type': 'content', 'content': combined, 'style': style})
+                    current_paragraph_content = []
+                    paragraph_starts_with_introduction = False
+                image_path, title = self._get_map_meta(paragraph)
+                grouped_odt.append({
+                    'type': 'map',
                     'image_path': image_path,
                     'title': title,
                 })
@@ -1911,6 +1943,32 @@ class ExportService:
   </draw:frame>
 </text:p>\n'''
                     
+            # MAP
+            elif item['type'] == 'map':
+                from pathlib import Path as _Path2
+                image_path = item['image_path']
+                title      = item['title']
+                if title:
+                    content_xml += f'<text:p text:style-name="ImageCaption">Mapa: {title}</text:p>\n'
+                if image_path and _Path2(image_path).exists():
+                    filename = _Path2(image_path).name
+                    img_width_cm  = 14.0
+                    img_height_cm = 10.0
+                    try:
+                        from PIL import Image as _PILImage2
+                        with _PILImage2.open(image_path) as im:
+                            w, h = im.size
+                            img_height_cm = round(img_width_cm * h / w, 2)
+                    except Exception:
+                        pass
+                    content_xml += f'''<text:p text:style-name="Normal">
+  <draw:frame draw:style-name="GraphicsCenter" draw:name="{filename}" text:anchor-type="paragraph"
+              svg:width="{img_width_cm:.2f}cm" svg:height="{img_height_cm:.2f}cm"
+              draw:z-index="0">
+    <draw:image xlink:href="Pictures/{filename}" xlink:type="simple" xlink:show="embed" xlink:actuate="onLoad"/>
+  </draw:frame>
+</text:p>\n'''
+
             elif item['type'] == 'content':
                 content_xml += f'<text:p text:style-name="{item["style"]}">{item["content"]}</text:p>\n'
         
@@ -2428,6 +2486,17 @@ class ExportService:
                     image_path, title = self._get_chart_meta(paragraph)
                     grouped_pdf.append({'type': 'chart', 'image_path': image_path, 'title': title})
                     last_was_quote = False
+
+                elif paragraph.type in (ParagraphType.MAP, 'map'):
+                    if current_paragraph_content:
+                        combined = " ".join(current_paragraph_content)
+                        grouped_pdf.append({'type': 'content', 'content': combined, 'style': current_style})
+                        current_paragraph_content = []
+                        current_style = None
+                        paragraph_starts_with_introduction = False
+                    image_path, title = self._get_map_meta(paragraph)
+                    grouped_pdf.append({'type': 'map', 'image_path': image_path, 'title': title})
+                    last_was_quote = False
                 
                 elif paragraph.type in [ParagraphType.INTRODUCTION, ParagraphType.ARGUMENT, ParagraphType.CONCLUSION, ParagraphType.ARGUMENT_RESUMPTION]:
                     should_start_new = (
@@ -2615,6 +2684,35 @@ class ExportService:
                         story.append(RLParagraph(f"Gráfico: {title}", caption_style))
                         story.append(Spacer(1, 6))
 
+                # MAP
+                elif item['type'] == 'map':
+                    image_path = item['image_path']
+                    title      = item['title']
+                    if image_path and Path(image_path).exists():
+                        try:
+                            img_width_cm  = 14.0
+                            img_height_cm = 10.0
+                            try:
+                                from PIL import Image as _PIL2
+                                with _PIL2.open(image_path) as im:
+                                    w, h = im.size
+                                    img_height_cm = round(img_width_cm * h / w, 2)
+                            except Exception:
+                                pass
+                            pdf_img = RLImage(image_path, width=img_width_cm*cm, height=img_height_cm*cm)
+                            pdf_img.hAlign = 'CENTER'
+                            story.append(Spacer(1, 6))
+                            story.append(pdf_img)
+                            story.append(Spacer(1, 6))
+                        except Exception as e:
+                            print(_("Erro ao adicionar mapa ao PDF: {}").format(e))
+                            story.append(RLParagraph(f"[Mapa: {title}]", normal_style))
+                    else:
+                        story.append(RLParagraph(f"[Mapa: {title}]", normal_style))
+                    if title:
+                        story.append(RLParagraph(f"Mapa: {title}", caption_style))
+                        story.append(Spacer(1, 6))
+
                 elif item['type'] == 'content':
                     story.append(RLParagraph(item['content'], item['style']))
             
@@ -2789,6 +2887,15 @@ class ExportService:
                             if title:
                                 pic.add_caption(title)
 
+                # MAP
+                elif paragraph.type in (ParagraphType.MAP, 'map'):
+                    image_path, title = self._get_map_meta(paragraph)
+                    if image_path and Path(image_path).exists():
+                        with doc.create(Figure(position='h!')) as pic:
+                            pic.add_image(image_path, width=NoEscape(r'0.9\textwidth'))
+                            if title:
+                                pic.add_caption(title)
+
             flush_buffer()
 
             doc.generate_tex(str(file_path_obj.with_suffix('')))
@@ -2817,3 +2924,24 @@ class ExportService:
         formatting = getattr(paragraph, 'formatting', {}) or {}
         meta = formatting.get('chart_data', {})
         return meta.get('image_path', ''), meta.get('title', 'Gráfico')
+
+    def _get_map_meta(self, paragraph):
+        """Retorna (image_path, title) de um parágrafo MAP."""
+        formatting = getattr(paragraph, 'formatting', {}) or {}
+        meta = formatting.get('map_data', {})
+        image_path = meta.get('image_path', '')
+        # Reconstrói título estruturado (Local: Tema (Ano))
+        local = meta.get('title_local', '').strip()
+        tema  = meta.get('title_tema',  '').strip()
+        ano   = meta.get('title_ano',   '').strip()
+        parts = []
+        if local and tema:
+            parts.append(f"{local}: {tema}")
+        elif local:
+            parts.append(local)
+        elif tema:
+            parts.append(tema)
+        if ano:
+            parts.append(f"({ano})")
+        title = " ".join(parts) or meta.get('title', 'Mapa')
+        return image_path, title

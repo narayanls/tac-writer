@@ -12,6 +12,7 @@ finish-args:
   - --share=network           
   - --filesystem=host        
   - --env=ENCHANT_CONFIG_DIR=/app/share/enchant
+  - --talk-name=org.freedesktop.Flatpak
 
 cleanup:
   - /include
