@@ -3474,15 +3474,15 @@ class GoalsDialog(Adw.Window):
         self._add_stat_row(writing_group,
                            _("Total de Palavras"),
                            str(total_words),
-                           'tac-format-text-symbolic')
+                           'tac-format-text-plaintext-symbolic')
         self._add_stat_row(writing_group,
                            _("Total de Caracteres"),
                            str(total_chars),
-                           'tac-format-text-symbolic')
+                           'tac-list-remove-symbolic')
         self._add_stat_row(writing_group,
                            _("Total de Parágrafos"),
                            str(total_paragraphs),
-                           'tac-view-list-symbolic')
+                           'tac-format-justify-left-symbolic')
 
         # ── Grupo: Hábito de Escrita ──────────────────────────────
         habit_group = Adw.PreferencesGroup()
