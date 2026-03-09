@@ -227,7 +227,7 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Synonyms and antonyms dictionary
         self.dictionary_button = Gtk.Button()
-        self.dictionary_button.set_icon_name('tac-dictionary')
+        self.dictionary_button.set_icon_name('tac-dictionary-symbolic')
         self.dictionary_button.set_tooltip_text(_("Dicionário de Sinônimos e Antônimos"))
         self.dictionary_button.connect('clicked', self._on_dictionary_clicked)
         self.dictionary_button.set_sensitive(False)

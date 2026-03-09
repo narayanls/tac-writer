@@ -5843,3 +5843,278 @@ class MindMapPlannerDialog(Adw.Window):
         dialog.add_response("ok", _("OK"))
         dialog.connect("response", lambda d, _r: d.destroy())
         dialog.present()
+
+class DictionaryDialog(Adw.Window):
+    """Dialog for synonyms and antonyms lookup (pt-BR formal writing)"""
+
+    __gtype_name__ = 'TacDictionaryDialog'
+
+    # Category display names
+    _CATEGORY_LABELS = {
+        'conectivos_conclusao':         _("Conectivos de Conclusão"),
+        'conectivos_contraste':         _("Conectivos de Contraste"),
+        'conectivos_adicao':            _("Conectivos de Adição"),
+        'conectivos_causa_consequencia':_("Conectivos de Causa / Consequência"),
+        'conectivos_condicao':          _("Conectivos de Condição"),
+        'verbos_argumentacao':          _("Verbos de Argumentação"),
+        'verbos_citacao':               _("Verbos de Citação"),
+        'verbos_analise':               _("Verbos de Análise"),
+        'adjetivos_relevancia':         _("Adjetivos de Relevância"),
+        'adjetivos_quantidade':         _("Adjetivos de Quantidade"),
+        'adjetivos_avaliacao':          _("Adjetivos de Avaliação"),
+        'substantivos_textuais':        _("Substantivos Textuais"),
+    }
+
+    def __init__(self, parent, **kwargs):
+        super().__init__(**kwargs)
+        self.set_title(_("Dicionário de Sinônimos e Antônimos"))
+        self.set_transient_for(parent)
+        self.set_modal(True)
+        self.set_default_size(560, 520)
+        self.set_resizable(True)
+
+        self._dict = self._load_dictionary()
+        self._create_ui()
+
+    # ── Data loading ─────────────────────────────────────────────────────
+
+    def _load_dictionary(self) -> dict:
+        """Load the JSON dictionary bundled with the app."""
+        import json
+        candidates = [
+            # Installed layout: share/tac-writer/ (one level up from ui/)
+            Path(__file__).parent.parent / 'dicionario_tacwriter.json',
+            # Development fallback: repo root
+            Path(__file__).parent.parent.parent / 'share' / 'tac-writer' / 'dicionario_tacwriter.json',
+        ]
+        for path in candidates:
+            if path.exists():
+                try:
+                    with open(path, encoding='utf-8') as f:
+                        return json.load(f)
+                except Exception:
+                    pass
+        return {}
+
+    # ── UI construction ──────────────────────────────────────────────────
+
+    def _create_ui(self):
+        self.toast_overlay = Adw.ToastOverlay()
+        self.set_content(self.toast_overlay)
+
+        content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.toast_overlay.set_child(content_box)
+
+        # ── Header bar ──
+        header_bar = Adw.HeaderBar()
+        content_box.append(header_bar)
+
+        # ── Search bar (below header) ──
+        search_bar_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        search_bar_box.set_margin_top(12)
+        search_bar_box.set_margin_bottom(4)
+        search_bar_box.set_margin_start(16)
+        search_bar_box.set_margin_end(16)
+
+        self.search_entry = Gtk.SearchEntry()
+        self.search_entry.set_placeholder_text(_("Buscar palavra… (ex: portanto, analisar)"))
+        self.search_entry.set_hexpand(True)
+        self.search_entry.connect('activate', self._on_search)
+        self.search_entry.connect('search-changed', self._on_search_changed)
+        search_bar_box.append(self.search_entry)
+
+        content_box.append(search_bar_box)
+
+        # ── Scrollable results area ──
+        scrolled = Gtk.ScrolledWindow()
+        scrolled.set_vexpand(True)
+        scrolled.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        content_box.append(scrolled)
+
+        clamp = Adw.Clamp()
+        clamp.set_maximum_size(800)
+        clamp.set_margin_top(12)
+        clamp.set_margin_bottom(24)
+        clamp.set_margin_start(12)
+        clamp.set_margin_end(12)
+        scrolled.set_child(clamp)
+
+        self.results_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=16)
+        clamp.set_child(self.results_box)
+
+        # ── Initial placeholder ──
+        self._show_placeholder()
+
+        # Grab focus immediately
+        self.search_entry.grab_focus()
+
+    # ── Search logic ─────────────────────────────────────────────────────
+
+    def _on_search_changed(self, entry):
+        """Live search: trigger when text is cleared."""
+        if not entry.get_text().strip():
+            self._clear_results()
+            self._show_placeholder()
+
+    def _on_search(self, entry):
+        word = entry.get_text().strip().lower()
+        if not word:
+            return
+        self._clear_results()
+
+        if not self._dict:
+            self._show_error(_("Dicionário não encontrado."),
+                             _("Verifique se o arquivo dicionario_tacwriter.json está em share/tac-writer/."))
+            return
+
+        entry_data = self._dict.get(word)
+        if entry_data:
+            self._show_results(word, entry_data)
+        else:
+            self._show_not_found(word)
+
+    # ── Results rendering ────────────────────────────────────────────────
+
+    def _clear_results(self):
+        child = self.results_box.get_first_child()
+        while child:
+            nxt = child.get_next_sibling()
+            self.results_box.remove(child)
+            child = nxt
+
+    def _show_placeholder(self):
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        box.set_valign(Gtk.Align.CENTER)
+        box.set_vexpand(True)
+        box.set_margin_top(48)
+
+        icon = Gtk.Image.new_from_icon_name('tac-dictionary')
+        icon.set_pixel_size(48)
+        icon.add_css_class('dim-label')
+        box.append(icon)
+
+        lbl = Gtk.Label(label=_("Digite uma palavra para buscar sinônimos e antônimos"))
+        lbl.add_css_class('dim-label')
+        lbl.set_wrap(True)
+        lbl.set_justify(Gtk.Justification.CENTER)
+        box.append(lbl)
+
+        hint = Gtk.Label(label=_("Ex: portanto · analisar · fundamental · no entanto"))
+        hint.add_css_class('dim-label')
+        hint.add_css_class('caption')
+        hint.set_wrap(True)
+        hint.set_justify(Gtk.Justification.CENTER)
+        box.append(hint)
+
+        self.results_box.append(box)
+
+    def _show_not_found(self, word: str):
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        box.set_valign(Gtk.Align.CENTER)
+        box.set_margin_top(48)
+
+        icon = Gtk.Image.new_from_icon_name('tac-dialog-warning-symbolic')
+        icon.set_pixel_size(40)
+        icon.add_css_class('dim-label')
+        box.append(icon)
+
+        lbl = Gtk.Label(label=_("\"{}\" não encontrado no dicionário.").format(word))
+        lbl.add_css_class('dim-label')
+        lbl.set_wrap(True)
+        lbl.set_justify(Gtk.Justification.CENTER)
+        box.append(lbl)
+
+        hint = Gtk.Label(label=_("O dicionário cobre conectivos, verbos e adjetivos de escrita formal."))
+        hint.add_css_class('dim-label')
+        hint.add_css_class('caption')
+        hint.set_wrap(True)
+        hint.set_justify(Gtk.Justification.CENTER)
+        box.append(hint)
+
+        self.results_box.append(box)
+
+    def _show_error(self, title: str, detail: str):
+        lbl = Gtk.Label(label=f"{title}\n{detail}")
+        lbl.add_css_class('dim-label')
+        lbl.set_wrap(True)
+        lbl.set_margin_top(32)
+        self.results_box.append(lbl)
+
+    def _show_results(self, word: str, data: dict):
+        # ── Word header ──
+        header_group = Adw.PreferencesGroup()
+        cat_key = data.get('categoria', '')
+        cat_label = self._CATEGORY_LABELS.get(cat_key, cat_key.replace('_', ' ').title())
+        header_group.set_title(word.capitalize())
+        header_group.set_description(cat_label)
+        self.results_box.append(header_group)
+
+        # ── Sinônimos ──
+        sinonimos = data.get('sinonimos', [])
+        self._append_word_chips(
+            title=_("Sinônimos"),
+            words=sinonimos,
+            css_class='suggested-action',
+        )
+
+        # ── Antônimos ──
+        antonimos = data.get('antonimos', [])
+        if antonimos:
+            self._append_word_chips(
+                title=_("Antônimos"),
+                words=antonimos,
+                css_class='destructive-action',
+            )
+
+    def _append_word_chips(self, title: str, words: list, css_class: str):
+        """Render a labelled group of clickable word chips."""
+        group = Adw.PreferencesGroup()
+        group.set_title(title)
+        self.results_box.append(group)
+
+        # FlowBox for responsive chip layout
+        flow = Gtk.FlowBox()
+        flow.set_selection_mode(Gtk.SelectionMode.NONE)
+        flow.set_min_children_per_line(2)
+        flow.set_max_children_per_line(6)
+        flow.set_row_spacing(6)
+        flow.set_column_spacing(6)
+        flow.set_margin_top(4)
+        flow.set_margin_bottom(4)
+        flow.set_margin_start(4)
+        flow.set_margin_end(4)
+
+        for w in words:
+            btn = Gtk.Button(label=w)
+            btn.add_css_class('pill')
+            btn.add_css_class(css_class)
+            btn.set_tooltip_text(_("Clique para copiar \"{}\"").format(w))
+            btn.connect('clicked', self._on_chip_clicked, w)
+            flow.append(btn)
+
+        # Wrap in a frame to visually group
+        frame = Gtk.Frame()
+        frame.set_child(flow)
+        frame.set_margin_start(8)
+        frame.set_margin_end(8)
+        frame.set_margin_bottom(4)
+
+        # Use an ActionRow as a container so it sits inside the PreferencesGroup
+        row = Adw.ActionRow()
+        row.set_activatable(False)
+        row.set_child(frame)
+        group.add(row)
+
+    # ── Chip interaction ─────────────────────────────────────────────────
+
+    def _on_chip_clicked(self, btn, word: str):
+        """Copy word to clipboard and show a toast."""
+        clipboard = self.get_clipboard()
+        clipboard.set(word)
+        self._show_toast(_("\"{}\" copiado para a área de transferência.").format(word))
+
+    # ── Toast helper ─────────────────────────────────────────────────────
+
+    def _show_toast(self, message: str):
+        toast = Adw.Toast.new(message)
+        self.toast_overlay.add_toast(toast)
