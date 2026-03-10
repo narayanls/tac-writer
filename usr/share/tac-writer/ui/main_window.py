@@ -219,7 +219,7 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Referencies catalogy for quotes
         self.references_button = Gtk.Button()
-        self.references_button.set_icon_name('tac-accessories-dictionary-symbolic')
+        self.references_button.set_icon_name('tac-references-symbolic')
         self.references_button.set_tooltip_text(_("Referências para Citação"))
         self.references_button.connect('clicked', self._on_references_clicked)
         self.references_button.set_sensitive(False) 

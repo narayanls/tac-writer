@@ -5968,10 +5968,11 @@ class DictionaryDialog(Adw.Window):
     def _do_search(self, word: str):
         """Core lookup — called both live and on Enter.
 
-        Strategy:
-        1. Exact match (highest priority)
-        2. Prefix match: typed text is the start of a key (e.g. "dessa for" → "dessa forma")
-        3. Not found
+        Strategy (priority order):
+        1. Exact key match
+        2. Prefix key match (e.g. "dessa for" → "dessa forma")
+        3. Found as synonym/antonym inside other entries (bidirectional)
+        4. Not found
         """
         word = word.lower().strip()
         self._clear_results()
@@ -5981,25 +5982,76 @@ class DictionaryDialog(Adw.Window):
                              _("Verifique se o arquivo dicionario_tacwriter.json está em share/tac-writer/."))
             return
 
-        # 1. Exact match
+        # 1. Exact key match
         entry_data = self._dict.get(word)
         if entry_data:
             self._show_results(word, entry_data)
             return
 
-        # 2. Prefix match — find all keys that start with the typed text
-        candidates = [
+        # 2. Prefix key match
+        key_candidates = [
             k for k in self._dict
             if k != '_meta' and k.startswith(word)
         ]
-
-        if len(candidates) == 1:
-            # Single prefix match — show it directly
-            key = candidates[0]
+        if len(key_candidates) == 1:
+            key = key_candidates[0]
             self._show_results(key, self._dict[key])
-        elif len(candidates) > 1:
-            # Multiple candidates — show a suggestion list
-            self._show_suggestions(word, candidates)
+            return
+        elif len(key_candidates) > 1:
+            self._show_suggestions(word, key_candidates)
+            return
+
+        # 3. Bidirectional: search inside synonym/antonym lists
+        # Supports exact match and prefix match ("inegavel" finds "inegavelmente")
+        found_as = []  # list of (lemma, matched_term, relation)
+        for key, entry in self._dict.items():
+            if key == '_meta' or not isinstance(entry, dict):
+                continue
+            sins = [s.lower() for s in entry.get('sinonimos', [])]
+            ants = [a.lower() for a in entry.get('antonimos', [])]
+            sin_match = next((s for s in sins if s == word), None) \
+                     or next((s for s in sins if s.startswith(word)), None)
+            ant_match = next((a for a in ants if a == word), None) \
+                     or next((a for a in ants if a.startswith(word)), None)
+            if sin_match:
+                found_as.append((key, sin_match, 'sinonimo'))
+            elif ant_match:
+                found_as.append((key, ant_match, 'antonimo'))
+
+        if found_as:
+            # Consolidate all parent hits into one clean result:
+            # - if found as sinônimo of parent → parent's sinonimos are our sinonimos,
+            #                                     parent's antonimos are our antonimos
+            # - if found as antônimo of parent → parent's antonimos are our sinonimos,
+            #                                     parent's sinonimos are our antonimos
+            # Always remove the searched word from chips (it's not a synonym of itself)
+            merged_sins = []
+            merged_ants = []
+            parent_labels = []
+            for lemma, matched, relation in found_as:
+                entry = self._dict[lemma]
+                sins = [s for s in entry.get('sinonimos', []) if s.lower() != matched]
+                ants = [a for a in entry.get('antonimos', []) if a.lower() != matched]
+                if relation == 'sinonimo':
+                    merged_sins.extend(sins)
+                    merged_ants.extend(ants)
+                    parent_labels.append(_("sinônimo de \"{}\"").format(lemma))
+                else:
+                    # antônimo relation: flip the lists
+                    merged_sins.extend(ants)
+                    merged_ants.extend(sins)
+                    parent_labels.append(_("antônimo de \"{}\"").format(lemma))
+
+            # Deduplicate preserving order
+            seen = set()
+            unique_sins = [w for w in merged_sins if not (w.lower() in seen or seen.add(w.lower()))]
+            seen = set()
+            unique_ants = [w for w in merged_ants if not (w.lower() in seen or seen.add(w.lower()))]
+            # Also remove any overlap between the two lists
+            ant_lower = {a.lower() for a in unique_ants}
+            unique_sins = [w for w in unique_sins if w.lower() not in ant_lower]
+
+            self._show_results_via_relation(matched, parent_labels, unique_sins, unique_ants)
         else:
             self._show_not_found(word)
 
@@ -6130,6 +6182,38 @@ class DictionaryDialog(Adw.Window):
 
         # ── Antônimos ──
         antonimos = data.get('antonimos', [])
+        if antonimos:
+            self._append_word_chips(
+                title=_("Antônimos"),
+                words=antonimos,
+                css_class='destructive-action',
+            )
+
+    def _show_results_via_relation(self, searched: str, parent_labels: list,
+                                    sinonimos: list, antonimos: list):
+        """Show a unified result built from bidirectional lookup.
+
+        Args:
+            searched:      the term that was actually matched in a list
+            parent_labels: human-readable strings like ['sinônimo de "X"', 'antônimo de "Y"']
+            sinonimos:     deduplicated synonym list (searched word already removed)
+            antonimos:     deduplicated antonym list (searched word already removed)
+        """
+        # ── Header with context note ──
+        header_group = Adw.PreferencesGroup()
+        header_group.set_title(searched.capitalize())
+        header_group.set_description(_(", ").join(parent_labels).capitalize())
+        self.results_box.append(header_group)
+
+        # ── Sinônimos ──
+        if sinonimos:
+            self._append_word_chips(
+                title=_("Sinônimos"),
+                words=sinonimos,
+                css_class='suggested-action',
+            )
+
+        # ── Antônimos ──
         if antonimos:
             self._append_word_chips(
                 title=_("Antônimos"),
