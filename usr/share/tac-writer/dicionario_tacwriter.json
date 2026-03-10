@@ -15,6 +15,7 @@
       "adjetivos_relevancia",
       "adjetivos_quantidade",
       "adjetivos_avaliacao",
+      "adjetivos_sensacao",
       "substantivos_textuais",
       "adjetivos_estruturais",
       "conectivos_enfase",
@@ -4967,7 +4968,7 @@
       "omissão",
       "vazio",
       "deficiência",
-      "hiato"
+      "hiato",
     ],
     "antonimos": [
       "preenchimento",
@@ -5600,7 +5601,12 @@
       "visando a",
       "objetivando"
     ],
-    "antonimos": []
+    "antonimos": [
+      "sem a intenção de",
+      "sem o propósito de",
+      "involuntariamente",
+      "sem pretender"
+    ]
   },
   "com o propósito de": {
     "categoria": "conectivos_finalidade",
@@ -5610,7 +5616,11 @@
       "com o intuito de",
       "tendo em vista"
     ],
-    "antonimos": []
+    "antonimos": [
+      "despropositadamente",
+      "acidentalmente",
+      "ao acaso"
+    ]
   },
   "com o intuito de": {
     "categoria": "conectivos_finalidade",
@@ -5620,7 +5630,11 @@
       "com o propósito de",
       "objetivando"
     ],
-    "antonimos": []
+    "antonimos": [
+      "sem a intenção de",
+      "involuntariamente",
+      "sem planejamento"
+    ]
   },
   "visando a": {
     "categoria": "conectivos_finalidade",
@@ -5630,6 +5644,70 @@
       "com o objetivo de",
       "buscando"
     ],
-    "antonimos": []
-  }
+    "antonimos": [
+      "ignorando",
+      "sem levar em conta",
+      "indiferente a"
+    ]
+  },
+  "dilema": {
+    "categoria": "substantivos_textuais",
+    "sinonimos": [
+      "dúvida",
+      "impasse",
+      "problema",
+      "dubiedade"
+    ],
+    "antonimos": [
+      "resolução",
+      "saída",
+      "obviedade",
+      "conformidade"
+    ]
+  },
+  "inovador": {
+    "categoria": "adjetivos_sensacao",
+    "sinonimos": [
+      "arrojado",
+      "inventivo",
+      "audacioso",
+      "transformador"
+    ],
+    "antonimos": [
+      "tradicional",
+      "convencional",
+      "ortodoxo",
+      "arcaico"
+    ]
+  },
+  "fascinante": {
+    "categoria": "adjetivos_sensacao",
+    "sinonimos": [
+      "admirável",
+      "atraente",
+      "arrebatador",
+      "deslumbrante"
+    ],
+    "antonimos": [
+      "desinteressante",
+      "enfadonho",
+      "medonho",
+      "banal"
+    ]
+   },
+  "alarmante": {
+    "categoria": "adjetivos_sensacao",
+    "sinonimos": [
+      "preocupante",
+      "assustador",
+      "estarrecedor",
+      "espantoso"
+    ],
+    "antonimos": [
+      "calmante",
+      "tranquilizador",
+      "ínfimo",
+      "relaxante"
+    ]
+   },
 }
