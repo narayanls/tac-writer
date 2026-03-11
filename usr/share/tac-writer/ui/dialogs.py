@@ -3249,7 +3249,8 @@ class SupporterDialog(Adw.Window):
         status_page.set_description(
             _("Apoie o Tac Writer e desbloqueie RECURSOS EXCLUSIVOS. "
               "Além de aproveitar funções adicionais você ajuda a manter o projeto vivo. "
-              "Apoie no Infinitepay com uma colaboração única.")
+              "Apoie no Infinitepay com uma colaboração única. \n"
+              "ATENÇÃO: Chave de ativação será enviada por e-mail em até 1 dia útil.")
         )
         status_page.add_css_class("compact")
         
