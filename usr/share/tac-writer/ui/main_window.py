@@ -716,6 +716,7 @@ class MainWindow(Adw.ApplicationWindow):
 
                 else:
                     editor_widget = ParagraphEditor(paragraph, config=self.config)
+                    editor_widget.connect('content-changed', self._on_paragraph_changed)
                     editor_widget.connect('remove-requested', self._on_paragraph_remove_requested)
                 
                 from ui.components import ReorderableParagraphRow 

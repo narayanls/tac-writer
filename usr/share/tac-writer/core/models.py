@@ -415,14 +415,14 @@ class Project:
         
         for p in paragraphs:
             # Types that always start a new logical paragraph block
-            if p.type == ParagraphType.INTRODUCTION:
+            if p.type in [ParagraphType.INTRODUCTION, ParagraphType.ARGUMENT_RESUMPTION]:
                 total_paragraphs += 1
                 is_in_paragraph = True
             # Types that continue a paragraph, but only if one was already started
             elif p.type in [ParagraphType.ARGUMENT, ParagraphType.CONCLUSION]:
                 if not is_in_paragraph:
                     total_paragraphs += 1
-                    is_in_paragraph = False  # Reset for the next one
+                    is_in_paragraph = False
             # Other types (TITLE_1, TITLE_2, QUOTE) don't affect main paragraph counting
         
         return total_paragraphs
