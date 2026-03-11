@@ -24,7 +24,7 @@ class UpdateChecker:
     GITHUB_USER = "narayanls"
     GITHUB_REPO = "tac-writer"
     APP_PACKAGE_NAME = "tac-writer"
-    FLATPAK_APP_ID    = "io.github.narayanls.tacwriter"
+    FLATPAK_APP_ID    = "io.github.narayanls.TacWriter"
 
     def __init__(self, current_version: str):
         self.current_version = current_version
@@ -251,6 +251,38 @@ class UpdateChecker:
 
     # ── Network helpers ───────────────────────────────────────
 
+    @staticmethod
+    def _make_ssl_context():
+        """Build an SSL context using certifi certs (bundled or installed).
+        Falls back to system certs, then to unverified as last resort.
+        """
+        import ssl
+        # 1. Prefer SSL_CERT_FILE env var (set by runtime_hook when frozen)
+        cert_file = os.environ.get('SSL_CERT_FILE')
+        if cert_file and os.path.isfile(cert_file):
+            ctx = ssl.create_default_context(cafile=cert_file)
+            print(f'[UpdateChecker] SSL: using cert file {cert_file}')
+            return ctx
+        # 2. Try certifi package
+        try:
+            import certifi
+            ctx = ssl.create_default_context(cafile=certifi.where())
+            print('[UpdateChecker] SSL: using certifi')
+            return ctx
+        except ImportError:
+            pass
+        # 3. System default (works on most Linux/macOS)
+        try:
+            ctx = ssl.create_default_context()
+            print('[UpdateChecker] SSL: using system default context')
+            return ctx
+        except Exception:
+            pass
+        # 4. Last resort: unverified (logs a warning)
+        print('[UpdateChecker] SSL WARNING: certificate verification disabled')
+        ctx = ssl._create_unverified_context()
+        return ctx
+
     def _fetch_latest_release(self) -> Optional[Dict]:
         import urllib.request
 
@@ -261,7 +293,8 @@ class UpdateChecker:
         req.add_header("User-Agent", "TAC-Writer-UpdateChecker/1.0")
 
         try:
-            with urllib.request.urlopen(req, timeout=15) as resp:
+            ctx = self._make_ssl_context()
+            with urllib.request.urlopen(req, timeout=15, context=ctx) as resp:
                 if resp.status != 200:
                     return None
                 return json.loads(resp.read().decode("utf-8"))
@@ -281,7 +314,8 @@ class UpdateChecker:
         req.add_header("User-Agent", "TAC-Writer-UpdateChecker/1.0")
 
         try:
-            with urllib.request.urlopen(req, timeout=15) as resp:
+            ctx = self._make_ssl_context()
+            with urllib.request.urlopen(req, timeout=15, context=ctx) as resp:
                 if resp.status != 200:
                     print(f"[UpdateChecker] AUR RPC returned status {resp.status}")
                     return None
@@ -373,15 +407,7 @@ class UpdateChecker:
         if IS_WINDOWS:
             return "windows"
 
-        # Flatpak: dentro do sandbox, FLATPAK_ID e injetado automaticamente.
-        # Nao podemos rodar "flatpak info" de dentro do sandbox pois o binario
-        # flatpak nao existe no ambiente isolado.
-        flatpak_id = os.environ.get("FLATPAK_ID", "")
-        print(f"[UpdateChecker] FLATPAK_ID env: {flatpak_id!r}")
-        if flatpak_id:
-            return "flatpak"
-
-        # Fora do sandbox (instalacao nativa): tenta flatpak info normalmente
+        # Flatpak tem prioridade sobre gestores nativos
         try:
             r = subprocess.run(
                 ["flatpak", "info", UpdateChecker.FLATPAK_APP_ID],
@@ -391,7 +417,6 @@ class UpdateChecker:
                 return "flatpak"
         except (FileNotFoundError, subprocess.TimeoutExpired):
             pass
-
 
         checks = [
             ("pacman", ["-Q", "tac-writer"], "aur"),
@@ -500,3 +525,38 @@ class UpdateChecker:
                     "url":  asset.get("browser_download_url", ""),
                 }
         return None
+
+    @staticmethod
+    def find_windows_asset(assets: List[Dict]) -> Optional[Dict[str, str]]:
+        """Find the Windows installer (.exe) in GitHub release assets.
+
+        Skips ARM/AArch64 builds and prefers x86_64/x64/setup names.
+        Falls back to any .exe if no preferred candidate is found.
+        """
+        preferred = None
+        fallback = None
+
+        for asset in assets:
+            name = asset.get("name", "")
+            if not name.lower().endswith(".exe"):
+                continue
+
+            lower = name.lower()
+            # Skip ARM builds
+            if "arm" in lower or "aarch64" in lower:
+                continue
+
+            entry = {
+                "name": name,
+                "url": asset.get("browser_download_url", ""),
+            }
+
+            # Prefer installers that hint at setup/x86_64/x64/win64
+            if any(k in lower for k in ("setup", "x86_64", "x64", "win64", "installer")):
+                if preferred is None:
+                    preferred = entry
+            else:
+                if fallback is None:
+                    fallback = entry
+
+        return preferred or fallback

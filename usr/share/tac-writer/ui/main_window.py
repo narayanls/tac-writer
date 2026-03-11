@@ -3154,8 +3154,7 @@ class MainWindow(Adw.ApplicationWindow):
         import platform
     
         if platform.system() == 'Windows':
-            # Windows: always open GitHub releases page
-            self._perform_update_unknown()
+            self._perform_update_windows(update_info)
             return
     
         method = update_info['install_method']
@@ -3168,6 +3167,121 @@ class MainWindow(Adw.ApplicationWindow):
             self._perform_update_flatpak(update_info)
         else:
             self._perform_update_unknown()
+
+    # ── Windows update ─────────────────────────────────────────
+
+    def _perform_update_windows(self, update_info):
+        """Download the Windows .exe installer and launch it automatically.
+
+        The installer (NSIS/Inno Setup) is self-elevating on Windows, so no
+        pkexec equivalent is needed — just running the file is enough.
+        After launching the installer the application is closed so the
+        installer can replace files that are currently in use.
+        """
+        from core.update_checker import UpdateChecker
+
+        assets = update_info.get("assets", [])
+        asset = UpdateChecker.find_windows_asset(assets)
+
+        if not asset or not asset.get("url"):
+            # No .exe found — fall back to opening the releases page
+            self._show_toast(
+                _("Instalador .exe não encontrado no release. Abrindo página de downloads."),
+                Adw.ToastPriority.HIGH,
+            )
+            self._perform_update_unknown()
+            return
+
+        # ── Progress window ──────────────────────────────────
+        progress_win = Adw.Window()
+        progress_win.set_title(_("Atualizando Tac Writer"))
+        progress_win.set_transient_for(self)
+        progress_win.set_modal(True)
+        progress_win.set_default_size(420, 200)
+        progress_win.set_deletable(False)
+
+        vbox = Gtk.Box(
+            orientation=Gtk.Orientation.VERTICAL, spacing=16,
+            valign=Gtk.Align.CENTER, halign=Gtk.Align.CENTER,
+            margin_top=40, margin_bottom=40, margin_start=40, margin_end=40,
+        )
+        spinner = Gtk.Spinner()
+        spinner.start()
+        spinner.set_size_request(48, 48)
+        vbox.append(spinner)
+
+        status_label = Gtk.Label(label=_("Baixando {}...").format(asset["name"]))
+        status_label.set_wrap(True)
+        status_label.set_max_width_chars(45)
+        vbox.append(status_label)
+
+        progress_win.set_content(vbox)
+        progress_win.present()
+
+        # Save to the user's Downloads folder so they can re-run it if needed
+        downloads_dir = os.path.join(os.path.expanduser("~"), "Downloads")
+        os.makedirs(downloads_dir, exist_ok=True)
+        tmp_path = os.path.join(downloads_dir, asset["name"])
+
+        def worker():
+            try:
+                import urllib.request
+                urllib.request.urlretrieve(asset["url"], tmp_path)
+
+                GLib.idle_add(
+                    status_label.set_text,
+                    _("Iniciando instalador..."),
+                )
+
+                # Launch the installer; it will self-elevate via UAC
+                subprocess.Popen([tmp_path], close_fds=True)
+
+                GLib.idle_add(
+                    self._on_windows_update_launched,
+                    progress_win, True,
+                    update_info["latest_version"], None,
+                )
+            except Exception as exc:
+                GLib.idle_add(
+                    self._on_windows_update_launched,
+                    progress_win, False,
+                    update_info["latest_version"], str(exc),
+                )
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _on_windows_update_launched(self, progress_win, success, version, error):
+        """Handle the result of launching the Windows installer."""
+        progress_win.destroy()
+
+        if success:
+            dialog = Adw.MessageDialog.new(
+                self,
+                _("Instalador Iniciado"),
+                _("O instalador do Tac Writer {} foi baixado e iniciado.\n"
+                  "Conclua a instalação na janela do instalador e reinicie o aplicativo."
+                  ).format(version),
+            )
+            dialog.add_response("later", _("Depois"))
+            dialog.add_response("quit", _("Fechar Aplicativo"))
+            dialog.set_response_appearance("quit", Adw.ResponseAppearance.SUGGESTED)
+            dialog.set_default_response("quit")
+            dialog.set_close_response("later")
+
+            def on_resp(dlg, resp):
+                dlg.destroy()
+                if resp == "quit":
+                    self.get_application().quit()
+
+            dialog.connect("response", on_resp)
+            dialog.present()
+        else:
+            msg = _("Falha ao baixar ou iniciar o instalador.")
+            if error:
+                msg += f"\n{error}"
+            self._show_toast(msg, Adw.ToastPriority.HIGH)
+
+        return False
 
     # ── AUR update ─────────────────────────────────────────────
 
