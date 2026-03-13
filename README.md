@@ -23,6 +23,17 @@
 ![Estrelas GitHub](https://img.shields.io/github/stars/narayanls/tac-writer?style=flat-square)
 ![Forks GitHub](https://img.shields.io/github/forks/narayanls/tac-writer?style=flat-square)
 
+<details>
+<summary>📊 Métricas de Download</summary>
+
+![Linux RPM](https://img.shields.io/github/downloads/narayanls/tac-writer/latest/tac-writer-1.4.2-3-1.x86_64.rpm?style=flat-square&label=Linux+RPM&color=E95420)
+![Linux DEB](https://img.shields.io/github/downloads/narayanls/tac-writer/latest/tac-writer_1.4.2-3_amd64.deb?style=flat-square&label=Linux+DEB&color=E95420)
+
+![Linux Flatpak](https://img.shields.io/github/downloads/narayanls/tac-writer/latest/tac-writer-1.4.2-3.flatpak?style=flat-square&label=Flatpak&color=4A90D9)
+![Windows EXE](https://img.shields.io/github/downloads/narayanls/tac-writer/latest/TacWriter-1.4.2-3-Setup-x64.exe?style=flat-square&label=Windows+EXE&color=0078D4)
+...
+
+</details>
 
 ## Visão Geral
 
@@ -43,8 +54,6 @@ A Técnica da Argumentação Contínua enfatiza parágrafos interconectados que 
 *Tela de boas-vindas do Tac Writer*
 
 <img width="550" height="450" alt="tac-welcome" src="https://github.com/user-attachments/assets/de3520bf-30bd-4ad6-b520-01926652b44b" />
-
-
 
 ## Principais Recursos
 
