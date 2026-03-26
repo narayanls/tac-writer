@@ -28,7 +28,11 @@
       "adverbios_modalizacao",
       "conectivos_ordenacao",
       "verbos_metodologia",
-      "substantivos_metodologia"
+      "substantivos_metodologia",
+      "substantivos_acao_estado",
+      "substantivos_atributo",
+      "substantivos_avaliacao",
+      "verbos_relacao"
     ]
   },
   "portanto": {
@@ -5810,6 +5814,150 @@
       "retirar",
       "eliminar",
       "expurgar"
+    ]
+  },
+  "galvanização": {
+    "categoria": "substantivos_acao_estado",
+    "sinonimos": [
+      "arrebatamento",
+      "entusiasmo",
+      "estímulo",
+      "excitação",
+      "impulso",
+      "revestimento",
+      "cobertura",
+      "proteção",
+      "blindagem"
+    ],
+    "antonimos": [
+      "apatia",
+      "desânimo",
+      "indiferença",
+      "marasmo",
+      "exposição",
+      "desgaste",
+      "vulnerabilidade"
+    ]
+  },
+  "característica": {
+    "categoria": "substantivos_atributo",
+    "sinonimos": [
+      "atributo",
+      "traço",
+      "particularidade",
+      "peculiaridade",
+      "qualidade",
+      "marca",
+      "propriedade",
+      "aspecto",
+      "especificidade"
+    ],
+    "antonimos": [
+      "generalidade",
+      "universalidade",
+      "lugar-comum",
+      "padronização",
+      "trivialidade"
+    ]
+  },
+  "mixórdia": {
+    "categoria": "substantivos_avaliacao",
+    "sinonimos": [
+      "confusão",
+      "desordem",
+      "caos",
+      "miscelânea",
+      "barafunda",
+      "tumulto",
+      "mistura",
+      "embrulho",
+      "balbúrdia"
+    ],
+    "antonimos": [
+      "ordem",
+      "organização",
+      "clareza",
+      "método",
+      "sistematização",
+      "harmonia",
+      "arrumação"
+    ]
+  },
+  "inconfundível": {
+    "categoria": "adjetivos_avaliacao",
+    "sinonimos": [
+      "único",
+      "singular",
+      "distinto",
+      "patente",
+      "evidente",
+      "inquestionável",
+      "indubitável",
+      "notório",
+      "peculiar",
+      "ímpar"
+    ],
+    "antonimos": [
+      "confuso",
+      "ambíguo",
+      "indistinto",
+      "comum",
+      "ordinário",
+      "genérico",
+      "trivial",
+      "banal"
+    ]
+  },
+  "eficaz": {
+    "categoria": "adjetivos_avaliacao",
+    "sinonimos": [
+      "eficiente",
+      "produtivo",
+      "útil",
+      "válido",
+      "infalível",
+      "profícuo",
+      "capaz",
+      "operativo",
+      "resolutivo",
+      "certeiro"
+    ],
+    "antonimos": [
+      "ineficaz",
+      "ineficiente",
+      "inútil",
+      "falho",
+      "improdutivo",
+      "vão",
+      "inócuo",
+      "impotente",
+      "frustrado"
+    ]
+  },
+  "distanciar": {
+    "categoria": "verbos_relacao",
+    "sinonimos": [
+      "afastar",
+      "separar",
+      "apartar",
+      "isolar",
+      "desvincular",
+      "desunir",
+      "divergir",
+      "alhear",
+      "desviar",
+      "desconectar"
+    ],
+    "antonimos": [
+      "aproximar",
+      "unir",
+      "juntar",
+      "associar",
+      "vincular",
+      "ligar",
+      "acercar",
+      "aliar",
+      "conectar"
     ]
   }
 }
