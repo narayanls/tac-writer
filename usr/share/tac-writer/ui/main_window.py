@@ -357,6 +357,7 @@ class MainWindow(Adw.ApplicationWindow):
         # Project list
         self.project_list = ProjectListWidget(self.project_manager)
         self.project_list.connect('project-selected', self._on_project_selected)
+        self.project_list.connect('project-renamed', self._on_project_renamed)
         sidebar_box.append(self.project_list)
 
         # Add to paned as start (left) child
@@ -1105,6 +1106,11 @@ class MainWindow(Adw.ApplicationWindow):
     def _on_project_selected(self, widget, project_info):
         """Handle project selection from sidebar"""
         self._load_project(project_info['id'])
+
+    def _on_project_renamed(self, widget, project_id, new_name):
+       if self.current_project and self.current_project.id == project_id:
+           self.current_project.name = new_name
+           self._update_header_for_view("editor")
 
     def _on_paragraph_changed(self, paragraph_editor):
         """Handle paragraph content changes"""

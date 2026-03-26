@@ -960,6 +960,7 @@ class ProjectListWidget(Gtk.Box):
 
     __gsignals__ = {
         'project-selected': (GObject.SIGNAL_RUN_FIRST, None, (object,)),
+        'project-renamed':  (GObject.SIGNAL_RUN_FIRST, None, (str, str,)),  # (project_id, new_name)
     }
 
     def __init__(self, project_manager: ProjectManager, **kwargs):
@@ -1176,6 +1177,7 @@ class ProjectListWidget(Gtk.Box):
                     project.name = new_name
                     self.project_manager.save_project(project)
                     self.refresh_projects()
+                    self.emit('project-renamed', project_info['id'], new_name)
             dialog.destroy()
 
         def on_response(dialog, response):
