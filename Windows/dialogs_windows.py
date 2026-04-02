@@ -800,6 +800,9 @@ class PreferencesDialog(Adw.PreferencesWindow):
     """Preferences dialog"""
 
     __gtype_name__ = 'TacPreferencesDialog'
+    __gsignals__ = {
+        'font-size-changed': (GObject.SIGNAL_RUN_FIRST, None, (int,)),
+    }
 
     def __init__(self, parent, config: Config, **kwargs):
         super().__init__(**kwargs)
@@ -918,6 +921,27 @@ class PreferencesDialog(Adw.PreferencesWindow):
         self.word_wrap_row.connect('notify::active', self._on_word_wrap_changed)
         behavior_group.add(self.word_wrap_row)
 
+        # Typography group
+        typography_group = Adw.PreferencesGroup()
+        typography_group.set_title(_("Tipografia"))
+        typography_group.set_description(_("Afeta a exibição no editor e o tamanho base do documento"))
+        editor_page.add(typography_group)
+
+        # Font size row
+        font_size_row = Adw.ActionRow()
+        font_size_row.set_title(_("Tamanho da Fonte Base"))
+        font_size_row.set_subtitle(_("Tamanho padrão para novos parágrafos (títulos e citações escalam proporcionalmente)"))
+
+        self.font_size_spin = Gtk.SpinButton()
+        self.font_size_spin.set_adjustment(
+            Gtk.Adjustment(value=12, lower=8, upper=32, step_increment=1, page_increment=2)
+        )
+        self.font_size_spin.set_numeric(True)
+        self.font_size_spin.set_valign(Gtk.Align.CENTER)
+        self.font_size_spin.connect('value-changed', self._on_font_size_changed)
+        font_size_row.add_suffix(self.font_size_spin)
+        typography_group.add(font_size_row)
+
         # AI page assistant
         ai_page = Adw.PreferencesPage()
         ai_page.set_title(_("Assistente de IA"))
@@ -1034,6 +1058,10 @@ class PreferencesDialog(Adw.PreferencesWindow):
             # Behavior
             self.auto_save_row.set_active(self.config.get('auto_save', True))
             self.word_wrap_row.set_active(self.config.get('word_wrap', True))
+
+            # Editor - Typography
+            font_size = self.config.get('font_size', 12)
+            self.font_size_spin.set_value(float(font_size))
             
             # AI Assistant
             self.ai_enabled_row.set_active(self.config.get_ai_assistant_enabled())
@@ -1119,13 +1147,16 @@ class PreferencesDialog(Adw.PreferencesWindow):
         except Exception as e:
             print(_("Erro ao alterar família da fonte: {}").format(e))
 
-    def _on_font_size_changed(self, spin, pspec):
+    def _on_font_size_changed(self, spin):
         """Handle font size change"""
         try:
-            self.config.set('font_size', int(spin.get_value()))
+            size = int(spin.get_value())
+            self.config.set('font_size', size)
             self.config.save()
+            self.emit('font-size-changed', size)
         except Exception as e:
             print(_("Erro ao alterar tamanho da fonte: {}").format(e))
+
 
     def _on_auto_save_changed(self, switch, pspec):
         """Handle auto save toggle"""
@@ -1472,7 +1503,7 @@ def AboutDialog(parent):
     # Application information
     dialog.set_application_name(config.APP_NAME)
     dialog.set_application_icon("tac-writer")
-    dialog.set_version("1.4.1")
+    dialog.set_version("1.4.3")
     dialog.set_developer_name(_(config.APP_DESCRIPTION))
     dialog.set_website(config.APP_WEBSITE)
 
@@ -2350,10 +2381,13 @@ class ImageDialog(Adw.Window):
             )
 
             if self.edit_mode:
-                # Emit update signal
+                # Read new possition
+                selected_index = self.position_dropdown.get_selected()
+
                 self.emit('image-updated', {
-                    'paragraph': image_para,
-                    'original_paragraph': self.edit_paragraph
+                'paragraph': image_para,
+                'original_paragraph': self.edit_paragraph,
+                'position': selected_index         
                 })
             else:
                 # Get insert position
@@ -3257,7 +3291,8 @@ class SupporterDialog(Adw.Window):
         status_page.set_description(
             _("Apoie o Tac Writer e desbloqueie RECURSOS EXCLUSIVOS. "
               "Além de aproveitar funções adicionais você ajuda a manter o projeto vivo. "
-              "Apoie no Infinitepay com uma colaboração única.")
+              "Apoie no Infinitepay com uma colaboração única.\n"
+              "ATENÇÃO: você receberá a chave de ativação por e-mail em até 1 dia útil.")
         )
         status_page.add_css_class("compact")
         
@@ -3482,15 +3517,15 @@ class GoalsDialog(Adw.Window):
         self._add_stat_row(writing_group,
                            _("Total de Palavras"),
                            str(total_words),
-                           'tac-format-text-symbolic')
+                           'tac-format-text-plaintext-symbolic')
         self._add_stat_row(writing_group,
                            _("Total de Caracteres"),
                            str(total_chars),
-                           'tac-format-text-symbolic')
+                           'tac-list-remove-symbolic')
         self._add_stat_row(writing_group,
                            _("Total de Parágrafos"),
                            str(total_paragraphs),
-                           'tac-view-list-symbolic')
+                           'tac-format-justify-left-symbolic')
 
         # ── Grupo: Hábito de Escrita ──────────────────────────────
         habit_group = Adw.PreferencesGroup()
@@ -5985,3 +6020,349 @@ class MindMapPreviewDialog(Adw.Window):
                 pass
         self.destroy()
 
+
+class DictionaryDialog(Adw.Window):
+    """Dialog for synonyms and antonyms lookup (pt-BR formal writing)"""
+
+    __gtype_name__ = 'TacDictionaryDialog'
+
+    # Category display names
+    _CATEGORY_LABELS = {
+        'conectivos_conclusao':         _("Conectivos de Conclusão"),
+        'conectivos_contraste':         _("Conectivos de Contraste"),
+        'conectivos_adicao':            _("Conectivos de Adição"),
+        'conectivos_causa_consequencia':_("Conectivos de Causa / Consequência"),
+        'conectivos_condicao':          _("Conectivos de Condição"),
+        'verbos_argumentacao':          _("Verbos de Argumentação"),
+        'verbos_citacao':               _("Verbos de Citação"),
+        'verbos_analise':               _("Verbos de Análise"),
+        'adjetivos_relevancia':         _("Adjetivos de Relevância"),
+        'adjetivos_quantidade':         _("Adjetivos de Quantidade"),
+        'adjetivos_avaliacao':          _("Adjetivos de Avaliação"),
+        'substantivos_textuais':        _("Substantivos Textuais"),
+    }
+
+    def __init__(self, parent, **kwargs):
+        super().__init__(**kwargs)
+        self.set_title(_("Dicionário de Sinônimos e Antônimos"))
+        self.set_transient_for(parent)
+        self.set_modal(True)
+        self.set_default_size(560, 520)
+        self.set_resizable(True)
+
+        self._dict = self._load_dictionary()
+        self._create_ui()
+
+    # ── Data loading ─────────────────────────────────────────────────────
+
+    def _load_dictionary(self) -> dict:
+        """Load the JSON dictionary bundled with the app."""
+        import json
+        candidates = [
+            # Installed layout: share/tac-writer/ (one level up from ui/)
+            Path(__file__).parent.parent / 'dicionario_tacwriter.json',
+            # Development fallback: repo root
+            Path(__file__).parent.parent.parent / 'share' / 'tac-writer' / 'dicionario_tacwriter.json',
+        ]
+        for path in candidates:
+            if path.exists():
+                try:
+                    with open(path, encoding='utf-8') as f:
+                        return json.load(f)
+                except Exception:
+                    pass
+        return {}
+
+    # ── UI construction ──────────────────────────────────────────────────
+
+    def _create_ui(self):
+        self.toast_overlay = Adw.ToastOverlay()
+        self.set_content(self.toast_overlay)
+
+        content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.toast_overlay.set_child(content_box)
+
+        # ── Header bar ──
+        header_bar = Adw.HeaderBar()
+        content_box.append(header_bar)
+
+        # ── Search bar (below header) ──
+        search_bar_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        search_bar_box.set_margin_top(12)
+        search_bar_box.set_margin_bottom(4)
+        search_bar_box.set_margin_start(16)
+        search_bar_box.set_margin_end(16)
+
+        self.search_entry = Gtk.SearchEntry()
+        self.search_entry.set_placeholder_text(_("Buscar palavra… (ex: portanto, analisar)"))
+        self.search_entry.set_hexpand(True)
+        self.search_entry.connect('activate', self._on_search)
+        self.search_entry.connect('search-changed', self._on_search_changed)
+        search_bar_box.append(self.search_entry)
+
+        content_box.append(search_bar_box)
+
+        # ── Scrollable results area ──
+        scrolled = Gtk.ScrolledWindow()
+        scrolled.set_vexpand(True)
+        scrolled.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        content_box.append(scrolled)
+
+        clamp = Adw.Clamp()
+        clamp.set_maximum_size(800)
+        clamp.set_margin_top(12)
+        clamp.set_margin_bottom(24)
+        clamp.set_margin_start(12)
+        clamp.set_margin_end(12)
+        scrolled.set_child(clamp)
+
+        self.results_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=16)
+        clamp.set_child(self.results_box)
+
+        # ── Initial placeholder ──
+        self._show_placeholder()
+
+        # Grab focus immediately
+        self.search_entry.grab_focus()
+
+    # ── Search logic ─────────────────────────────────────────────────────
+
+    def _on_search_changed(self, entry):
+        """Live search as the user types (triggers at 3+ characters)."""
+        text = entry.get_text().strip()
+        if not text:
+            self._clear_results()
+            self._show_placeholder()
+        elif len(text) >= 3:
+            self._do_search(text)
+
+    def _on_search(self, entry):
+        """Trigger search on Enter (works for any length)."""
+        word = entry.get_text().strip()
+        if word:
+            self._do_search(word)
+
+    def _do_search(self, word: str):
+        """Core lookup — called both live and on Enter.
+
+        Strategy:
+        1. Exact match (highest priority)
+        2. Prefix match: typed text is the start of a key (e.g. "dessa for" → "dessa forma")
+        3. Not found
+        """
+        word = word.lower().strip()
+        self._clear_results()
+
+        if not self._dict:
+            self._show_error(_("Dicionário não encontrado."),
+                             _("Verifique se o arquivo dicionario_tacwriter.json está em share/tac-writer/."))
+            return
+
+        # 1. Exact match
+        entry_data = self._dict.get(word)
+        if entry_data:
+            self._show_results(word, entry_data)
+            return
+
+        # 2. Prefix match — find all keys that start with the typed text
+        candidates = [
+            k for k in self._dict
+            if k != '_meta' and k.startswith(word)
+        ]
+
+        if len(candidates) == 1:
+            # Single prefix match — show it directly
+            key = candidates[0]
+            self._show_results(key, self._dict[key])
+        elif len(candidates) > 1:
+            # Multiple candidates — show a suggestion list
+            self._show_suggestions(word, candidates)
+        else:
+            self._show_not_found(word)
+
+    # ── Results rendering ────────────────────────────────────────────────
+
+    def _clear_results(self):
+        child = self.results_box.get_first_child()
+        while child:
+            nxt = child.get_next_sibling()
+            self.results_box.remove(child)
+            child = nxt
+
+    def _show_placeholder(self):
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        box.set_valign(Gtk.Align.CENTER)
+        box.set_vexpand(True)
+        box.set_margin_top(48)
+
+        icon = Gtk.Image.new_from_icon_name('tac-dictionary')
+        icon.set_pixel_size(48)
+        icon.add_css_class('dim-label')
+        box.append(icon)
+
+        lbl = Gtk.Label(label=_("Digite uma palavra para buscar sinônimos e antônimos"))
+        lbl.add_css_class('dim-label')
+        lbl.set_wrap(True)
+        lbl.set_justify(Gtk.Justification.CENTER)
+        box.append(lbl)
+
+        hint = Gtk.Label(label=_("Ex: portanto · analisar · fundamental · no entanto"))
+        hint.add_css_class('dim-label')
+        hint.add_css_class('caption')
+        hint.set_wrap(True)
+        hint.set_justify(Gtk.Justification.CENTER)
+        box.append(hint)
+
+        self.results_box.append(box)
+
+    def _show_suggestions(self, typed: str, candidates: list):
+        """Show a list of clickable suggestions when multiple prefix matches exist."""
+        group = Adw.PreferencesGroup()
+        group.set_title(_('Sugestões para "{}"').format(typed))
+        self.results_box.append(group)
+
+        flow = Gtk.FlowBox()
+        flow.set_selection_mode(Gtk.SelectionMode.NONE)
+        flow.set_min_children_per_line(2)
+        flow.set_max_children_per_line(5)
+        flow.set_row_spacing(6)
+        flow.set_column_spacing(6)
+        flow.set_margin_top(4)
+        flow.set_margin_bottom(4)
+        flow.set_margin_start(4)
+        flow.set_margin_end(4)
+
+        for candidate in sorted(candidates):
+            btn = Gtk.Button(label=candidate)
+            btn.add_css_class('pill')
+            btn.set_tooltip_text(_('Buscar "{}"').format(candidate))
+            btn.connect('clicked', self._on_suggestion_clicked, candidate)
+            flow.append(btn)
+
+        frame = Gtk.Frame()
+        frame.set_child(flow)
+        frame.set_margin_start(8)
+        frame.set_margin_end(8)
+
+        row = Adw.ActionRow()
+        row.set_activatable(False)
+        row.set_child(frame)
+        group.add(row)
+
+    def _on_suggestion_clicked(self, btn, word: str):
+        """Fill the search entry with the suggestion and search it."""
+        self.search_entry.set_text(word)
+        # Move cursor to end
+        self.search_entry.set_position(-1)
+        self._do_search(word)
+
+    def _show_not_found(self, word: str):
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        box.set_valign(Gtk.Align.CENTER)
+        box.set_margin_top(48)
+
+        icon = Gtk.Image.new_from_icon_name('tac-dialog-warning-symbolic')
+        icon.set_pixel_size(40)
+        icon.add_css_class('dim-label')
+        box.append(icon)
+
+        lbl = Gtk.Label(label=_("\"{}\" não encontrado no dicionário.").format(word))
+        lbl.add_css_class('dim-label')
+        lbl.set_wrap(True)
+        lbl.set_justify(Gtk.Justification.CENTER)
+        box.append(lbl)
+
+        hint = Gtk.Label(label=_("O dicionário cobre conectivos, verbos e adjetivos de escrita formal."))
+        hint.add_css_class('dim-label')
+        hint.add_css_class('caption')
+        hint.set_wrap(True)
+        hint.set_justify(Gtk.Justification.CENTER)
+        box.append(hint)
+
+        self.results_box.append(box)
+
+    def _show_error(self, title: str, detail: str):
+        lbl = Gtk.Label(label=f"{title}\n{detail}")
+        lbl.add_css_class('dim-label')
+        lbl.set_wrap(True)
+        lbl.set_margin_top(32)
+        self.results_box.append(lbl)
+
+    def _show_results(self, word: str, data: dict):
+        # ── Word header ──
+        header_group = Adw.PreferencesGroup()
+        cat_key = data.get('categoria', '')
+        cat_label = self._CATEGORY_LABELS.get(cat_key, cat_key.replace('_', ' ').title())
+        header_group.set_title(word.capitalize())
+        header_group.set_description(cat_label)
+        self.results_box.append(header_group)
+
+        # ── Sinônimos ──
+        sinonimos = data.get('sinonimos', [])
+        self._append_word_chips(
+            title=_("Sinônimos"),
+            words=sinonimos,
+            css_class='suggested-action',
+        )
+
+        # ── Antônimos ──
+        antonimos = data.get('antonimos', [])
+        if antonimos:
+            self._append_word_chips(
+                title=_("Antônimos"),
+                words=antonimos,
+                css_class='destructive-action',
+            )
+
+    def _append_word_chips(self, title: str, words: list, css_class: str):
+        """Render a labelled group of clickable word chips."""
+        group = Adw.PreferencesGroup()
+        group.set_title(title)
+        self.results_box.append(group)
+
+        # FlowBox for responsive chip layout
+        flow = Gtk.FlowBox()
+        flow.set_selection_mode(Gtk.SelectionMode.NONE)
+        flow.set_min_children_per_line(2)
+        flow.set_max_children_per_line(6)
+        flow.set_row_spacing(6)
+        flow.set_column_spacing(6)
+        flow.set_margin_top(4)
+        flow.set_margin_bottom(4)
+        flow.set_margin_start(4)
+        flow.set_margin_end(4)
+
+        for w in words:
+            btn = Gtk.Button(label=w)
+            btn.add_css_class('pill')
+            btn.add_css_class(css_class)
+            btn.set_tooltip_text(_("Clique para copiar \"{}\"").format(w))
+            btn.connect('clicked', self._on_chip_clicked, w)
+            flow.append(btn)
+
+        # Wrap in a frame to visually group
+        frame = Gtk.Frame()
+        frame.set_child(flow)
+        frame.set_margin_start(8)
+        frame.set_margin_end(8)
+        frame.set_margin_bottom(4)
+
+        # Use an ActionRow as a container so it sits inside the PreferencesGroup
+        row = Adw.ActionRow()
+        row.set_activatable(False)
+        row.set_child(frame)
+        group.add(row)
+
+    # ── Chip interaction ─────────────────────────────────────────────────
+
+    def _on_chip_clicked(self, btn, word: str):
+        """Copy word to clipboard and show a toast."""
+        clipboard = self.get_clipboard()
+        clipboard.set(word)
+        self._show_toast(_("\"{}\" copiado para a área de transferência.").format(word))
+
+    # ── Toast helper ─────────────────────────────────────────────────────
+
+    def _show_toast(self, message: str):
+        toast = Adw.Toast.new(message)
+        self.toast_overlay.add_toast(toast)
