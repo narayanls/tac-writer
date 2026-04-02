@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/narayanls/tac-writer/releases"><img src="https://img.shields.io/badge/Version-1.4.2-blue.svg" alt="Versão"/></a>
+  <a href="https://github.com/narayanls/tac-writer/releases"><img src="https://img.shields.io/badge/Version-1.4.3-blue.svg" alt="Versão"/></a>
   <a href="https://github.com/narayanls/tac-writer/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-GPL--3.0-green.svg" alt="Licença"/></a>
   <a href="https://www.gtk.org/"><img src="https://img.shields.io/badge/GTK-4.0+-orange.svg" alt="Versão GTK"/></a>
   <a href="https://gnome.pages.gitlab.gnome.org/libadwaita/"><img src="https://img.shields.io/badge/libadwaita-1.0+-purple.svg" alt="Versão libadwaita"/></a>
@@ -26,11 +26,11 @@
 <details>
 <summary>📊 Métricas de Download</summary>
 
-![Linux RPM](https://img.shields.io/github/downloads/narayanls/tac-writer/latest/tac-writer-1.4.2-7-1.x86_64.rpm?style=flat-square&label=Linux+RPM&color=E95420)
-![Linux DEB](https://img.shields.io/github/downloads/narayanls/tac-writer/latest/tac-writer_1.4.2-7_amd64.deb?style=flat-square&label=Linux+DEB&color=E95420)
+![Linux RPM](https://img.shields.io/github/downloads/narayanls/tac-writer/latest/tac-writer-1.4.3-1.x86_64.rpm?style=flat-square&label=Linux+RPM&color=E95420)
+![Linux DEB](https://img.shields.io/github/downloads/narayanls/tac-writer/latest/tac-writer_1.4.3_amd64.deb?style=flat-square&label=Linux+DEB&color=E95420)
 
-![Linux Flatpak](https://img.shields.io/github/downloads/narayanls/tac-writer/latest/tac-writer-1.4.2-7.flatpak?style=flat-square&label=Flatpak&color=4A90D9)
-![Windows EXE](https://img.shields.io/github/downloads/narayanls/tac-writer/latest/TacWriter-1.4.2-7-Setup-x64.exe?style=flat-square&label=Windows+EXE&color=0078D4)
+![Linux Flatpak](https://img.shields.io/github/downloads/narayanls/tac-writer/latest/tac-writer-1.4.3.flatpak?style=flat-square&label=Flatpak&color=4A90D9)
+![Windows EXE](https://img.shields.io/github/downloads/narayanls/tac-writer/latest/TacWriter-1.4.3-Setup-x64.exe?style=flat-square&label=Windows+EXE&color=0078D4)
 
 </details>
 
