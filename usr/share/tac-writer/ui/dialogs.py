@@ -792,6 +792,9 @@ class PreferencesDialog(Adw.PreferencesWindow):
     """Preferences dialog"""
 
     __gtype_name__ = 'TacPreferencesDialog'
+    __gsignals__ = {
+        'font-size-changed': (GObject.SIGNAL_RUN_FIRST, None, (int,)),
+    }
 
     def __init__(self, parent, config: Config, **kwargs):
         super().__init__(**kwargs)
@@ -910,6 +913,27 @@ class PreferencesDialog(Adw.PreferencesWindow):
         self.word_wrap_row.connect('notify::active', self._on_word_wrap_changed)
         behavior_group.add(self.word_wrap_row)
 
+        # Typography group
+        typography_group = Adw.PreferencesGroup()
+        typography_group.set_title(_("Tipografia"))
+        typography_group.set_description(_("Afeta a exibição no editor e o tamanho base do documento"))
+        editor_page.add(typography_group)
+
+        # Font size row
+        font_size_row = Adw.ActionRow()
+        font_size_row.set_title(_("Tamanho da Fonte Base"))
+        font_size_row.set_subtitle(_("Tamanho padrão para novos parágrafos (títulos e citações escalam proporcionalmente)"))
+
+        self.font_size_spin = Gtk.SpinButton()
+        self.font_size_spin.set_adjustment(
+            Gtk.Adjustment(value=12, lower=8, upper=32, step_increment=1, page_increment=2)
+        )
+        self.font_size_spin.set_numeric(True)
+        self.font_size_spin.set_valign(Gtk.Align.CENTER)
+        self.font_size_spin.connect('value-changed', self._on_font_size_changed)
+        font_size_row.add_suffix(self.font_size_spin)
+        typography_group.add(font_size_row)
+
         # AI page assistant
         ai_page = Adw.PreferencesPage()
         ai_page.set_title(_("Assistente de IA"))
@@ -1026,6 +1050,10 @@ class PreferencesDialog(Adw.PreferencesWindow):
             # Behavior
             self.auto_save_row.set_active(self.config.get('auto_save', True))
             self.word_wrap_row.set_active(self.config.get('word_wrap', True))
+
+            # Editor - Typography
+            font_size = self.config.get('font_size', 12)
+            self.font_size_spin.set_value(float(font_size))
             
             # AI Assistant
             self.ai_enabled_row.set_active(self.config.get_ai_assistant_enabled())
@@ -1111,11 +1139,13 @@ class PreferencesDialog(Adw.PreferencesWindow):
         except Exception as e:
             print(_("Erro ao alterar família da fonte: {}").format(e))
 
-    def _on_font_size_changed(self, spin, pspec):
+    def _on_font_size_changed(self, spin):
         """Handle font size change"""
         try:
-            self.config.set('font_size', int(spin.get_value()))
+            size = int(spin.get_value())
+            self.config.set('font_size', size)
             self.config.save()
+            self.emit('font-size-changed', size)
         except Exception as e:
             print(_("Erro ao alterar tamanho da fonte: {}").format(e))
 

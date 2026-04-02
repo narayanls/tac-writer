@@ -33,11 +33,12 @@ class Paragraph:
     """Represents a single paragraph in a document"""
     
     def __init__(self, paragraph_type: ParagraphType, content: str = "",
-                 paragraph_id: Optional[str] = None):
+                 paragraph_id: Optional[str] = None, base_font_size: int = 12):
         self.id = paragraph_id or str(uuid.uuid4())
         self.type = paragraph_type
         self.content = content
-        self.footnotes = []  # List of footnote texts
+        self.base_font_size = base_font_size
+        self.footnotes = []  
         self.created_at = datetime.now()
         self.modified_at = self.created_at
         self.order = 0
@@ -45,7 +46,7 @@ class Paragraph:
         # Default formatting options
         self.formatting = {
             'font_family': 'Adwaita Sans',
-            'font_size': 12,
+            'font_size': base_font_size,
             'line_spacing': 1.5,
             'alignment': 'justify',
             'indent_first_line': 0.0,
@@ -61,16 +62,17 @@ class Paragraph:
 
     def _apply_type_formatting(self):
         """Apply formatting specific to paragraph type"""
+        b = self.base_font_size
         if self.type == ParagraphType.TITLE_1:
             self.formatting.update({
-                'font_size': 18,
+                'font_size': b + 6,
                 'bold': True,
                 'alignment': 'left',
                 'line_spacing': 1.2,
             })
         elif self.type == ParagraphType.TITLE_2:
             self.formatting.update({
-                'font_size': 16,
+                'font_size': b + 4,
                 'bold': True,
                 'alignment': 'left',
                 'line_spacing': 1.2,
@@ -85,14 +87,14 @@ class Paragraph:
             })
         elif self.type == ParagraphType.QUOTE:
             self.formatting.update({
-                'font_size': 10,
+                'font_size': max(8, b - 2),
                 'indent_left': 4.0,
                 'line_spacing': 1.0,
                 'italic': False
             })
         elif self.type == ParagraphType.EPIGRAPH:
             self.formatting.update({
-                'font_size': 12,
+                'font_size': b,
                 'indent_left': 7.5,
                 'line_spacing': 1.5,
                 'alignment': 'right',
@@ -101,7 +103,7 @@ class Paragraph:
         elif self.type == ParagraphType.LATEX:
             self.formatting.update({
                 'font_family': 'Monospace',
-                'font_size': 11,
+                'font_size': max(8, b - 1),
                 'indent_left': 2.0,        
                 'indent_right': 2.0,
                 'line_spacing': 1.2,
@@ -109,12 +111,24 @@ class Paragraph:
         elif self.type == ParagraphType.CODE:
             self.formatting.update({
                 'font_family': 'Monospace',
-                'font_size': 10,
+                'font_size': max(8, b - 2),
                 'indent_left': 1.0,        
                 'indent_right': 1.0,
                 'line_spacing': 1.1,
                 'alignment': 'left',
             })
+
+    def recalculate_font_sizes(self, base_font_size: int) -> None:
+        """Recalcula os tamanhos de fonte com base em um novo tamanho base."""
+        self.base_font_size = base_font_size
+        self._apply_type_formatting()
+        
+        if self.type not in [
+            ParagraphType.TITLE_1, ParagraphType.TITLE_2,
+            ParagraphType.QUOTE, ParagraphType.LATEX, ParagraphType.CODE
+        ]:
+            self.formatting['font_size'] = base_font_size
+        self.modified_at = datetime.now()
 
     def update_content(self, content: str) -> None:
         """Update paragraph content"""
@@ -127,7 +141,7 @@ class Paragraph:
         if self.type in [ParagraphType.TITLE_1, ParagraphType.TITLE_2]:
             if 'font_size' not in formatting_updates:
                 formatting_updates = formatting_updates.copy()
-                formatting_updates['font_size'] = 18 if self.type == ParagraphType.TITLE_1 else 16
+                formatting_updates['font_size'] = self.base_font_size + offset
     
         self.formatting.update(formatting_updates)
         self.modified_at = datetime.now()
@@ -183,6 +197,7 @@ class Paragraph:
             'created_at': self.created_at.isoformat(),
             'modified_at': self.modified_at.isoformat(),
             'order': self.order,
+            'base_font_size': self.base_font_size,
             'formatting': self.formatting.copy(),
             'footnotes': self.footnotes.copy()
         }
@@ -198,7 +213,8 @@ class Paragraph:
         paragraph = cls(
             paragraph_type=ParagraphType(paragraph_type_str),
             content=data.get('content', ''),
-            paragraph_id=data.get('id')
+            paragraph_id=data.get('id'),
+            base_font_size=data.get('base_font_size', 12)
         )
         
         paragraph.created_at = datetime.fromisoformat(data.get('created_at', datetime.now().isoformat()))
@@ -260,10 +276,9 @@ class Project:
             }
         }
 
-    def add_paragraph(self, paragraph_type: ParagraphType, content: str = "",
-                     position: Optional[int] = None, inherit_formatting: bool = True) -> Paragraph:
-        """Add a new paragraph to the project"""
-        paragraph = Paragraph(paragraph_type, content)
+    def add_paragraph(self, paragraph_type, content="", position=None, inherit_formatting=True):
+        base = self.document_formatting.get('font_size', 12)
+        paragraph = Paragraph(paragraph_type, content, base_font_size=base)
         
         # Inherit formatting from previous paragraphs if enabled
         if inherit_formatting:
@@ -308,7 +323,7 @@ class Project:
         """Apply inherited formatting while preserving type-specific settings"""
         current_formatting = paragraph.formatting.copy()
         current_formatting.update(base_formatting)
-        
+    
         # Preserve type-specific formatting
         if paragraph.type == ParagraphType.INTRODUCTION:
             current_formatting['indent_first_line'] = 1.5
@@ -320,22 +335,22 @@ class Project:
                 'italic': True
             })
         elif paragraph.type in [ParagraphType.TITLE_1, ParagraphType.TITLE_2]:
-            if paragraph.type == ParagraphType.TITLE_1:
-                current_formatting.update({
-                    'font_size': 18,
-                    'bold': True,
-                    'alignment': 'left',
-                    'line_spacing': 1.2,
-                })
-            elif paragraph.type == ParagraphType.TITLE_2:
-                current_formatting.update({
-                    'font_size': 16,
-                    'bold': True,
-                    'alignment': 'left',
-                    'line_spacing': 1.2,
-                })
-        
+            offset = 6 if paragraph.type == ParagraphType.TITLE_1 else 4
+            current_formatting.update({
+                'font_size': paragraph.base_font_size + offset,
+                'bold': True,
+                'alignment': 'left',
+                'line_spacing': 1.2,
+            })
+    
         paragraph.formatting = current_formatting
+
+    def set_base_font_size(self, size: int) -> None:
+        """Atualiza o tamanho base e recalcula todos os parágrafos existentes."""
+        self.document_formatting['font_size'] = size
+        for paragraph in self.paragraphs:
+            paragraph.recalculate_font_sizes(size)
+        self._update_modified_time()
 
     def update_preferred_formatting(self, formatting: Dict[str, Any]) -> None:
         """Update preferred formatting for new paragraphs"""

@@ -2061,7 +2061,26 @@ class MainWindow(Adw.ApplicationWindow):
     def show_preferences_dialog(self):
         """Show preferences dialog"""
         dialog = PreferencesDialog(self, self.config)
+        dialog.connect('font-size-changed', self._on_font_size_preference_changed)
         dialog.present()
+
+    def _on_font_size_preference_changed(self, dialog, size: int):
+        """Apply new base font size to the current project and refresh the editor"""
+        if not self.current_project:
+            return
+
+        # 1. Atualiza o modelo — recalcula todos os parágrafos existentes
+        self.current_project.set_base_font_size(size)
+
+        # 2. Persiste imediatamente
+        self.project_manager.save_project(self.current_project)
+
+        # 3. Limpa o cache de widgets para forçar rebuild com a nova fonte
+        self._existing_widgets = {}
+
+        # 4. Recarrega o editor
+        self._refresh_paragraphs()
+
 
     def show_about_dialog(self):
         """Show about dialog"""
