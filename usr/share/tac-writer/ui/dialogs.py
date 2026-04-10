@@ -1328,7 +1328,7 @@ class WelcomeDialog(Adw.Window):
         # Apply custom CSS to reduce header padding
         try:
             css_provider = Gtk.CssProvider()
-            css_provider.load_from_data(""", -1)
+            css_provider.load_from_data("""
             headerbar {
                 min-height: 24px;
                 padding: 2px 6px;
@@ -5890,13 +5890,30 @@ class DictionaryDialog(Adw.Window):
         'conectivos_adicao':            _("Conectivos de Adição"),
         'conectivos_causa_consequencia':_("Conectivos de Causa / Consequência"),
         'conectivos_condicao':          _("Conectivos de Condição"),
+        'conectivos_enfase':            _("Conectivos de Ênfase"),
+        'conectivos_finalidade':        _("Conectivos de Finalidade"),
+        'conectivos_tempo':             _("Conectivos de Tempo"),
+        'conectivos_conformidade':      _("Conectivos de Conformidade"),
+        'conectivos_proporcao':         _("Conectivos de Proporção"),
+        'conectivos_explicacao':        _("Conectivos de Explicação"),
+        'conectivos_exemplificacao':    _("Conectivos de Exemplificação"),
+        'conectivos_ordenacao':         _("Conectivos de Ordenação"),
         'verbos_argumentacao':          _("Verbos de Argumentação"),
         'verbos_citacao':               _("Verbos de Citação"),
         'verbos_analise':               _("Verbos de Análise"),
+        'verbos_metodologia':           _("Verbos de Metodologia"),
+        'verbos_relacao':               _("Verbos de Relação"),
         'adjetivos_relevancia':         _("Adjetivos de Relevância"),
         'adjetivos_quantidade':         _("Adjetivos de Quantidade"),
         'adjetivos_avaliacao':          _("Adjetivos de Avaliação"),
+        'adjetivos_sensacao':           _("Adjetivos de Sensação"),
+        'adjetivos_estruturais':        _("Adjetivos Estruturais"),
+        'adverbios_modalizacao':        _("Advérbios de Modalização"),
         'substantivos_textuais':        _("Substantivos Textuais"),
+        'substantivos_metodologia':     _("Substantivos de Metodologia"),
+        'substantivos_acao_estado':     _("Substantivos de Ação / Estado"),
+        'substantivos_atributo':        _("Substantivos de Atributo"),
+        'substantivos_avaliacao':       _("Substantivos de Avaliação"),
     }
 
     def __init__(self, parent, **kwargs):

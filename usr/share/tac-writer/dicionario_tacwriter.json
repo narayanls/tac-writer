@@ -1,7 +1,7 @@
 {
   "_meta": {
     "nome": "Dicionário Tac Writer — Sinônimos e Antônimos",
-    "versao": "1.4",
+    "versao": "1.5",
     "contexto": "Escrita formal e acadêmica em português do Brasil",
     "categorias": [
       "conectivos_conclusao",
@@ -5959,5 +5959,152 @@
       "aliar",
       "conectar"
     ]
-  }
+  },
+  "afinco": {
+    "categoria": "substantivos_acao_estado",
+    "sinonimos": [
+      "empenho",
+      "persistência",
+      "afã",
+      "dedicação"
+
+    ],
+    "antonimos": [
+      "indiferença",
+      "negligência",
+      "desleixo"
+    ]
+  },
+  "avançar": {
+    "categoria": "verbos_argumentacao",
+    "sinonimos": [
+      "seguir",
+      "prosseguir",
+      "adiantar",
+      "progredir"
+    ],
+    "antonimos": [
+      "recuar",
+      "retroceder",
+      "ficar",
+      "suspender"
+    ]
+  },
+  "auxiliar": {
+    "categoria": "verbos_argumentacao",
+    "sinonimos": [
+      "ajudar",
+      "acudir",
+      "contribuir",
+      "secundário",
+      "suplementar"
+    ],
+    "antonimos": [
+      "prejudicar",
+      "desamparar",
+      "substancial",
+      "primário"
+    ]
+  },
+  "documentar": {
+  "categoria": "verbos_metodologia",
+  "sinonimos": [
+    "registrar",
+    "catalogar",
+    "arquivar",
+    "consignar",
+    "reportar",
+    "atestar",
+    "comprovar",
+    "evidenciar"
+  ],
+  "antonimos": [
+    "omitir",
+    "suprimir",
+    "ocultar",
+    "apagar"
+  ]
+},
+
+"privilegiar": {
+  "categoria": "verbos_argumentacao",
+  "sinonimos": [
+    "priorizar",
+    "destacar",
+    "valorizar",
+    "enfatizar",
+    "favorecer",
+    "preferir",
+    "eleger"
+  ],
+  "antonimos": [
+    "negligenciar",
+    "subestimar",
+    "secundarizar",
+    "ignorar",
+    "preterir",
+    "marginalizar"
+  ]
+},
+
+"sequência": {
+  "categoria": "substantivos_metodologia",
+  "sinonimos": [
+    "sucessão",
+    "série",
+    "encadeamento",
+    "progressão",
+    "continuidade",
+    "cadeia",
+    "ordem"
+  ],
+  "antonimos": [
+    "desordem",
+    "descontinuidade",
+    "interrupção",
+    "ruptura",
+    "fragmentação"
+  ]
+},
+
+"acrescentar": {
+  "categoria": "verbos_relacao",
+  "sinonimos": [
+    "adicionar",
+    "incluir",
+    "inserir",
+    "agregar",
+    "anexar",
+    "incorporar",
+    "somar"
+  ],
+  "antonimos": [
+    "suprimir",
+    "retirar",
+    "remover",
+    "excluir",
+    "eliminar",
+    "subtrair"
+  ]
+},
+
+"valia": {
+  "categoria": "substantivos_avaliacao",
+  "sinonimos": [
+    "valor",
+    "mérito",
+    "importância",
+    "relevância",
+    "peso",
+    "significado",
+    "utilidade",
+    "préstimo"
+  ],
+  "antonimos": [
+    "inutilidade",
+    "insignificância",
+    "desvalor",
+    "futilidade"
+  ]
+}
 }
