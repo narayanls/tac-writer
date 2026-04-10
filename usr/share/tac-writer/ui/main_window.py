@@ -3024,8 +3024,8 @@ class MainWindow(Adw.ApplicationWindow):
         """Mistura hex1 com hex2. Fator 0.0 é 100% hex1, 1.0 é 100% hex2."""
         h1 = hex1.lstrip('#')
         h2 = hex2.lstrip('#')
-        r1, g1, b1 = (int(h1, 16) for i in (0, 2, 4))
-        r2, g2, b2 = (int(h2, 16) for i in (0, 2, 4))
+        r1, g1, b1 = (int(h1[i:i+2], 16) for i in (0, 2, 4))
+        r2, g2, b2 = (int(h2[i:i+2], 16) for i in (0, 2, 4))
         
         r = int(r1 * (1 - factor) + r2 * factor)
         g = int(g1 * (1 - factor) + g2 * factor)

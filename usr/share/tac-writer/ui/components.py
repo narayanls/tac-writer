@@ -60,7 +60,7 @@ def get_cached_css_provider(font_family: str, font_size: int) -> dict:
             font-size: {font_size}pt;
         }}
         """
-        css_provider.load_from_data(css, -1)
+        css_provider.load_from_data(css)
         _css_cache[key] = {
             'provider': css_provider,
             'class_name': class_name
@@ -624,7 +624,7 @@ class PomodoroDialog(Adw.Window):
             }
             """
             
-            css_provider.load_from_data(css_data, -1)
+            css_provider.load_from_data(css_data)
             Gtk.StyleContext.add_provider_for_display(
                 Gdk.Display.get_default(),
                 css_provider,
@@ -1284,7 +1284,7 @@ class ParagraphEditor(Gtk.Box):
                     padding: 6px;
                 }
                 """
-                css_provider.load_from_data(css, -1)
+                css_provider.load_from_data(css)
                 self.text_view.get_style_context().add_provider(
                     css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
                 )
@@ -1302,13 +1302,13 @@ class ParagraphEditor(Gtk.Box):
                     font-family: 'Monospace';
                     background-color: #f3f3f3;
                     color: #2e3436;
-                    border: 1px solid alpha(#000000, 0.1);
+                    border: 1px solid alpha(0,0,0, 0.1);
                     border-radius: 4px;
                     padding: 8px;
                 }
                 """
 
-                css_provider.load_from_data(css, -1)
+                css_provider.load_from_data(css)
                 self.text_view.get_style_context().add_provider(
                     css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
                 )
@@ -1751,7 +1751,7 @@ class ParagraphEditor(Gtk.Box):
         }
         """
         try:
-            css_provider.load_from_data(css, -1)
+            css_provider.load_from_data(css)
             self.get_style_context().add_provider(
                 css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
             )
@@ -2424,7 +2424,7 @@ class FirstRunTour:
     def _setup_css(self):
         """Setup CSS for tour overlay"""
         css_provider = Gtk.CssProvider()
-        css_provider.load_from_data(""", -1)
+        css_provider.load_from_data(""")
             /* Dark overlay that covers everything - 50% opacity to see interface */
             .dark-overlay {
                 background-color: rgba(0, 0, 0, 0.5);
@@ -2659,7 +2659,7 @@ class ReorderableParagraphRow(Gtk.Box):
         }
         """
         try:
-            css_provider.load_from_data(css, -1)
+            css_provider.load_from_data(css)
             display = Gdk.Display.get_default()
             Gtk.StyleContext.add_provider_for_display(display, css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
         except:
