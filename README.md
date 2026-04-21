@@ -181,6 +181,20 @@ Ao relatar bugs, por favor inclua:
 - **Capturas de tela/Logs**: Auxílios visuais ou arquivos de log relevantes
 - **Arquivos de Projeto**: Projetos de exemplo que demonstram o problema (se aplicável)
 
+## Política de Privacidade
+
+O Tac Writer é um aplicativo de desktop — ele roda diretamente no seu computador, e não em servidores na internet. Isso significa que todos os seus projetos, textos e configurações ficam armazenados localmente na sua máquina, nas pastas do sistema do próprio usuário. Nenhum dado é enviado para servidores externos pelo Tac Writer.
+
+Além disso, o Tac Writer é um software de código aberto, licenciado sob a GPL-3.0. Todo o código-fonte está disponível publicamente no GitHub para que qualquer pessoa possa auditar, verificar e confirmar exatamente o que o programa faz.
+
+E as funcionalidades online?
+
+O Tac Writer possui dois recursos opcionais que envolvem comunicação com serviços externos, ambos desativados por padrão e que dependem exclusivamente da ação do usuário para funcionar, e que seu uso é, totalmente, opcional:
+
+Assistente de IA — Caso você opte por usar o recurso de revisão por IA, será necessário configurar sua própria chave de API (do Gemini ou OpenRouter). Nesse caso, apenas você tem acesso a sua api privativa que criou sem interferência alguma do programa. O Tac Writer não intermedia nem armazena esses dados.
+
+Sincronização com Dropbox — Caso você opte por ativar o backup em nuvem, os dados serão sincronizados com a sua conta pessoal do Dropbox, cuja segurança é de responsabilidade dessa empresa.
+
 ## Licença
 
 Este projeto está licenciado sob a **GNU General Public License v3.0**. Veja o arquivo [LICENSE](LICENSE) para detalhes.
