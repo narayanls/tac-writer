@@ -8,6 +8,7 @@ import json
 import platform
 from pathlib import Path
 from typing import Dict, Any, Optional, List
+import unicodedata
 
 IS_WINDOWS = platform.system() == 'Windows'
 
@@ -16,7 +17,7 @@ class Config:
     """Application configuration manager"""
 
     # Application version and metadata
-    APP_VERSION = "1.39.8"
+    APP_VERSION = "1.39.9"
     APP_NAME = "TAC"
     APP_FULL_NAME = "TAC - Continuous Argumentation Technique"
     APP_DESCRIPTION = "Academic Writing Assistant"
@@ -376,8 +377,10 @@ class Config:
             if len(signature) != 64: 
                 return False
 
+             # Normaliza para NFC antes de verificar
+            normalized_email = unicodedata.normalize('NFC', email.strip().lower())
             pub_key = load_pem_public_key(self._SUPPORTER_PUBLIC_KEY_PEM.encode())
-            pub_key.verify(signature, email.strip().lower().encode())
+            pub_key.verify(signature, normalized_email.encode())
             return True
 
         except Exception:

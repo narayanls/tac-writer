@@ -17,6 +17,8 @@ from pathlib import Path
 from datetime import datetime
 from typing import Dict, List, Any
 import uuid
+import unicodedata
+
 try:
     import matplotlib
     matplotlib.use('Agg') # Modo 'Agg' gera a imagem em background sem abrir janela
@@ -3364,7 +3366,7 @@ class SupporterDialog(Adw.Window):
 
 
     def _on_activate_clicked(self, entry_row):
-        email = self.email_row.get_text().strip()
+        email = unicodedata.normalize('NFC', self.email_row.get_text()).strip()
         code  = entry_row.get_text().strip()
 
         if not email:
