@@ -1610,7 +1610,9 @@ class ExportService:
         paragraph_starts_with_introduction = False
         last_was_quote = False
         
-        for i, paragraph in enumerate(project.paragraphs):
+        sorted_paragraphs = sorted(project.paragraphs, key=lambda p: p.order)
+
+        for i, paragraph in enumerate(sorted_paragraphs):
             content = self._format_text_for_odt(paragraph.content)
             
             if paragraph.type == ParagraphType.CODE:
@@ -1630,7 +1632,7 @@ class ExportService:
                 grouped_odt.append({'type': 'code', 'content': code_content})
                 last_was_quote = False
 
-            if paragraph.type == ParagraphType.TITLE_1:
+            elif paragraph.type == ParagraphType.TITLE_1:
                 if current_paragraph_content:
                     combined = " ".join(current_paragraph_content)
                     style = "Introduction" if paragraph_starts_with_introduction else "Normal"
@@ -1763,10 +1765,9 @@ class ExportService:
                 current_paragraph_content.append(content.strip())
                 
                 next_is_new = False
-                if i + 1 < len(project.paragraphs):
-                    next_p = project.paragraphs[i + 1]
-                    if next_p.type in [ParagraphType.INTRODUCTION, ParagraphType.TITLE_1, 
-                                      ParagraphType.TITLE_2, ParagraphType.QUOTE]:
+                if i + 1 < len(sorted_paragraphs):
+                    next_p = sorted_paragraphs[i + 1]
+                    if next_p.type not in [ParagraphType.ARGUMENT, ParagraphType.CONCLUSION]:
                         next_is_new = True
                 else:
                     next_is_new = True

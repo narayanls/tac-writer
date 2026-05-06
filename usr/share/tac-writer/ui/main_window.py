@@ -1159,7 +1159,7 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Logic to determine the new index
         if position == "after":
-            new_idx = target_idx + 1 if current_idx < target_idx else target_idx
+            new_idx = target_idx if current_idx < target_idx else target_idx + 1
         else: 
             new_idx = target_idx if current_idx > target_idx else target_idx - 1
             
