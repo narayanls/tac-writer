@@ -723,6 +723,8 @@ class MainWindow(Adw.ApplicationWindow):
                     editor_widget = ParagraphEditor(paragraph, config=self.config)
                     editor_widget.connect('content-changed', self._on_paragraph_changed)
                     editor_widget.connect('remove-requested', self._on_paragraph_remove_requested)
+                    editor_widget.connect('type-change-requested', self._on_paragraph_type_change_requested)
+                    editor_widget.connect('insert-after-requested', self._on_paragraph_insert_after_requested)
                 
                 from ui.components import ReorderableParagraphRow 
                 row_widget = ReorderableParagraphRow(editor_widget)
@@ -1137,6 +1139,59 @@ class MainWindow(Adw.ApplicationWindow):
             # Update sidebar project list in real-time with current statistics
             current_stats = self.current_project.get_statistics()
             self.project_list.update_project_statistics(self.current_project.id, current_stats)
+
+    def _on_paragraph_type_change_requested(self, paragraph_editor, paragraph_id, new_type_str):
+        """Handle paragraph type change: update model, rebuild widget in place"""
+        if not self.current_project:
+            return
+ 
+        paragraph = self.current_project.get_paragraph(paragraph_id)
+        if not paragraph:
+            return
+ 
+        new_type = ParagraphType(new_type_str)
+        if not paragraph.change_type(new_type):
+            self._show_toast(
+                _("Não é possível converter este tipo de parágrafo"),
+                Adw.ToastPriority.HIGH,
+            )
+            return
+ 
+        # Rebuild the widget (header buttons, formatting, spellcheck depend on type)
+        old_widget = self._existing_widgets.get(paragraph_id)
+        if not old_widget:
+            return
+ 
+        prev_sibling = old_widget.get_prev_sibling()
+ 
+        # Remove old widget from UI
+        self.paragraphs_box.remove(old_widget)
+        del self._existing_widgets[paragraph_id]
+ 
+        # Create replacement widget with the updated paragraph
+        new_editor = ParagraphEditor(paragraph, config=self.config)
+        new_editor.connect('content-changed', self._on_paragraph_changed)
+        new_editor.connect('remove-requested', self._on_paragraph_remove_requested)
+        new_editor.connect('type-change-requested', self._on_paragraph_type_change_requested)
+        new_editor.connect('insert-after-requested', self._on_paragraph_insert_after_requested)
+ 
+        from ui.components import ReorderableParagraphRow
+        new_row = ReorderableParagraphRow(new_editor)
+        new_row.connect('paragraph-reorder', self._on_paragraph_reorder)
+ 
+        # Insert at the same position (after previous sibling, or at start)
+        self.paragraphs_box.insert_child_after(new_row, prev_sibling)
+        self._existing_widgets[paragraph_id] = new_row
+ 
+        self.project_manager.save_project(self.current_project)
+        self._update_header_for_view("editor")
+        current_stats = self.current_project.get_statistics()
+        self.project_list.update_project_statistics(self.current_project.id, current_stats)
+
+    def _on_paragraph_insert_after_requested(self, paragraph_editor, paragraph_id, new_type_str):
+        """Handle insert paragraph after a specific paragraph"""
+        paragraph_type = ParagraphType(new_type_str)
+        self._add_paragraph(paragraph_type, after_paragraph_id=paragraph_id)
 
     def _on_paragraph_reorder(self, paragraph_editor, dragged_id, target_id, position):
         """
@@ -2138,25 +2193,40 @@ class MainWindow(Adw.ApplicationWindow):
         except Exception as e:
             self._on_project_loaded(None, str(e))
 
-    def _add_paragraph(self, paragraph_type: ParagraphType):
-        """Add a new paragraph"""
+    def _add_paragraph(self, paragraph_type: ParagraphType, after_paragraph_id=None):
+        """Add a new paragraph, optionally after a specific paragraph"""
         if not self.current_project:
             return
-
-        paragraph = self.current_project.add_paragraph(paragraph_type)
-
+ 
+        # Determine insertion position in the model
+        position = None
+        if after_paragraph_id:
+            ref_paragraph = self.current_project.get_paragraph(after_paragraph_id)
+            if ref_paragraph:
+                position = self.current_project.paragraphs.index(ref_paragraph) + 1
+ 
+        paragraph = self.current_project.add_paragraph(paragraph_type, position=position)
+ 
         paragraph_editor = ParagraphEditor(paragraph, config=self.config)
         paragraph_editor.connect('content-changed', self._on_paragraph_changed)
         paragraph_editor.connect('remove-requested', self._on_paragraph_remove_requested)
+        paragraph_editor.connect('type-change-requested', self._on_paragraph_type_change_requested)
+        paragraph_editor.connect('insert-after-requested', self._on_paragraph_insert_after_requested)
         
         # Create Wrapper
         from ui.components import ReorderableParagraphRow
         row_widget = ReorderableParagraphRow(paragraph_editor)
         row_widget.connect('paragraph-reorder', self._on_paragraph_reorder)
-
-        self.paragraphs_box.append(row_widget)
+ 
+        # Insert at correct position in the UI
+        if after_paragraph_id and after_paragraph_id in self._existing_widgets:
+            sibling = self._existing_widgets[after_paragraph_id]
+            self.paragraphs_box.insert_child_after(row_widget, sibling)
+        else:
+            self.paragraphs_box.append(row_widget)
+ 
         self._existing_widgets[paragraph.id] = row_widget 
-
+ 
         self._update_header_for_view("editor")
         current_stats = self.current_project.get_statistics()
         self.project_list.update_project_statistics(self.current_project.id, current_stats)
