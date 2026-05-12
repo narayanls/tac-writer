@@ -60,7 +60,7 @@ def get_cached_css_provider(font_family: str, font_size: int) -> dict:
             font-size: {font_size}pt;
         }}
         """
-        css_provider.load_from_data(css)
+        css_provider.load_from_data(css, -1)
         _css_cache[key] = {
             'provider': css_provider,
             'class_name': class_name
@@ -624,7 +624,7 @@ class PomodoroDialog(Adw.Window):
             }
             """
             
-            css_provider.load_from_data(css_data)
+            css_provider.load_from_data(css_data, -1)
             Gtk.StyleContext.add_provider_for_display(
                 Gdk.Display.get_default(),
                 css_provider,
@@ -1144,13 +1144,8 @@ class ProjectListWidget(Gtk.Box):
 
     def _on_edit_project(self, project_info):
         """Handle project rename"""
-        dialog = Adw.MessageDialog.new(
-            self.get_root(),
-            _("Renomear Projeto"),
-            _("Digite novo nome para '{}'").format(project_info['name'])
-        )
+        parent = self.get_root()
 
-        # Add entry for new name
         entry = Gtk.Entry()
         entry.set_text(project_info['name'])
         entry.set_margin_start(20)
@@ -1158,18 +1153,7 @@ class ProjectListWidget(Gtk.Box):
         entry.set_margin_top(10)
         entry.set_margin_bottom(10)
 
-        # Select all text for easy replacement
-        entry.grab_focus()
-        entry.select_region(0, -1)
-
-        dialog.set_extra_child(entry)
-        dialog.add_response("cancel", _("Cancelar"))
-        dialog.add_response("rename", _("Renomear"))
-        dialog.set_response_appearance("rename", Adw.ResponseAppearance.SUGGESTED)
-        dialog.set_default_response("rename")
-
-        def save_name():
-            """Save the new name"""
+        def do_rename(dlg):
             new_name = entry.get_text().strip()
             if new_name and new_name != project_info['name']:
                 project = self.project_manager.load_project(project_info['id'])
@@ -1178,43 +1162,93 @@ class ProjectListWidget(Gtk.Box):
                     self.project_manager.save_project(project)
                     self.refresh_projects()
                     self.emit('project-renamed', project_info['id'], new_name)
-            dialog.destroy()
 
-        def on_response(dialog, response):
-            if response == "rename":
-                save_name()
-            else:
-                dialog.destroy()
+        if hasattr(Adw, 'AlertDialog'):
+            dialog = Adw.AlertDialog(
+                heading=_("Renomear Projeto"),
+                body=_("Digite novo nome para '{}'").format(project_info['name']),
+                close_response="cancel",
+            )
+            dialog.set_extra_child(entry)
+            dialog.add_response("cancel", _("Cancelar"))
+            dialog.add_response("rename", _("Renomear"))
+            dialog.set_response_appearance("rename", Adw.ResponseAppearance.SUGGESTED)
 
-        def on_entry_activate(entry):
-            save_name()
+            def on_choose(d, result):
+                try:
+                    resp = d.choose_finish(result)
+                except Exception:
+                    resp = "cancel"
+                if resp == "rename":
+                    do_rename(d)
 
-        entry.connect('activate', on_entry_activate)
-        dialog.connect('response', on_response)
-        dialog.present()
+            entry.connect('activate', lambda e: dialog.response("rename"))
+            dialog.choose(parent, None, on_choose)
+        else:
+            dialog = Adw.MessageDialog.new(
+                parent,
+                _("Renomear Projeto"),
+                _("Digite novo nome para '{}'").format(project_info['name'])
+            )
+            dialog.set_extra_child(entry)
+            dialog.add_response("cancel", _("Cancelar"))
+            dialog.add_response("rename", _("Renomear"))
+            dialog.set_response_appearance("rename", Adw.ResponseAppearance.SUGGESTED)
+            dialog.set_default_response("rename")
+
+            def on_response(d, response):
+                if response == "rename":
+                    do_rename(d)
+                d.destroy()
+
+            entry.connect('activate', lambda e: on_response(dialog, "rename"))
+            dialog.connect('response', on_response)
+            dialog.present()
 
     def _on_delete_project(self, project_info):
         """Handle project deletion"""
-        dialog = Adw.MessageDialog.new(
-            self.get_root(),
-            _("Excluir '{}'?").format(project_info['name']),
-            _("Este projeto será movido para a lixeira e pode ser recuperado.")
-        )
+        parent = self.get_root()
+        if hasattr(Adw, 'AlertDialog'):
+            dialog = Adw.AlertDialog(
+                heading=_("Excluir '{}'?").format(project_info['name']),
+                body=_("Este projeto será movido para a lixeira e pode ser recuperado."),
+                close_response="cancel",
+            )
+            dialog.add_response("cancel", _("Cancelar"))
+            dialog.add_response("delete", _("Excluir"))
+            dialog.set_response_appearance("delete", Adw.ResponseAppearance.DESTRUCTIVE)
 
-        dialog.add_response("cancel", _("Cancelar"))
-        dialog.add_response("delete", _("Excluir"))
-        dialog.set_response_appearance("delete", Adw.ResponseAppearance.DESTRUCTIVE)
-        dialog.set_default_response("cancel")
+            def on_choose(d, result):
+                try:
+                    resp = d.choose_finish(result)
+                except Exception:
+                    resp = "cancel"
+                if resp == "delete":
+                    success = self.project_manager.delete_project(project_info['id'])
+                    if success:
+                        self.refresh_projects()
 
-        def on_response(dialog, response):
-            if response == "delete":
-                success = self.project_manager.delete_project(project_info['id'])
-                if success:
-                    self.refresh_projects()
-            dialog.destroy()
+            dialog.choose(parent, None, on_choose)
+        else:
+            dialog = Adw.MessageDialog.new(
+                parent,
+                _("Excluir '{}'?").format(project_info['name']),
+                _("Este projeto será movido para a lixeira e pode ser recuperado.")
+            )
+            dialog.add_response("cancel", _("Cancelar"))
+            dialog.add_response("delete", _("Excluir"))
+            dialog.set_response_appearance("delete", Adw.ResponseAppearance.DESTRUCTIVE)
+            dialog.set_default_response("cancel")
 
-        dialog.connect('response', on_response)
-        dialog.present()
+            def on_response(dialog, response):
+                if response == "delete":
+                    success = self.project_manager.delete_project(project_info['id'])
+                    if success:
+                        self.refresh_projects()
+                dialog.destroy()
+
+            dialog.connect('response', on_response)
+            dialog.present()
 
 
 class ParagraphEditor(Gtk.Box):
@@ -1286,7 +1320,7 @@ class ParagraphEditor(Gtk.Box):
                     padding: 6px;
                 }
                 """
-                css_provider.load_from_data(css)
+                css_provider.load_from_data(css, -1)
                 self.text_view.get_style_context().add_provider(
                     css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
                 )
@@ -1304,13 +1338,13 @@ class ParagraphEditor(Gtk.Box):
                     font-family: 'Monospace';
                     background-color: #f3f3f3;
                     color: #2e3436;
-                    border: 1px solid alpha(0,0,0, 0.1);
+                    border: 1px solid alpha(#000000, 0.1);
                     border-radius: 4px;
                     padding: 8px;
                 }
                 """
 
-                css_provider.load_from_data(css)
+                css_provider.load_from_data(css, -1)
                 self.text_view.get_style_context().add_provider(
                     css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
                 )
@@ -1773,7 +1807,7 @@ class ParagraphEditor(Gtk.Box):
         }
         """
         try:
-            css_provider.load_from_data(css)
+            css_provider.load_from_data(css, -1)
             self.get_style_context().add_provider(
                 css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
             )
@@ -1972,23 +2006,42 @@ class ParagraphEditor(Gtk.Box):
 
     def _on_remove_clicked(self, button):
         """Handle remove button click"""
-        dialog = Adw.MessageDialog.new(
-            self.get_root(),
-            _("Remover Parágrafo?"),
-            _("Esta ação não pode ser desfeita.")
-        )
+        parent = self.get_root()
+        if hasattr(Adw, 'AlertDialog'):
+            dialog = Adw.AlertDialog(
+                heading=_("Remover Parágrafo?"),
+                body=_("Esta ação não pode ser desfeita."),
+                close_response="cancel",
+            )
+            dialog.add_response("cancel", _("Cancelar"))
+            dialog.add_response("remove", _("Remover"))
+            dialog.set_response_appearance("remove", Adw.ResponseAppearance.DESTRUCTIVE)
 
-        dialog.add_response("cancel", _("Cancelar"))
-        dialog.add_response("remove", _("Remover"))
-        dialog.set_response_appearance("remove", Adw.ResponseAppearance.DESTRUCTIVE)
-        dialog.set_default_response("cancel")
-        dialog.set_close_response("cancel")
+            def on_choose(d, result):
+                try:
+                    resp = d.choose_finish(result)
+                except Exception:
+                    resp = "cancel"
+                if resp == "remove":
+                    self.emit('remove-requested', self.paragraph.id)
 
-        dialog.connect('response', self._on_remove_confirmed)
-        dialog.present()
+            dialog.choose(parent, None, on_choose)
+        else:
+            dialog = Adw.MessageDialog.new(
+                parent,
+                _("Remover Parágrafo?"),
+                _("Esta ação não pode ser desfeita.")
+            )
+            dialog.add_response("cancel", _("Cancelar"))
+            dialog.add_response("remove", _("Remover"))
+            dialog.set_response_appearance("remove", Adw.ResponseAppearance.DESTRUCTIVE)
+            dialog.set_default_response("cancel")
+            dialog.set_close_response("cancel")
+            dialog.connect('response', self._on_remove_confirmed)
+            dialog.present()
 
     def _on_remove_confirmed(self, dialog, response):
-        """Handle remove confirmation"""
+        """Handle remove confirmation (fallback for old libadwaita)"""
         if response == "remove":
             self.emit('remove-requested', self.paragraph.id)
         dialog.destroy()
@@ -2488,7 +2541,7 @@ class FirstRunTour:
     def _setup_css(self):
         """Setup CSS for tour overlay"""
         css_provider = Gtk.CssProvider()
-        css_provider.load_from_data(""")
+        css_provider.load_from_data("""
             /* Dark overlay that covers everything - 50% opacity to see interface */
             .dark-overlay {
                 background-color: rgba(0, 0, 0, 0.5);
@@ -2498,7 +2551,7 @@ class FirstRunTour:
             popover {
                 opacity: 1.0;
             }
-        """)
+        """, -1)
 
         display = Gdk.Display.get_default()
         Gtk.StyleContext.add_provider_for_display(
@@ -2723,7 +2776,7 @@ class ReorderableParagraphRow(Gtk.Box):
         }
         """
         try:
-            css_provider.load_from_data(css)
+            css_provider.load_from_data(css, -1)
             display = Gdk.Display.get_default()
             Gtk.StyleContext.add_provider_for_display(display, css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
         except:
