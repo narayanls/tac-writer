@@ -9,7 +9,7 @@ gi.require_version('Adw', '1')
 
 import re
 
-from gi.repository import Gtk, Adw, GObject, Gdk, GLib, Pango, Graphene
+from gi.repository import Gtk, Adw, GObject, Gdk, GLib, Gio, Pango, Graphene
 from datetime import datetime
 
 from core.models import Paragraph, ParagraphType, DEFAULT_TEMPLATES
@@ -1226,6 +1226,8 @@ class ParagraphEditor(Gtk.Box):
         'content-changed': (GObject.SIGNAL_RUN_FIRST, None, ()),
         'remove-requested': (GObject.SIGNAL_RUN_FIRST, None, (str,)),
         'paragraph-reorder': (GObject.SIGNAL_RUN_FIRST, None, (str, str, str)),
+        'type-change-requested': (GObject.SIGNAL_RUN_FIRST, None, (str, str)),
+        'insert-after-requested': (GObject.SIGNAL_RUN_FIRST, None, (str, str)),
     }
 
     def __init__(self, paragraph: Paragraph, config=None, **kwargs):
@@ -1384,6 +1386,9 @@ class ParagraphEditor(Gtk.Box):
 
     def _create_header(self):
         """Create paragraph header with type and controls"""
+        # Setup action group for type change and insert operations
+        self._setup_paragraph_actions()
+
         header_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         header_box.set_margin_start(12)
         header_box.set_margin_end(12)
@@ -1400,13 +1405,21 @@ class ParagraphEditor(Gtk.Box):
         self.drag_handle.set_cursor(Gdk.Cursor.new_from_name("grab", None))
         header_box.append(self.drag_handle)
         
-        # Type label
-        type_label = Gtk.Label()
-        type_label.set_text(self._get_type_label())
-        type_label.add_css_class("caption")
-        type_label.add_css_class("accent")
-        type_label.set_halign(Gtk.Align.START)
-        header_box.append(type_label)
+        # Type change menu button (click to change paragraph type)
+        self.type_menu_button = Gtk.MenuButton()
+        self.type_menu_button.set_label(self._get_type_label())
+        self.type_menu_button.add_css_class("flat")
+        self.type_menu_button.add_css_class("caption")
+        self.type_menu_button.set_tooltip_text(_("Clique para alterar o tipo"))
+        self.type_menu_button.set_halign(Gtk.Align.START)
+
+        if self.paragraph.type not in Paragraph._STRUCTURED_TYPES:
+            change_type_menu = self._build_type_menu('para.change_type')
+            self.type_menu_button.set_menu_model(change_type_menu)
+        else:
+            self.type_menu_button.set_sensitive(False)
+
+        header_box.append(self.type_menu_button)
 
         # Spacer
         spacer = Gtk.Box()
@@ -1486,6 +1499,15 @@ class ParagraphEditor(Gtk.Box):
         self.word_count_label.add_css_class("dim-label")
         self._update_word_count()
         header_box.append(self.word_count_label)
+
+        # Insert paragraph after this one
+        insert_button = Gtk.MenuButton()
+        insert_button.set_icon_name('tac-list-add-symbolic')
+        insert_button.set_tooltip_text(_("Inserir novo parágrafo após este"))
+        insert_button.add_css_class("flat")
+        insert_menu = self._build_type_menu('para.insert_after')
+        insert_button.set_menu_model(insert_menu)
+        header_box.append(insert_button)
 
         # Remove button
         remove_button = Gtk.Button()
@@ -1832,6 +1854,48 @@ class ParagraphEditor(Gtk.Box):
             ParagraphType.CODE: _("Bloco de Código")
         }
         return type_labels.get(self.paragraph.type, _("Parágrafo"))
+
+    def _setup_paragraph_actions(self):
+        """Setup action group for paragraph-level operations (type change, insert)"""
+        action_group = Gio.SimpleActionGroup()
+
+        change_action = Gio.SimpleAction.new('change_type', GLib.VariantType.new('s'))
+        change_action.connect('activate', self._on_change_type_activated)
+        action_group.add_action(change_action)
+
+        insert_action = Gio.SimpleAction.new('insert_after', GLib.VariantType.new('s'))
+        insert_action.connect('activate', self._on_insert_after_activated)
+        action_group.add_action(insert_action)
+
+        self.insert_action_group('para', action_group)
+
+    def _build_type_menu(self, action_name):
+        """Build a Gio.Menu listing all text-based paragraph types"""
+        menu = Gio.Menu()
+        for label, ptype in [
+            (_("Título 1"), ParagraphType.TITLE_1),
+            (_("Título 2"), ParagraphType.TITLE_2),
+            (_("Epígrafe"), ParagraphType.EPIGRAPH),
+            (_("Introdução"), ParagraphType.INTRODUCTION),
+            (_("Argumento"), ParagraphType.ARGUMENT),
+            (_("Retomada do Argumento"), ParagraphType.ARGUMENT_RESUMPTION),
+            (_("Citação"), ParagraphType.QUOTE),
+            (_("Conclusão"), ParagraphType.CONCLUSION),
+            (_("Equação LaTeX"), ParagraphType.LATEX),
+            (_("Bloco de Código"), ParagraphType.CODE),
+        ]:
+            menu.append(label, f"{action_name}('{ptype.value}')")
+        return menu
+
+    def _on_change_type_activated(self, action, param):
+        """Handle paragraph type change request"""
+        new_type = param.get_string()
+        self.emit('type-change-requested', self.paragraph.id, new_type)
+
+    def _on_insert_after_activated(self, action, param):
+        """Handle insert paragraph after this one request"""
+        new_type = param.get_string()
+        self.emit('insert-after-requested', self.paragraph.id, new_type)
 
     def _apply_formatting(self):
         """Apply formatting using TextBuffer tags (GTK4 mode)"""
