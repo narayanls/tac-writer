@@ -17,7 +17,7 @@ class Config:
     """Application configuration manager"""
 
     # Application version and metadata
-    APP_VERSION = "1.39.11"
+    APP_VERSION = "1.42.0"
     APP_NAME = "TAC"
     APP_FULL_NAME = "TAC - Continuous Argumentation Technique"
     APP_DESCRIPTION = "Academic Writing Assistant"

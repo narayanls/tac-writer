@@ -146,6 +146,44 @@ class Paragraph:
         self.formatting.update(formatting_updates)
         self.modified_at = datetime.now()
 
+        # Types that store structured data in content and cannot be converted
+    _STRUCTURED_TYPES = frozenset({
+        ParagraphType.IMAGE, ParagraphType.TABLE,
+        ParagraphType.CHART, ParagraphType.MAP,
+        ParagraphType.MIND_MAP,
+    })
+
+    def change_type(self, new_type: 'ParagraphType') -> bool:
+        """
+        Change the paragraph type, reapplying the appropriate formatting.
+        Returns False if the conversion is not allowed (e.g. IMAGE → text).
+        """
+        if new_type == self.type:
+            return True
+ 
+        # Block conversions involving structured-data types
+        if self.type in self._STRUCTURED_TYPES or new_type in self._STRUCTURED_TYPES:
+            return False
+ 
+        self.type = new_type
+ 
+        # Reset formatting to defaults, then apply type-specific rules
+        self.formatting = {
+            'font_family': 'Adwaita Sans',
+            'font_size': self.base_font_size,
+            'line_spacing': 1.5,
+            'alignment': 'justify',
+            'indent_first_line': 0.0,
+            'indent_left': 0.0,
+            'indent_right': 0.0,
+            'bold': False,
+            'italic': False,
+            'underline': False,
+        }
+        self._apply_type_formatting()
+        self.modified_at = datetime.now()
+        return True
+
     def get_word_count(self) -> int:
         """Get word count for this paragraph"""
         return len(self.content.split()) if self.content else 0
