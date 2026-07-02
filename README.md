@@ -95,7 +95,7 @@ A Técnica da Argumentação Contínua enfatiza parágrafos interconectados que 
 ### Requisitos Mínimos
 - **SO**: Ubuntu, Fedora, Arch Linux e seus derivados.
 - **Python**: 3.11+
-- **GTK**: 3.0+
+- **GTK**: 4.0+
 - **libadwaita**: 1.0+
 - **Memória**: 2GB RAM
 - **CPU**: 2 núcleos / 2 threads
