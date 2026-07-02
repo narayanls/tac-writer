@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.narayanls.tacwriter</id>
+  <name>Tac Writer</name>
+  <summary>Academic writing assistant for structured papers</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+  <developer id="io.github.narayanls">
+    <name>Narayan Silva</name>
+  </developer>
+  <launchable type="desktop-id">io.github.narayanls.tacwriter.desktop</launchable>
+  <icon type="stock">io.github.narayanls.tacwriter</icon>
+  <description>
+    <p>
+      Tac Writer is a GTK4 and libadwaita desktop application for planning,
+      structuring, and writing academic texts with the Tecnica da Argumentacao
+      Continua (TAC) workflow.
+    </p>
+    <p>
+      It helps students and researchers organize paragraphs, track writing
+      progress, manage projects, and export drafts in common academic formats.
+    </p>
+  </description>
+  <categories>
+    <category>Office</category>
+  </categories>
+  <keywords>
+    <keyword>writing</keyword>
+    <keyword>academic</keyword>
+    <keyword>research</keyword>
+    <keyword>document</keyword>
+    <keyword>editor</keyword>
+  </keywords>
+  <url type="homepage">https://github.com/narayanls/tac-writer</url>
+  <url type="bugtracker">https://github.com/narayanls/tac-writer/issues</url>
+  <screenshots>
+    <screenshot type="default">
+      <image>https://raw.githubusercontent.com/narayanls/tac-writer/main/screenshots/tac-main-light.png</image>
+      <caption>Main editor in light mode</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/narayanls/tac-writer/main/screenshots/tac-main-dark.png</image>
+      <caption>Main editor in dark mode</caption>
+    </screenshot>
+  </screenshots>
+  <releases>
+    <release version="1.4.4-1" date="2026-06-08"/>
+  </releases>
+  <content_rating type="oars-1.1"/>
+</component>

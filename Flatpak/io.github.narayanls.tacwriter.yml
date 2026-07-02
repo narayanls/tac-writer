@@ -38,6 +38,9 @@ modules:
 
       # Instala ícone do app
       - install -Dm644 share/icons/hicolor/scalable/apps/io.github.narayanls.tacwriter.svg /app/share/icons/hicolor/scalable/apps/io.github.narayanls.tacwriter.svg
+
+      # Instala metainfo para catálogos Flatpak/AppStream
+      - install -Dm644 share/metainfo/io.github.narayanls.tacwriter.metainfo.xml /app/share/metainfo/io.github.narayanls.tacwriter.metainfo.xml
       
       # Cria o executável
       - |
