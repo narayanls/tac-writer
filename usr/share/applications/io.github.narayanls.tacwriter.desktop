@@ -1,0 +1,12 @@
+[Desktop Entry]
+Name=Tac Writer
+Comment=Academic writing assistant
+Exec=tac-writer %F
+Icon=io.github.narayanls.tacwriter
+StartupWMClass=io.github.narayanls.tacwriter
+StartupNotify=true
+Terminal=false
+Type=Application
+Categories=Office;
+Keywords=writing;academic;research;document;editor;
+MimeType=text/plain;application/rtf;application/x-tex;text/x-tex;application/x-latex;text/x-markdown;
