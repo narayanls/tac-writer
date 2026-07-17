@@ -6106,5 +6106,77 @@
     "desvalor",
     "futilidade"
   ]
-}
+},
+  "adentrar": {
+    "categoria": "verbos_analise",
+    "sinonimos": [
+      "ingressar",
+      "penetrar",
+      "entrar",
+      "introduzir",
+      "incursionar"
+    ],
+    "antonimos": [
+      "sair",
+      "retirar",
+      "egressar",
+      "abandonar",
+      "recuar",
+      "excluir"
+    ]
+},
+  "perpassar": {
+    "categoria": "verbos_analise",
+    "sinonimos": [
+      "atravessar",
+      "permear",
+      "difundir",
+      "estar presente",
+      "subjazer",
+      "permeiar"
+    ],
+    "antonimos": [
+      "ausentar",
+      "ignorar",
+      "fugir",
+      "omitir"
+    ]
+  },
+  "fomentar": {
+    "categoria": "verbos_argumentacao",
+    "sinonimos": [
+      "incentivar",
+      "estimular",
+      "impulsionar",
+      "promover",
+      "apoiar",
+      "patrocinar",
+      "instigar"
+    ],
+    "antonimos": [
+      "desencorajar",
+      "inibir",
+      "reprimir",
+      "obstaculizar",
+      "desestimular"
+    ]
+  },
+  "convergir": {
+    "categoria": "verbos_relacao",
+    "sinonimos": [
+      "confluir",
+      "encontrar",
+      "unir",
+      "concordar",
+      "coincidir",
+      "tender a"
+    ],
+    "antonimos": [
+      "divergir",
+      "afastar",
+      "discordar",
+      "separar",
+      "dispersar"
+    ]
+  }
 }
