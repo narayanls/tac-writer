@@ -78,7 +78,7 @@ A Técnica da Argumentação Contínua enfatiza parágrafos interconectados que 
 - **Sistema de Backup**: Criação automática de backup
 
 ### 📤 **Opções de Exportação**
-- **Múltiplos Formatos**: TXT, ODT, PDF
+- **Múltiplos Formatos**: TXT, ODT, PDF, TEX
 - **Padrões Acadêmicos**: Formatos de exportação adequados para submissão acadêmica
 
 ### ⚡ **Recursos de Produtividade**
