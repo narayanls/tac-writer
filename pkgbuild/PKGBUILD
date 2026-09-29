@@ -20,7 +20,7 @@ depends=(
     'hunspell-pt-br'
     'hunspell-en_us'
     'hunspell-es_any'
-    'python-pylatex-git'
+    'python-pylatex'
     'texlive-langportuguese'
     'python-dropbox'
     'texlive-latexextra'
