@@ -73,6 +73,11 @@ class MainWindow(Adw.ApplicationWindow):
         self._is_loading_paragraphs = False
         self._pending_scroll_to_bottom = False
         self._preserved_scroll_position = None
+        self._scroll_hold_active = False
+        self._scroll_hold_source_id = None
+        self._scroll_hold_prev_scroll_to_focus = True
+        self._paragraph_batch_source_id = None
+        self._last_placed_widget = None
 
         # Auto-save timer tracking
         self.auto_save_timeout_id = None
@@ -650,13 +655,17 @@ class MainWindow(Adw.ApplicationWindow):
         if not self.current_project:
             return
     
-        # Save scroll position before any changes
-        if hasattr(self, 'editor_scrolled') and self.editor_scrolled:
-            vadj = self.editor_scrolled.get_vadjustment()
-            if vadj.get_value() > 0:
-                self._preserved_scroll_position = vadj.get_value()
-            else:
-                self._preserved_scroll_position = None
+        # Save scroll position before any changes. This also stops the viewport
+        # from following the keyboard focus while the list is being updated:
+        # when the removed widget holds the focus, GTK moves it to the first
+        # focusable widget and the editor would jump to the top of the project.
+        position = self._hold_scroll_position()
+        self._preserved_scroll_position = position if position else None
+
+        # A previous refresh may still be loading: stop it, this one replaces it
+        if self._paragraph_batch_source_id is not None:
+            GLib.source_remove(self._paragraph_batch_source_id)
+            self._paragraph_batch_source_id = None
 
         # Cleans up old widgets that are no longer in the project
         existing_widgets = {}
@@ -673,25 +682,35 @@ class MainWindow(Adw.ApplicationWindow):
                 self.paragraphs_box.remove(widget)
                 del existing_widgets[paragraph_id]
     
-        # Removes all from view to reorder/reinsert correctly
-        child = self.paragraphs_box.get_first_child()
-        while child:
-            next_child = child.get_next_sibling()
-            self.paragraphs_box.remove(child)
-            child = next_child
-    
+        # Widgets that are still valid stay where they are: emptying the box
+        # collapses the scrollable area and sends the scroll back to the top.
+        # _process_paragraph_batch() puts each one in its right place instead.
         self._paragraphs_to_add = list(self.current_project.paragraphs)
         self._existing_widgets = existing_widgets
+        self._last_placed_widget = None
         
         # Reset control flags
         self._is_loading_paragraphs = True
         self._pending_scroll_to_bottom = False
 
         # Start batch processing
-        GLib.idle_add(self._process_paragraph_batch)
+        self._paragraph_batch_source_id = GLib.idle_add(self._process_paragraph_batch)
 
     def _process_paragraph_batch(self):
         """Process a batch of paragraphs for asynchronous loading"""
+        try:
+            return self._process_paragraph_batch_step()
+        except Exception:
+            # Never leave the editor stuck in loading state / with scroll held
+            self._is_loading_paragraphs = False
+            self._paragraph_batch_source_id = None
+            self._last_placed_widget = None
+            self._release_scroll_position(self._preserved_scroll_position)
+            self._preserved_scroll_position = None
+            raise
+
+    def _process_paragraph_batch_step(self):
+        """Place the next batch of paragraph rows; returns True while there is more to do"""
         BATCH_SIZE = 10 
         
         count = 0
@@ -741,24 +760,60 @@ class MainWindow(Adw.ApplicationWindow):
                 
                 self._existing_widgets[paragraph.id] = row_widget
             
-            self.paragraphs_box.append(row_widget)
+            self._place_paragraph_row(row_widget)
             count += 1
 
         # TERMINATION CHECK
         if not self._paragraphs_to_add:
             self._is_loading_paragraphs = False
-            
+            self._paragraph_batch_source_id = None
+
+            # Drop leftovers after the last placed row that are not part of the project
+            valid_ids = {p.id for p in self.current_project.paragraphs} if self.current_project else set()
+            last = self._last_placed_widget
+            if last is not None and last.get_parent() is not self.paragraphs_box:
+                last = None
+            child = last.get_next_sibling() if last else self.paragraphs_box.get_first_child()
+            while child:
+                next_child = child.get_next_sibling()
+                child_paragraph = getattr(child, 'paragraph', None)
+                if getattr(child_paragraph, 'id', None) not in valid_ids:
+                    self.paragraphs_box.remove(child)
+                child = next_child
+            self._last_placed_widget = None
+
             # FIX: Restore scrolling ONLY when everything is loaded
-            if self._preserved_scroll_position is not None:
-                GLib.idle_add(self._restore_scroll_position, priority=GLib.PRIORITY_LOW)
-            
-            elif self._pending_scroll_to_bottom:
+            position = self._preserved_scroll_position
+            self._preserved_scroll_position = None
+
+            if position is None and self._pending_scroll_to_bottom:
                 GLib.idle_add(self._execute_pending_scroll, priority=GLib.PRIORITY_LOW)
-                self._pending_scroll_to_bottom = False
+            self._pending_scroll_to_bottom = False
+
+            # Always release: re-enables auto-scroll on focus (position may be None)
+            self._release_scroll_position(position)
                 
             return False
 
         return True
+
+    def _place_paragraph_row(self, row_widget):
+        """Put a paragraph row right after the last placed one, without rebuilding the list"""
+        last = self._last_placed_widget
+        if last is not None and last.get_parent() is not self.paragraphs_box:
+            # The reference row is gone: continue from the end of the list
+            last = self.paragraphs_box.get_last_child()
+            if last is row_widget:
+                last = row_widget.get_prev_sibling()
+
+        if row_widget.get_parent() is self.paragraphs_box:
+            # Already on screen: move it only if it is out of place
+            if row_widget.get_prev_sibling() is not last:
+                self.paragraphs_box.reorder_child_after(row_widget, last)
+        else:
+            self.paragraphs_box.insert_child_after(row_widget, last)
+
+        self._last_placed_widget = row_widget
 
     def _restore_scroll_position(self):
         """Helper to restore scroll position after refresh"""
@@ -775,9 +830,84 @@ class MainWindow(Adw.ApplicationWindow):
         if hasattr(self, 'editor_scrolled'):
             adjustment = self.editor_scrolled.get_vadjustment()
             adjustment.set_value(adjustment.get_upper() - adjustment.get_page_size())
-        return False    
+        return False
 
-    
+    def _hold_scroll_position(self):
+        """
+        Freeze the editor scroll position before swapping a paragraph widget in place.
+
+        Removing the widget that holds keyboard focus makes GTK move the focus to
+        the first focusable widget of the window, and the viewport then scrolls
+        to it (jumping to the top of the project). Auto-scroll on focus is
+        disabled here and re-enabled by _release_scroll_position().
+
+        Returns the scroll position to restore, or None.
+        """
+        if not getattr(self, 'editor_scrolled', None):
+            return None
+
+        viewport = self.editor_scrolled.get_child()
+        if isinstance(viewport, Gtk.Viewport):
+            # Only remember the original setting if no hold is already in progress
+            if not self._scroll_hold_active:
+                self._scroll_hold_prev_scroll_to_focus = viewport.get_scroll_to_focus()
+                self._scroll_hold_active = True
+            viewport.set_scroll_to_focus(False)
+
+        return self.editor_scrolled.get_vadjustment().get_value()
+
+    def _release_scroll_position(self, position, row_widget=None, focus_widget=None):
+        """
+        Restore the scroll position saved by _hold_scroll_position() once the
+        new widget has been laid out, then re-enable auto-scroll on focus.
+        With position=None only the auto-scroll on focus is re-enabled.
+        """
+        if not getattr(self, 'editor_scrolled', None):
+            return
+
+        def still_valid():
+            # Skip if the paragraph list was rebuilt in the meantime
+            return row_widget is None or row_widget.get_parent() is self.paragraphs_box
+
+        def restore():
+            if position is not None and still_valid():
+                self.editor_scrolled.get_vadjustment().set_value(position)
+            return False
+
+        def finish():
+            self._scroll_hold_source_id = None
+
+            if still_valid():
+                # Keep keyboard focus on the converted paragraph
+                if focus_widget is not None and row_widget is not None:
+                    current_focus = self.get_focus()
+                    if current_focus is None or not (
+                        current_focus is row_widget or current_focus.is_ancestor(row_widget)
+                    ):
+                        focus_widget.grab_focus()
+
+                if position is not None:
+                    self.editor_scrolled.get_vadjustment().set_value(position)
+
+            # A refresh that started in the meantime still needs the hold
+            if self._is_loading_paragraphs:
+                return False
+
+            viewport = self.editor_scrolled.get_child()
+            if isinstance(viewport, Gtk.Viewport) and self._scroll_hold_active:
+                viewport.set_scroll_to_focus(self._scroll_hold_prev_scroll_to_focus)
+            self._scroll_hold_active = False
+            return False
+
+        # A previous hold is still pending: replace it
+        if self._scroll_hold_source_id is not None:
+            GLib.source_remove(self._scroll_hold_source_id)
+
+        # First pass right after layout, second pass once focus has settled
+        GLib.idle_add(restore, priority=GLib.PRIORITY_LOW)
+        self._scroll_hold_source_id = GLib.timeout_add(150, finish)
+
+
     def _create_image_widget(self, paragraph):
         """Create widget to display an image paragraph"""
         from pathlib import Path
@@ -1172,7 +1302,11 @@ class MainWindow(Adw.ApplicationWindow):
             return
  
         prev_sibling = old_widget.get_prev_sibling()
- 
+
+        # Keep the view where it is: the old widget holds the focus (type menu),
+        # and removing it would make the editor jump to the top of the project
+        scroll_position = self._hold_scroll_position()
+
         # Remove old widget from UI
         self.paragraphs_box.remove(old_widget)
         del self._existing_widgets[paragraph_id]
@@ -1191,7 +1325,13 @@ class MainWindow(Adw.ApplicationWindow):
         # Insert at the same position (after previous sibling, or at start)
         self.paragraphs_box.insert_child_after(new_row, prev_sibling)
         self._existing_widgets[paragraph_id] = new_row
- 
+
+        # Hand the focus over to the converted paragraph and restore the scroll
+        new_text_view = getattr(new_editor, 'text_view', None)
+        if new_text_view is not None:
+            new_text_view.grab_focus()
+        self._release_scroll_position(scroll_position, new_row, new_text_view)
+
         self.project_manager.save_project(self.current_project)
         self._update_header_for_view("editor")
         current_stats = self.current_project.get_statistics()
