@@ -1,6 +1,6 @@
 #define MyAppName "Tac Writer"
-#define MyAppVersion "1.3.1-4"
-#define MyAppNumericVersion "1.3.1.4"
+#define MyAppVersion "1.5.0-1"
+#define MyAppNumericVersion "1.5.0.1"
 #define MyAppPublisher "TAC"
 #define MyAppURL "https://github.com/narayanls/tac-writer"
 #define MyAppExeName "TacWriter.exe"

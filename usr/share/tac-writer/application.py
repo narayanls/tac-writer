@@ -168,7 +168,7 @@ class TacApplication(Adw.Application):
             application_id='io.github.narayanls.tacwriter',
             flags=Gio.ApplicationFlags.DEFAULT_FLAGS
         )
-        GLib.set_prgname('tac-writer')
+        GLib.set_prgname('io.github.narayanls.tacwriter')
         
         # Suppress various system warnings for cleaner output
         self._suppress_warnings()

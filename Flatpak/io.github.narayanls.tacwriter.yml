@@ -1,6 +1,6 @@
 id: io.github.narayanls.tacwriter
 runtime: org.gnome.Platform
-runtime-version: "47"
+runtime-version: "49"
 sdk: org.gnome.Sdk
 command: tac-writer
 
