@@ -23,6 +23,7 @@ depends=(
     'python-pylatex'
     'texlive-langportuguese'
     'python-dropbox'
+    'python-keyring'
     'texlive-latexextra'
     'python-cryptography'
     'python-matplotlib'

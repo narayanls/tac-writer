@@ -6,19 +6,23 @@ Application configuration management - cross-platform (Linux/Windows)
 import os
 import json
 import platform
+import time
 from pathlib import Path
 from typing import Dict, Any, Optional, List
 import unicodedata
+
+from utils.secrets import get_secret, set_secret, migrate_from_config
 
 IS_WINDOWS = platform.system() == 'Windows'
 
 
 class Config:
-    """Application configuration manager"""
+    """Application configuration manager (singleton)."""
 
     # Application version and metadata
     APP_VERSION = "1.42.19"
-    DROPBOX_APP_KEY = "x3h06acjg6fhbmq"
+    # Public OAuth client id (PKCE). Override via TAC_DROPBOX_APP_KEY when packaging.
+    DROPBOX_APP_KEY = os.environ.get("TAC_DROPBOX_APP_KEY", "x3h06acjg6fhbmq")
     APP_NAME = "TAC"
     APP_FULL_NAME = "TAC - Continuous Argumentation Technique"
     APP_DESCRIPTION = "Academic Writing Assistant"
@@ -27,6 +31,9 @@ class Config:
     APP_DEVELOPERS = ["Tales Mendonça, Narayan Silva, Jibreel al-Yahya"]
     APP_DESIGNERS = ["Narayan Silva"]
 
+    _SECRET_KEYS = ("ai_assistant_api_key", "dropbox_refresh_token")
+    _instance: Optional["Config"] = None
+
     # CHAVE PUB:
     _SUPPORTER_PUBLIC_KEY_PEM = (
         "-----BEGIN PUBLIC KEY-----\n"
@@ -34,11 +41,26 @@ class Config:
         "-----END PUBLIC KEY-----\n"
     )
 
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+            cls._instance._initialized = False
+        return cls._instance
+
     def __init__(self):
+        if getattr(self, "_initialized", False):
+            return
         self._supporter_cache = None
+        self._last_db_backup_at: float = 0.0
         self._setup_directories()
         self._load_defaults()
         self.load()
+        self._initialized = True
+
+    @classmethod
+    def reset_instance(cls) -> None:
+        """Reset singleton (for tests)."""
+        cls._instance = None
 
     def _setup_directories(self):
         """Setup application directories - cross-platform"""
@@ -109,7 +131,9 @@ class Config:
             'spell_check_enabled': True,
             'spell_check_language': 'pt_BR',
             'spell_check_show_language_menu': True,
-            'spell_check_available_languages': ['pt_BR', 'en_US', 'es_ES', 'fr_FR', 'de_DE', 'it_IT', 'ru_RU', 'zh_CH'],
+            'spell_check_available_languages': [
+                'pt_BR', 'en_US', 'es_ES', 'fr_FR', 'de_DE', 'it_IT', 'ru_RU', 'zh_CN'
+            ],
             'spell_check_personal_dictionary': str(self.config_dir / 'personal_dict.txt'),
 
             # Formatting defaults
@@ -124,6 +148,7 @@ class Config:
 
             # Application behavior
             'backup_files': True,
+            'backup_min_interval_seconds': 3600,
             'recent_files_limit': 10,
             'confirm_on_close': True,
             'restore_session': True,
@@ -174,20 +199,40 @@ class Config:
 
     def set(self, key: str, value: Any) -> None:
         """Set configuration value"""
+        if key in self._SECRET_KEYS:
+            set_secret(self.config_dir, key, value if value is None else str(value))
+            self._config[key] = ''
+            return
         self._config[key] = value
 
     def update(self, updates: Dict[str, Any]) -> None:
         """Update multiple configuration values"""
-        self._config.update(updates)
+        for key, value in updates.items():
+            self.set(key, value)
 
     def reset(self, key: Optional[str] = None) -> None:
         """Reset configuration to defaults"""
+        temp = object.__new__(Config)
+        temp.config_dir = self.config_dir
+        temp.data_dir = self.data_dir
+        temp.cache_dir = self.cache_dir
+        temp._load_defaults()
+        defaults = temp._config
         if key:
-            defaults = Config()._config
             if key in defaults:
                 self._config[key] = defaults[key]
         else:
-            self._load_defaults()
+            self._config = defaults
+
+    def should_create_db_backup(self) -> bool:
+        """Throttle database backups to avoid disk thrash on autosave."""
+        if not self.get('backup_files', False):
+            return False
+        interval = float(self.get('backup_min_interval_seconds', 3600) or 3600)
+        return (time.time() - self._last_db_backup_at) >= interval
+
+    def mark_db_backup_done(self) -> None:
+        self._last_db_backup_at = time.time()
 
     @property
     def config_file(self) -> Path:
@@ -204,8 +249,14 @@ class Config:
     def save(self) -> bool:
         """Save configuration to file"""
         try:
+            payload = {
+                k: v for k, v in self._config.items()
+                if k not in self._SECRET_KEYS
+            }
+            for key in self._SECRET_KEYS:
+                payload[key] = ''
             with open(self.config_file, 'w', encoding='utf-8') as f:
-                json.dump(self._config, f, indent=2, ensure_ascii=False)
+                json.dump(payload, f, indent=2, ensure_ascii=False)
             return True
         except Exception as e:
             print(f"Error saving configuration: {e}")
@@ -217,7 +268,19 @@ class Config:
             if self.config_file.exists():
                 with open(self.config_file, 'r', encoding='utf-8') as f:
                     saved_config = json.load(f)
+                langs = saved_config.get('spell_check_available_languages')
+                if isinstance(langs, list) and 'zh_CH' in langs:
+                    saved_config['spell_check_available_languages'] = [
+                        ('zh_CN' if x == 'zh_CH' else x) for x in langs
+                    ]
+                if saved_config.get('spell_check_language') == 'zh_CH':
+                    saved_config['spell_check_language'] = 'zh_CN'
                 self._config.update(saved_config)
+                migrated = migrate_from_config(
+                    self.config_dir, self._config, list(self._SECRET_KEYS)
+                )
+                if migrated:
+                    self.save()
                 self._supporter_cache = None
             return True
         except Exception as e:
@@ -318,10 +381,22 @@ class Config:
         self.set('ai_assistant_model', model)
 
     def get_ai_assistant_api_key(self) -> str:
-        return self.get('ai_assistant_api_key', '')
+        return get_secret(self.config_dir, 'ai_assistant_api_key') or self.get(
+            'ai_assistant_api_key', ''
+        )
 
     def set_ai_assistant_api_key(self, api_key: str) -> None:
-        self.set('ai_assistant_api_key', api_key)
+        set_secret(self.config_dir, 'ai_assistant_api_key', api_key)
+        self._config['ai_assistant_api_key'] = ''
+
+    def get_dropbox_refresh_token(self) -> str:
+        return get_secret(self.config_dir, 'dropbox_refresh_token') or self.get(
+            'dropbox_refresh_token', ''
+        ) or ''
+
+    def set_dropbox_refresh_token(self, token: Optional[str]) -> None:
+        set_secret(self.config_dir, 'dropbox_refresh_token', token)
+        self._config['dropbox_refresh_token'] = ''
 
     def get_openrouter_site_url(self) -> str:
         return self.get('ai_openrouter_site_url', '')

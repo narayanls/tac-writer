@@ -36,7 +36,12 @@ REMOTE_DB_PATH = "/tac_writer.db"
 
 def is_linked(config) -> bool:
     """A conta do Dropbox está vinculada?"""
-    return DROPBOX_AVAILABLE and bool(config.get('dropbox_refresh_token'))
+    token = (
+        config.get_dropbox_refresh_token()
+        if hasattr(config, 'get_dropbox_refresh_token')
+        else config.get('dropbox_refresh_token')
+    )
+    return DROPBOX_AVAILABLE and bool(token)
 
 
 def auto_sync_enabled(config) -> bool:
@@ -123,7 +128,11 @@ def sync_now(config, project_manager, progress=None) -> dict:
         resultado['message'] = _("Biblioteca do Dropbox não instalada.")
         return resultado
 
-    refresh_token = config.get('dropbox_refresh_token')
+    refresh_token = (
+        config.get_dropbox_refresh_token()
+        if hasattr(config, 'get_dropbox_refresh_token')
+        else config.get('dropbox_refresh_token')
+    )
     if not refresh_token:
         resultado['message'] = _("Conta do Dropbox não vinculada.")
         return resultado

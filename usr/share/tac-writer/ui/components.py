@@ -16,6 +16,7 @@ from core.models import Paragraph, ParagraphType, DEFAULT_TEMPLATES
 from core.services import ProjectManager
 from utils.helpers import TextHelper, FormatHelper
 from utils.i18n import _
+from utils.debug import debug_print
 
 _CURRENT_DRAG_ID = None
 
@@ -1382,17 +1383,17 @@ class ParagraphEditor(Gtk.Box):
         if self.paragraph.type in [ParagraphType.LATEX, ParagraphType.CODE]:
             return False
         # DEBUG: Call tracking
-        print(f"DEBUG: Tentando setup spell check para {self.paragraph.id[:8]}...", flush=True)
+        debug_print(f"DEBUG: Tentando setup spell check para {self.paragraph.id[:8]}...", flush=True)
 
         if self._spell_check_setup or not self.text_view:
             return False # Retorna False para parar o timeout
         
-        print(f"DEBUG: self.config = {self.config}", flush=True)
-        print(f"DEBUG: self.config type = {type(self.config)}", flush=True)
+        debug_print(f"DEBUG: self.config = {self.config}", flush=True)
+        debug_print(f"DEBUG: self.config type = {type(self.config)}", flush=True)
         if self.config:
-            print(f"DEBUG: spell_check_enabled = {self.config.get_spell_check_enabled()}", flush=True)
+            debug_print(f"DEBUG: spell_check_enabled = {self.config.get_spell_check_enabled()}", flush=True)
         if not self.config or not self.config.get_spell_check_enabled():
-            print("DEBUG: Spell check desabilitado na config ou config ausente.", flush=True)
+            debug_print("DEBUG: Spell check desabilitado na config ou config ausente.", flush=True)
         
             return False
         

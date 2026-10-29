@@ -128,14 +128,20 @@ class WritingAiAssistant:
             with self._lock:
                 self._inflight = False
 
+    MAX_PDF_PAGES = 50
+    MAX_PDF_CHARS = 100_000
+
     def _extract_pdf_text(self, pdf_path: str) -> str:
         text_content = ""
         try:
             reader = PdfReader(pdf_path)
-            for page in reader.pages:
+            pages = list(reader.pages)[: self.MAX_PDF_PAGES]
+            for page in pages:
                 extracted = page.extract_text()
                 if extracted:
                     text_content += extracted + "\n"
+                if len(text_content) >= self.MAX_PDF_CHARS:
+                    break
         except Exception as exc:
             raise RuntimeError(_("Erro ao ler PDF: {}").format(str(exc))) from exc
 
@@ -143,6 +149,8 @@ class WritingAiAssistant:
             raise RuntimeError(
                 _("Não foi possível extrair texto do PDF (pode ser uma imagem ou vazio).")
             )
+        if len(text_content) > self.MAX_PDF_CHARS:
+            text_content = text_content[: self.MAX_PDF_CHARS] + "\n\n[... truncated ...]"
         return text_content
 
     def _build_pdf_messages(self, text_content: str) -> List[Dict[str, str]]:

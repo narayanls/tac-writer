@@ -23,6 +23,7 @@ from core.config import Config
 from core.services import ProjectManager
 from ui.main_window import MainWindow
 from utils.i18n import _
+from utils.debug import debug_print
 
 # Try to load enchant for spell checking
 try:
@@ -62,9 +63,9 @@ def setup_system_localization():
                 if first_locale:
                     return first_locale
         
-        # Method 2: locale.getdefaultlocale()
+        # Method 2: locale.getlocale() (getdefaultlocale is deprecated)
         try:
-            default_locale, _ = locale.getdefaultlocale()
+            default_locale, _enc = locale.getlocale()
             if default_locale:
                 return default_locale
         except Exception:
@@ -175,7 +176,7 @@ class TacApplication(Adw.Application):
         
         # Application components
         self.config = Config()
-        self.project_manager = ProjectManager()
+        self.project_manager = ProjectManager(self.config)
         self.main_window = None
         
         # Check spell checking availability
@@ -211,9 +212,9 @@ class TacApplication(Adw.Application):
             # Debug: List found backends and dictionaries
             try:
                 broker = enchant.Broker()
-                print(f"DEBUG: Enchant Backends: {broker.describe()}")
-                print(f"DEBUG: Enchant Provider: {broker.get_provider()}")
-            except:
+                debug_print(f"DEBUG: Enchant Backends: {broker.describe()}")
+                debug_print(f"DEBUG: Enchant Provider: {broker.get_provider()}")
+            except Exception:
                 pass
 
             # Check for available dictionaries
@@ -228,10 +229,10 @@ class TacApplication(Adw.Application):
                         if norm_lang not in available_dicts:
                             available_dicts.append(norm_lang)
                 except Exception as e:
-                    print(f"DEBUG: Error checking dict {lang}: {e}")
+                    debug_print(f"DEBUG: Error checking dict {lang}: {e}")
 
             if available_dicts:
-                print(f"DEBUG: Available spell check dictionaries: {available_dicts}")
+                debug_print(f"DEBUG: Available spell check dictionaries: {available_dicts}")
                 
                 self.config.set('spell_check_available_languages', available_dicts)
                 
@@ -243,7 +244,7 @@ class TacApplication(Adw.Application):
                 else:
                     detected = available_dicts[0]
                 
-                print(f"DEBUG: Setting spell language to: {detected}")
+                debug_print(f"DEBUG: Setting spell language to: {detected}")
                 self.config.set_spell_check_language(detected)
                 
             else:
@@ -359,9 +360,9 @@ class TacApplication(Adw.Application):
                 ('<Control>e', 'app.export_project'),
                 ('<Control>comma', 'app.preferences'),
                 ('<Control>q', 'app.quit'),
-                # Global undo/redo shortcuts (backup if window shortcuts fail)
-                ('<Control>z', 'app.undo'),
-                ('<Control><Shift>z', 'app.redo'),
+                # Window-scoped undo/redo (actions live on MainWindow)
+                ('<Control>z', 'win.undo'),
+                ('<Control><Shift>z', 'win.redo'),
                 ('<Control><Shift>i', 'app.ai_assistant'),
             ]
             

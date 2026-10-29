@@ -155,8 +155,10 @@ class NewProjectDialog(Adw.Window):
         'project-created': (GObject.SIGNAL_RUN_FIRST, None, (object,)),
     }
 
-    def __init__(self, parent, project_type="strandard", **kwargs):
+    def __init__(self, parent, project_type="standard", **kwargs):
         super().__init__(**kwargs)
+        if project_type == "strandard":
+            project_type = "standard"
         self.project_type = project_type
         
         # Adjust title based on type
@@ -302,7 +304,7 @@ class NewProjectDialog(Adw.Window):
         # Template selection
         self.template_combo = Gtk.ComboBoxText()
         for template in DEFAULT_TEMPLATES:
-            self.template_combo.append(template.name, template.name)
+            self.template_combo.append(template.id, template.name)
         self.template_combo.set_active(0)
 
         template_row = Adw.ActionRow()
@@ -350,9 +352,9 @@ class NewProjectDialog(Adw.Window):
 
     def _on_template_changed(self, combo):
         """Handle template selection changes"""
-        template_name = combo.get_active_id()
+        template_id = combo.get_active_id()
         for template in DEFAULT_TEMPLATES:
-            if template.name == template_name:
+            if template.id == template_id or template.name == template_id:
                 self.template_desc_label.set_text(template.description)
                 break
 
@@ -1544,7 +1546,7 @@ def AboutDialog(parent):
     # Application information
     dialog.set_application_name(config.APP_NAME)
     dialog.set_application_icon("tac-writer")
-    dialog.set_version("1.5.0")
+    dialog.set_version(config.APP_VERSION)
     dialog.set_developer_name(_(config.APP_DESCRIPTION))
     dialog.set_website(config.APP_WEBSITE)
 
@@ -2835,7 +2837,7 @@ class CloudSyncDialog(Adw.Window):
 
     def _check_existing_connection(self):
         """Verifica se já existe um token salvo na config"""
-        refresh_token = self.config.get('dropbox_refresh_token')
+        refresh_token = self.config.get_dropbox_refresh_token()
         
         if refresh_token:
             self.is_connected = True
@@ -2966,7 +2968,7 @@ class CloudSyncDialog(Adw.Window):
         btn.set_label(_("Conectar"))
         
         # Save in user config
-        self.config.set('dropbox_refresh_token', refresh_token)
+        self.config.set_dropbox_refresh_token(refresh_token)
         self.config.save()
         
         self.is_connected = True
@@ -3025,7 +3027,7 @@ class CloudSyncDialog(Adw.Window):
         if response != "unlink":
             return
 
-        self.config.set('dropbox_refresh_token', None)
+        self.config.set_dropbox_refresh_token(None)
         # Limpa o marcador da última sincronização. Sem isso, uma futura
         # revinculação compararia a data do banco com a de outra sessão.
         self.config.set('dropbox_last_sync_mtime', None)
@@ -3040,7 +3042,7 @@ class CloudSyncDialog(Adw.Window):
         if not self.is_connected:
             return
 
-        refresh_token = self.config.get('dropbox_refresh_token')
+        refresh_token = self.config.get_dropbox_refresh_token()
         if not refresh_token:
             self._show_toast(_("Erro: Credenciais não encontradas."))
             return

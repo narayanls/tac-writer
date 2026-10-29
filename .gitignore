@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+dist/
+build/
+.venv/
+venv/
+.env
+*.mo
+!usr/share/locale/**/*.mo
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+*~
+.DS_Store
+
+# Local runtime / secrets
+secrets.json
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Packaging artifacts
+pkgbuild/pkg/
+pkgbuild/src/
+*.pkg.tar.*
+*.rpm
+*.deb
+*.AppImage
+
+# Test / coverage
+.coverage
+htmlcov/
+.pytest_cache/
+.mypy_cache/

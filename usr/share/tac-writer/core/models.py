@@ -560,6 +560,8 @@ class Project:
         
         if 'metadata' in data:
             project.metadata.update(data['metadata'])
+            if project.metadata.get('type') == 'strandard':
+                project.metadata['type'] = 'standard'
         
         if 'document_formatting' in data:
             project.document_formatting.update(data['document_formatting'])
@@ -579,7 +581,8 @@ class Project:
 class DocumentTemplate:
     """Template for creating new documents"""
     
-    def __init__(self, name: str, description: str):
+    def __init__(self, template_id: str, name: str, description: str):
+        self.id = template_id
         self.name = name
         self.description = description
         self.paragraph_structure: List[ParagraphType] = []
@@ -592,6 +595,7 @@ class DocumentTemplate:
         
         # Apply template metadata
         project.metadata.update(self.metadata_template)
+        project.metadata.setdefault('template', self.id)
         
         # Apply template formatting
         if self.default_formatting:
@@ -606,12 +610,17 @@ class DocumentTemplate:
 
 # Predefined templates
 ACADEMIC_ESSAY_TEMPLATE = DocumentTemplate(
+    template_id="academic_essay",
     name=_("Ensaio Acadêmico"),
-    description=_("Estrutura padrão de ensaio acadêmico")
+    description=_("Estrutura padrão de ensaio acadêmico"),
 )
 
 ACADEMIC_ESSAY_TEMPLATE.paragraph_structure = [
-    ParagraphType.INTRODUCTION
+    ParagraphType.INTRODUCTION,
+    ParagraphType.ARGUMENT,
+    ParagraphType.QUOTE,
+    ParagraphType.ARGUMENT_RESUMPTION,
+    ParagraphType.CONCLUSION,
 ]
 
 DEFAULT_TEMPLATES = [

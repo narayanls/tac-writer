@@ -16,7 +16,7 @@ from typing import Dict, List, Optional, Any
 from datetime import datetime
 
 from .config import Config
-from .models import Project, Paragraph, ParagraphType
+from .models import Project, Paragraph, ParagraphType, DEFAULT_TEMPLATES
 from utils.helpers import FileHelper
 from utils.i18n import _
 
@@ -69,8 +69,8 @@ except ImportError:
 class ProjectManager:
     """Manages project operations using a SQLite database"""
     
-    def __init__(self):
-        self.config = Config()
+    def __init__(self, config: Optional[Config] = None):
+        self.config = config or Config()
         self.db_path = self.config.database_path
         self._migration_lock = threading.Lock()
         self._init_db()
@@ -337,9 +337,10 @@ class ProjectManager:
                     if success:
                         conn.commit()
                         print(_("Projeto salvo no banco de dados: {}").format(project.name))
-                        # Create database backup after saving, so the backup
-                        # reflects the changes that were just committed
-                        self._create_database_backup()
+                        # Throttled backup after successful commit (avoids copy-on-every-autosave)
+                        if self.config.should_create_db_backup():
+                            if self._create_database_backup():
+                                self.config.mark_db_backup_done()
                         return True
                     else:
                         conn.rollback()
@@ -716,13 +717,22 @@ class ProjectManager:
             return 0
 
     def create_project(self, name: str, template: str = "academic_essay") -> Project:
-        """Create a new project"""
+        """Create a new project from a template id or display name."""
         try:
-            project = Project(name)
-            
-            if template == "academic_essay":
-                pass
-            
+            chosen = None
+            for tmpl in DEFAULT_TEMPLATES:
+                if getattr(tmpl, 'id', None) == template or tmpl.name == template:
+                    chosen = tmpl
+                    break
+
+            if chosen is not None:
+                project = chosen.create_project(name)
+            else:
+                project = Project(name)
+
+            if project.metadata.get('type') == 'strandard':
+                project.metadata['type'] = 'standard'
+
             if self.save_project(project):
                 print(_("Projeto criado: {} ({})").format(project.name, project.id))
                 return project

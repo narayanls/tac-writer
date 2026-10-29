@@ -1,30 +1,49 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
-# translation_utils.py - Utilities for translation support
+# i18n utilities for TAC Writer
 #
 import gettext
 import os
 
-# Determine locale directory (works in AppImage and system install)
-locale_dir = '/usr/share/locale'  # Default for system install
+_DOMAIN = "tac-writer"
 
-# Check if we're in an AppImage
-if 'APPIMAGE' in os.environ or 'APPDIR' in os.environ:
-    # Running from AppImage
-    # translation_utils.py is in: usr/share/tac-writer/utils/translation_utils.py
-    # We need to get to: usr/share/locale
-    script_dir = os.path.dirname(os.path.abspath(__file__))  # usr/share/tac-writer/utils
-    app_dir = os.path.dirname(script_dir)                    # usr/share/tac-writer
-    share_dir = os.path.dirname(app_dir)                     # usr/share
-    appimage_locale = os.path.join(share_dir, 'locale')      # usr/share/locale
-    
-    if os.path.isdir(appimage_locale):
-        locale_dir = appimage_locale
+_script_dir = os.path.dirname(os.path.abspath(__file__))  # .../tac-writer/utils
+_app_dir = os.path.dirname(_script_dir)                  # .../tac-writer
+_share_dir = os.path.dirname(_app_dir)                   # .../share
+_bundled_locale = os.path.join(_share_dir, "locale")     # .../share/locale
 
-# Configure the translation text domain for tac-writer
-gettext.bindtextdomain("tac-writer", locale_dir)
-gettext.textdomain("tac-writer")
 
-# Export _ directly as the translation function
+def _has_translations(locale_root: str) -> bool:
+    """True if this locale root ships at least one compiled catalog for us."""
+    if not os.path.isdir(locale_root):
+        return False
+    try:
+        for lang in os.listdir(locale_root):
+            mo = os.path.join(locale_root, lang, "LC_MESSAGES", f"{_DOMAIN}.mo")
+            if os.path.isfile(mo):
+                return True
+    except OSError:
+        return False
+    return False
+
+
+# Prefer catalogs shipped next to the app (source / Flatpak / AppImage),
+# then fall back to the system prefix. Checking for *.mo avoids always
+# picking /usr/share/locale just because that directory exists on Linux.
+_candidates = [
+    _bundled_locale,
+    "/app/share/locale",
+    "/usr/share/locale",
+]
+
+locale_dir = "/usr/share/locale"
+for candidate in _candidates:
+    if _has_translations(candidate):
+        locale_dir = candidate
+        break
+
+gettext.bindtextdomain(_DOMAIN, locale_dir)
+gettext.textdomain(_DOMAIN)
+
 _ = gettext.gettext
