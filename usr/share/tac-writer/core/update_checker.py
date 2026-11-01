@@ -9,6 +9,8 @@ import json
 import os
 import platform
 import subprocess
+import xml.etree.ElementTree as ET
+from pathlib import Path
 from typing import Dict, List, Optional, Callable
 
 from gi.repository import GLib
@@ -25,6 +27,7 @@ class UpdateChecker:
     GITHUB_REPO = "tac-writer"
     APP_PACKAGE_NAME = "tac-writer"
     FLATPAK_APP_ID    = "io.github.narayanls.tacwriter"
+    METAINFO_FILENAME = "io.github.narayanls.tacwriter.metainfo.xml"
 
     def __init__(self, current_version: str):
         self.current_version = current_version
@@ -231,15 +234,14 @@ class UpdateChecker:
     def _check_via_github(self, install_method, distro):
         """Check for updates via GitHub releases (for deb/rpm/windows/unknown)."""
 
-        # For deb/rpm, read the version from the file the installer creates
-        local_version = self._read_version_txt()
-        if local_version:
-            print(f"[UpdateChecker] Current (version.txt): {local_version}")
-        else:
-            # Fallback: use APP_VERSION (may not match tag scheme)
-            local_version = self.current_version
-            print(f"[UpdateChecker] version.txt not found, "
-                  f"using APP_VERSION: {local_version}")
+        local_version = self._get_installed_release_version()
+        if not local_version:
+            # Não usar APP_VERSION aqui: é um contador separado das tags
+            # (ex.: 1.43.0 vs 1.5.0-1) e, por ser "maior", fazia o app
+            # concluir que estava sempre atualizado.
+            print("[UpdateChecker] Could not determine installed release "
+                  "version (no metainfo.xml, no version.txt). Skipping.")
+            return None
 
         release = self._fetch_latest_release()
         if release is None:
@@ -269,6 +271,71 @@ class UpdateChecker:
             "install_method": install_method,
             "distro": distro,
         }
+
+    @classmethod
+    def _get_installed_release_version(cls) -> Optional[str]:
+        """
+        Versão de release instalada, no mesmo esquema das tags do GitHub.
+
+        Fontes:
+        - metainfo.xml: vai dentro de todo pacote (deb/rpm/flatpak), então
+          funciona mesmo quando o .deb/.rpm é baixado direto do GitHub,
+          sem o tac-installer.
+        - version.txt: gravado pelo tac-installer, pelo instalador do
+          Windows e pelo próprio app após atualizar.
+
+        Se existirem as duas, vale a maior: um version.txt antigo esquecido
+        não faz o app pedir atualização à toa, e um metainfo que ficou
+        para trás num release não esconde a versão gravada pelo instalador.
+        """
+        metainfo_ver = cls._read_metainfo_version()
+        txt_ver = cls._read_version_txt()
+
+        candidates = [v for v in (metainfo_ver, txt_ver) if v]
+        if not candidates:
+            return None
+
+        best = candidates[0]
+        for v in candidates[1:]:
+            if cls._compare_versions(v, best) > 0:
+                best = v
+        print(f"[UpdateChecker] Current: {best} "
+              f"(metainfo={metainfo_ver!r}, version.txt={txt_ver!r})")
+        return best
+
+    @classmethod
+    def _metainfo_paths(cls) -> List[Path]:
+        """
+        Onde procurar o metainfo.xml, em ordem.
+
+        O app fica em <prefix>/share/tac-writer/ e o metainfo em
+        <prefix>/share/metainfo/, então o caminho relativo funciona para
+        /usr (deb/rpm), /app (Flatpak) e para rodar direto do repositório.
+        """
+        app_dir = Path(__file__).resolve().parent.parent  # .../share/tac-writer
+        paths = [app_dir.parent / "metainfo" / cls.METAINFO_FILENAME]
+        if not IS_WINDOWS:
+            paths.append(Path("/usr/share/metainfo") / cls.METAINFO_FILENAME)
+        return paths
+
+    @classmethod
+    def _read_metainfo_version(cls) -> Optional[str]:
+        """Versão do <release> mais recente do metainfo.xml (o primeiro,
+        pela convenção AppStream)."""
+        for path in cls._metainfo_paths():
+            if not path.is_file():
+                continue
+            try:
+                root = ET.parse(path).getroot()
+                release = root.find("releases/release")
+                if release is not None:
+                    version = (release.get("version") or "").strip().lstrip("v")
+                    if version:
+                        print(f"[UpdateChecker] Read metainfo: '{version}' ({path})")
+                        return version
+            except (ET.ParseError, OSError) as e:
+                print(f"[UpdateChecker] Error reading metainfo {path}: {e}")
+        return None
 
     @staticmethod
     def _read_version_txt() -> Optional[str]:
