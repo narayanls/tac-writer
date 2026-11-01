@@ -10,6 +10,8 @@ from pathlib import Path
 from typing import Dict, Any, Optional, List
 import unicodedata
 
+from .secret_store import get_secret, set_secret, migrate_from_config
+
 IS_WINDOWS = platform.system() == 'Windows'
 
 
@@ -17,7 +19,7 @@ class Config:
     """Application configuration manager"""
 
     # Application version and metadata
-    APP_VERSION = "1.42.20"
+    APP_VERSION = "1.43.0"
     DROPBOX_APP_KEY = "x3h06acjg6fhbmq"
     APP_NAME = "TAC"
     APP_FULL_NAME = "TAC - Continuous Argumentation Technique"
@@ -26,6 +28,11 @@ class Config:
     APP_COPYRIGHT = "© 2025 TAC Development"
     APP_DEVELOPERS = ["Tales Mendonça, Narayan Silva, Jibreel al-Yahya"]
     APP_DESIGNERS = ["Narayan Silva"]
+
+    # Credenciais guardadas em secrets.json (core/secret_store.py), fora do
+    # config.json. Só voltam ao config.json se o secrets.json não puder ser
+    # gravado (ex.: disco cheio), para o usuário não perder a credencial.
+    SECRET_KEYS = ('ai_assistant_api_key', 'dropbox_refresh_token')
 
     # CHAVE PUB:
     _SUPPORTER_PUBLIC_KEY_PEM = (
@@ -156,7 +163,6 @@ class Config:
 
             # AI assistant
             'ai_assistant_enabled': False,
-            'ai_assistant_api_key': '',
             'ai_openrouter_site_url': '',
             'ai_openrouter_site_name': '',
 
@@ -170,15 +176,26 @@ class Config:
 
     def get(self, key: str, default: Any = None) -> Any:
         """Get configuration value"""
+        if key in self.SECRET_KEYS:
+            return (get_secret(self.config_dir, key)
+                    or self._config.get(key)
+                    or default)
         return self._config.get(key, default)
 
     def set(self, key: str, value: Any) -> None:
         """Set configuration value"""
+        if key in self.SECRET_KEYS:
+            if set_secret(self.config_dir, key, value):
+                self._config.pop(key, None)
+            else:
+                self._config[key] = value
+            return
         self._config[key] = value
 
     def update(self, updates: Dict[str, Any]) -> None:
         """Update multiple configuration values"""
-        self._config.update(updates)
+        for key, value in updates.items():
+            self.set(key, value)
 
     def reset(self, key: Optional[str] = None) -> None:
         """Reset configuration to defaults"""
@@ -217,7 +234,16 @@ class Config:
             if self.config_file.exists():
                 with open(self.config_file, 'r', encoding='utf-8') as f:
                     saved_config = json.load(f)
+
+                # Migração: versões anteriores guardavam as credenciais em
+                # texto puro no config.json. Move para o secrets.json e
+                # regrava o config.json já limpo.
+                migrated = migrate_from_config(
+                    self.config_dir, saved_config, self.SECRET_KEYS
+                )
                 self._config.update(saved_config)
+                if migrated:
+                    self.save()
                 self._supporter_cache = None
             return True
         except Exception as e:
