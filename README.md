@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/narayanls/tac-writer/releases"><img src="https://img.shields.io/badge/Version-1.4.4-blue.svg" alt="Versão"/></a>
+  <a href="https://github.com/narayanls/tac-writer/releases"><img src="https://img.shields.io/badge/Version-1.5.0-blue.svg" alt="Versão"/></a>
   <a href="https://github.com/narayanls/tac-writer/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-GPL--3.0-green.svg" alt="Licença"/></a>
   <a href="https://www.gtk.org/"><img src="https://img.shields.io/badge/GTK-4.0+-orange.svg" alt="Versão GTK"/></a>
   <a href="https://gnome.pages.gitlab.gnome.org/libadwaita/"><img src="https://img.shields.io/badge/libadwaita-1.0+-purple.svg" alt="Versão libadwaita"/></a>
@@ -26,11 +26,11 @@
 <details>
 <summary>📊 Métricas de Download</summary>
 
-![Linux RPM](https://img.shields.io/github/downloads/narayanls/tac-writer/latest/tac-writer-1.4.4_1-3.x86_64.rpm?style=flat-square&label=Linux+RPM&color=E95420)
-![Linux DEB](https://img.shields.io/github/downloads/narayanls/tac-writer/latest/tac-writer_1.4.4-3_amd64.deb?style=flat-square&label=Linux+DEB&color=E95420)
+![Linux RPM](https://img.shields.io/github/downloads/narayanls/tac-writer/latest/tac-writer-1.5.0_1-1.x86_64.rpm?style=flat-square&label=Linux+RPM&color=E95420)
+![Linux DEB](https://img.shields.io/github/downloads/narayanls/tac-writer/latest/tac-writer_1.5.0-1_amd64.deb?style=flat-square&label=Linux+DEB&color=E95420)
 
-![Linux Flatpak](https://img.shields.io/github/downloads/narayanls/tac-writer/latest/tac-writer-1.4.4-3.flatpak?style=flat-square&label=Flatpak&color=4A90D9)
-![Windows EXE](https://img.shields.io/github/downloads/narayanls/tac-writer/latest/TacWriter-1.4.4-3-Setup-x64.exe?style=flat-square&label=Windows+EXE&color=0078D4)
+![Linux Flatpak](https://img.shields.io/github/downloads/narayanls/tac-writer/latest/tac-writer-1.5.0-1.flatpak?style=flat-square&label=Flatpak&color=4A90D9)
+![Windows EXE](https://img.shields.io/github/downloads/narayanls/tac-writer/latest/TacWriter-1.5.0-1-Setup-x64.exe?style=flat-square&label=Windows+EXE&color=0078D4)
 
 </details>
 
@@ -66,12 +66,10 @@ A Técnica da Argumentação Contínua enfatiza parágrafos interconectados que 
 - **GTK4 + libadwaita**: Integração nativa com desktop Linux
 - **Design Adaptativo**: Layout responsivo que funciona em vários tamanhos de tela
 - **Suporte a Modo Escuro**: Troca automática de tema com as preferências do sistema
-- **Acessibilidade**: Navegação completa por teclado e suporte a leitor de tela
 
 ### 📊 **Análises em Tempo Real**
 - **Estatísticas ao Vivo**: Contagem de palavras, contagem de parágrafos
 - **Acompanhamento de Progresso**: Monitore seu progresso de escrita em tempo real
-- **Tempo de Leitura**: Cálculo estimado do tempo de leitura
 
 ### 💾 **Gerenciamento de Projetos**
 - **Salvamento Automático**: Nunca perca seu trabalho com o salvamento automático
@@ -80,7 +78,7 @@ A Técnica da Argumentação Contínua enfatiza parágrafos interconectados que 
 - **Sistema de Backup**: Criação automática de backup
 
 ### 📤 **Opções de Exportação**
-- **Múltiplos Formatos**: TXT, ODT, PDF
+- **Múltiplos Formatos**: TXT, ODT, PDF, TEX
 - **Padrões Acadêmicos**: Formatos de exportação adequados para submissão acadêmica
 
 ### ⚡ **Recursos de Produtividade**
@@ -88,7 +86,7 @@ A Técnica da Argumentação Contínua enfatiza parágrafos interconectados que 
 - **Verificação Ortográfica**: Suporte à verificação ortográfica em tempo real
 - **Atalhos de Teclado**: Fluxo de trabalho eficiente com atalhos personalizáveis
 - **Modo Livre de Distrações**: Foque na escrita com interface mínima
-- **Assistente de IA**: Conecte-se ao Gemini ou OpenRouter para reescrever, resumir ou sugerir parágrafos diretamente do editor (`Ctrl+Shift+I`)
+- **Assistente de IA**: Conecte-se ao Gemini ou OpenRouter para revisar o texto, a partir da procura de erros gramaticais e semânticos. (`Ctrl+Shift+I`)
 
 ## Requisitos do Sistema
 
