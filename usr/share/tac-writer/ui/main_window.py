@@ -2355,7 +2355,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.show_backup_manager_dialog()
 
     # Public methods called by application
-    def show_new_project_dialog(self, project_type="strandard"):
+    def show_new_project_dialog(self, project_type="standard"):
         """Show new project dialog"""
         dialog = NewProjectDialog(self, project_type=project_type)
         dialog.connect('project-created', self._on_project_created)

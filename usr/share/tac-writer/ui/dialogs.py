@@ -155,7 +155,7 @@ class NewProjectDialog(Adw.Window):
         'project-created': (GObject.SIGNAL_RUN_FIRST, None, (object,)),
     }
 
-    def __init__(self, parent, project_type="strandard", **kwargs):
+    def __init__(self, parent, project_type="standard", **kwargs):
         super().__init__(**kwargs)
         self.project_type = project_type
         
