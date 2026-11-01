@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version='1.0' encoding='UTF-8'?>
 <component type="desktop-application">
   <id>io.github.narayanls.tacwriter</id>
   <name>Tac Writer</name>
@@ -44,7 +44,8 @@
     </screenshot>
   </screenshots>
   <releases>
-    <release version="1.4.4-1" date="2026-06-08"/>
+    <release version="1.5.0-1" date="2026-10-04" />
+    <release version="1.4.4-1" date="2026-06-08" />
   </releases>
-  <content_rating type="oars-1.1"/>
+  <content_rating type="oars-1.1" />
 </component>
