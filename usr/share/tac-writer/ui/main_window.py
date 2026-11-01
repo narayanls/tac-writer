@@ -1666,19 +1666,15 @@ class MainWindow(Adw.ApplicationWindow):
         self.show_new_project_dialog(project_type)
 
     def _action_toggle_sidebar(self, action, param):
-        """Toggle sidebar visibility"""
-        if hasattr(self, 'sidebar_toggle_button'):
-            self.sidebar_toggle_button.set_active(not self.sidebar_toggle_button.get_active())
+        """Toggle sidebar visibility (F9).
 
-        if self.sidebar.get_visible():
-            # Save position before hiding
-            self._sidebar_last_position = self.paned.get_position()
-            self.sidebar.set_visible(False)
-            self.paned.set_position(0)
-        else:
-            self.sidebar.set_visible(True)
-            pos = getattr(self, '_sidebar_last_position', 300)
-            self.paned.set_position(pos)
+        Só inverte o botão: o sinal 'toggled' chama _on_sidebar_toggle,
+        que mostra/oculta a lateral. Fazer o trabalho aqui também
+        desfazia a ação na mesma chamada.
+        """
+        self.sidebar_toggle_button.set_active(
+            not self.sidebar_toggle_button.get_active()
+        )
 
     def _action_add_paragraph(self, action, param):
         """Add paragraph action"""
