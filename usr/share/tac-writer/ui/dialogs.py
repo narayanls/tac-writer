@@ -1236,7 +1236,17 @@ class PreferencesDialog(Adw.PreferencesWindow):
         if 0 <= index < len(self._ai_provider_options):
             provider_id = self._ai_provider_options[index][0]
             self._swap_ai_api_key_entry(provider_id)
+            self._reset_ai_model_entry(provider_id)
             self._update_ai_provider_ui(provider_id)
+
+    def _reset_ai_model_entry(self, provider_id: str) -> None:
+        """Clear the model field when switching providers, so the placeholder
+        suggestion for the new provider shows. Switching back to the saved
+        provider restores the saved model."""
+        if provider_id == self.config.get_ai_assistant_provider():
+            self.ai_model_entry.set_text(self.config.get_ai_assistant_model() or "")
+        else:
+            self.ai_model_entry.set_text("")
 
     def _swap_ai_api_key_entry(self, provider_id: str) -> None:
         """Show the stored key for the selected provider when the key slot changes.
