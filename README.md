@@ -26,11 +26,11 @@
 <details>
 <summary>📊 Métricas de Download</summary>
 
-![Linux RPM](https://img.shields.io/github/downloads/narayanls/tac-writer/latest/tac-writer-1.5.0_2-1.x86_64.rpm?style=flat-square&label=Linux+RPM&color=E95420)
-![Linux DEB](https://img.shields.io/github/downloads/narayanls/tac-writer/latest/tac-writer_1.5.0-2_amd64.deb?style=flat-square&label=Linux+DEB&color=E95420)
+![Linux RPM](https://img.shields.io/github/downloads/narayanls/tac-writer/latest/tac-writer-1.5.0_3-1.x86_64.rpm?style=flat-square&label=Linux+RPM&color=E95420)
+![Linux DEB](https://img.shields.io/github/downloads/narayanls/tac-writer/latest/tac-writer_1.5.0-3_amd64.deb?style=flat-square&label=Linux+DEB&color=E95420)
 
-![Linux Flatpak](https://img.shields.io/github/downloads/narayanls/tac-writer/latest/tac-writer-1.5.0-2.flatpak?style=flat-square&label=Flatpak&color=4A90D9)
-![Windows EXE](https://img.shields.io/github/downloads/narayanls/tac-writer/latest/TacWriter-1.5.0-2-Setup-x64.exe?style=flat-square&label=Windows+EXE&color=0078D4)
+![Linux Flatpak](https://img.shields.io/github/downloads/narayanls/tac-writer/latest/tac-writer-1.5.0-3.flatpak?style=flat-square&label=Flatpak&color=4A90D9)
+![Windows EXE](https://img.shields.io/github/downloads/narayanls/tac-writer/latest/TacWriter-1.5.0-3-Setup-x64.exe?style=flat-square&label=Windows+EXE&color=0078D4)
 
 </details>
 
