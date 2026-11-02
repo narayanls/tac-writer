@@ -1024,6 +1024,7 @@ class PreferencesDialog(Adw.PreferencesWindow):
         self._ai_provider_options = [
             ("gemini", "Gemini"),
             ("openrouter", "OpenRouter.ai"),
+            ("maritaca", "Maritaca AI (Sabiá)"),
         ]
         provider_model = Gtk.StringList.new([label for _pid, label in self._ai_provider_options])
         self.ai_provider_row.set_model(provider_model)
@@ -1116,7 +1117,10 @@ class PreferencesDialog(Adw.PreferencesWindow):
                 provider = provider_ids[0]
             
             self.ai_model_entry.set_text(self.config.get_ai_assistant_model() or "")
-            self.ai_api_key_entry.set_text(self.config.get_ai_assistant_api_key() or "")
+            self.ai_api_key_entry.set_text(
+                self.config.get_ai_api_key_for_provider(provider) or ""
+            )
+            self._ai_key_provider = provider
             
             self._update_ai_controls_sensitive(self.config.get_ai_assistant_enabled())
             self._update_ai_provider_ui(provider)
@@ -1138,6 +1142,7 @@ class PreferencesDialog(Adw.PreferencesWindow):
         """Handle manual save of AI settings"""
         try:
             # 1. Get Provider
+            provider_id = self.config.get_ai_assistant_provider()
             index = self.ai_provider_row.get_selected()
             if 0 <= index < len(self._ai_provider_options):
                 provider_id = self._ai_provider_options[index][0]
@@ -1148,8 +1153,11 @@ class PreferencesDialog(Adw.PreferencesWindow):
             self.config.set_ai_assistant_model(model)
 
             # 3. Get API Key
+            # (Maritaca has its own key in secrets.json, so saving it
+            # does not overwrite the Gemini/OpenRouter key.)
             api_key = self.ai_api_key_entry.get_text().strip()
-            self.config.set_ai_assistant_api_key(api_key)
+            self.config.set_ai_api_key_for_provider(provider_id, api_key)
+            self._ai_key_provider = provider_id
 
             # 4. Save to disk
             self.config.save()
@@ -1227,7 +1235,34 @@ class PreferencesDialog(Adw.PreferencesWindow):
         index = combo_row.get_selected()
         if 0 <= index < len(self._ai_provider_options):
             provider_id = self._ai_provider_options[index][0]
+            self._swap_ai_api_key_entry(provider_id)
+            self._reset_ai_model_entry(provider_id)
             self._update_ai_provider_ui(provider_id)
+
+    def _reset_ai_model_entry(self, provider_id: str) -> None:
+        """Clear the model field when switching providers, so the placeholder
+        suggestion for the new provider shows. Switching back to the saved
+        provider restores the saved model."""
+        if provider_id == self.config.get_ai_assistant_provider():
+            self.ai_model_entry.set_text(self.config.get_ai_assistant_model() or "")
+        else:
+            self.ai_model_entry.set_text("")
+
+    def _swap_ai_api_key_entry(self, provider_id: str) -> None:
+        """Show the stored key for the selected provider when the key slot changes.
+
+        Gemini and OpenRouter share one stored key; Maritaca has its own.
+        """
+        def slot(pid):
+            return "maritaca" if pid == "maritaca" else "shared"
+
+        previous = getattr(self, "_ai_key_provider", None)
+        if previous is not None and slot(previous) == slot(provider_id):
+            return
+        self.ai_api_key_entry.set_text(
+            self.config.get_ai_api_key_for_provider(provider_id) or ""
+        )
+        self._ai_key_provider = provider_id
 
     def _update_ai_controls_sensitive(self, enabled: bool) -> None:
         for widget in getattr(self, "_ai_config_widgets", []):
@@ -1250,6 +1285,15 @@ class PreferencesDialog(Adw.PreferencesWindow):
                 _("Identificador OpenRouter (ex: deepseek/deepseek-v4-flash-0731).")
             )
             self.ai_api_key_row.set_subtitle(_("Chave de API do OpenRouter."))
+
+        elif provider == "maritaca":
+            self.ai_model_entry.set_placeholder_text("sabia-4")
+            self.ai_model_row.set_subtitle(
+                _("Modelo Sabiá (ex: sabia-4 ou sabiazinho-4, mais barato).")
+            )
+            self.ai_api_key_row.set_subtitle(
+                _("Chave de API da plataforma Maritaca (plataforma.maritaca.ai).")
+            )
         
         else:
             # Generic fallback
