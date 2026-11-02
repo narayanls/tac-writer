@@ -32,7 +32,7 @@ class Config:
     # Credenciais guardadas em secrets.json (core/secret_store.py), fora do
     # config.json. Só voltam ao config.json se o secrets.json não puder ser
     # gravado (ex.: disco cheio), para o usuário não perder a credencial.
-    SECRET_KEYS = ('ai_assistant_api_key', 'dropbox_refresh_token')
+    SECRET_KEYS = ('ai_assistant_api_key', 'ai_maritaca_api_key', 'dropbox_refresh_token')
 
     # CHAVE PUB:
     _SUPPORTER_PUBLIC_KEY_PEM = (
@@ -348,6 +348,24 @@ class Config:
 
     def set_ai_assistant_api_key(self, api_key: str) -> None:
         self.set('ai_assistant_api_key', api_key)
+
+    def get_maritaca_api_key(self) -> str:
+        return self.get('ai_maritaca_api_key', '')
+
+    def set_maritaca_api_key(self, api_key: str) -> None:
+        self.set('ai_maritaca_api_key', api_key)
+
+    def get_ai_api_key_for_provider(self, provider: str) -> str:
+        """Chave de API do provedor (Maritaca tem chave própria no secrets.json)."""
+        if provider == 'maritaca':
+            return self.get_maritaca_api_key()
+        return self.get_ai_assistant_api_key()
+
+    def set_ai_api_key_for_provider(self, provider: str, api_key: str) -> None:
+        if provider == 'maritaca':
+            self.set_maritaca_api_key(api_key)
+        else:
+            self.set_ai_assistant_api_key(api_key)
 
     def get_openrouter_site_url(self) -> str:
         return self.get('ai_openrouter_site_url', '')

@@ -86,7 +86,7 @@ A Técnica da Argumentação Contínua enfatiza parágrafos interconectados que 
 - **Verificação Ortográfica**: Suporte à verificação ortográfica em tempo real
 - **Atalhos de Teclado**: Fluxo de trabalho eficiente com atalhos personalizáveis
 - **Modo Livre de Distrações**: Foque na escrita com interface mínima
-- **Assistente de IA**: Conecte-se ao Gemini ou OpenRouter para revisar o texto, a partir da procura de erros gramaticais e semânticos. (`Ctrl+Shift+I`)
+- **Assistente de IA**: Conecte-se ao Gemini, OpenRouter ou Maritaca AI (modelos Sabiá, treinados para o português brasileiro) para revisar o texto, a partir da procura de erros gramaticais e semânticos. (`Ctrl+Shift+I`)
 
 ## Requisitos do Sistema
 
@@ -113,8 +113,8 @@ A Técnica da Argumentação Contínua enfatiza parágrafos interconectados que 
 
 ### Assistente de IA
 
-1. Abra **Preferências ▸ Assistente de IA**, habilite o recurso e escolha seu provedor (Gemini ou OpenRouter).
-2. Informe o **Model ID** e a **API key** correspondente (OpenRouter também aceita Referer e Título opcionais para ranking).
+1. Abra **Preferências ▸ Assistente de IA**, habilite o recurso e escolha seu provedor (Gemini, OpenRouter ou Maritaca AI).
+2. Informe o **Model ID** e a **API key** correspondente (OpenRouter também aceita Referer e Título opcionais para ranking). Para a Maritaca, use `sabia-4` ou `sabiazinho-4` (mais barato); a chave é obtida em plataforma.maritaca.ai e fica salva separadamente, sem sobrescrever a do Gemini/OpenRouter.
 3. Abra o assistente com `Ctrl+Shift+I` (ou clique no avatar da barra superior).
 4. Anexe o arquivo pdf que será revisado.  
 
@@ -189,7 +189,7 @@ E as funcionalidades online?
 
 O Tac Writer possui dois recursos opcionais que envolvem comunicação com serviços externos, ambos desativados por padrão e que dependem exclusivamente da ação do usuário para funcionar, e que seu uso é, totalmente, opcional:
 
-Assistente de IA — Caso você opte por usar o recurso de revisão por IA, será necessário configurar sua própria chave de API (do Gemini ou OpenRouter). Nesse caso, apenas você tem acesso a sua api privativa que criou sem interferência alguma do programa. O Tac Writer não intermedia nem armazena esses dados.
+Assistente de IA — Caso você opte por usar o recurso de revisão por IA, será necessário configurar sua própria chave de API (do Gemini, OpenRouter ou Maritaca AI). Nesse caso, apenas você tem acesso a sua api privativa que criou sem interferência alguma do programa. O Tac Writer não intermedia nem armazena esses dados.
 
 Sincronização com Dropbox — Caso você opte por ativar o backup em nuvem, os dados serão sincronizados com a sua conta pessoal do Dropbox, cuja segurança é de responsabilidade dessa empresa.
 

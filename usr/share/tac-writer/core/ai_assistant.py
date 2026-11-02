@@ -39,6 +39,8 @@ class WritingAiAssistant:
 
     DEFAULT_GEMINI_MODEL = "gemini-2.5-flash"
     DEFAULT_OPENROUTER_MODEL = "openrouter/polaris-alpha"
+    DEFAULT_MARITACA_MODEL = "sabia-4"
+    MARITACA_API_URL = "https://chat.maritaca.ai/api/chat/completions"
 
     # Complies with CNPq Portaria nº 2.664/2026: the AI is restricted to
     # identifying errors only — it must not rewrite the text or add content.
@@ -70,11 +72,11 @@ class WritingAiAssistant:
     def missing_configuration(self) -> List[str]:
         missing: List[str] = []
         provider = (self.config.get_ai_assistant_provider() or "").strip()
-        api_key = (self.config.get_ai_assistant_api_key() or "").strip()
         if not provider:
             missing.append("provider")
             return missing
-        if provider in {"gemini", "openrouter"} and not api_key:
+        api_key = (self.config.get_ai_api_key_for_provider(provider) or "").strip()
+        if provider in {"gemini", "openrouter", "maritaca"} and not api_key:
             missing.append("api_key")
         return missing
 
@@ -171,10 +173,11 @@ class WritingAiAssistant:
     # ------------------------------------------------------------------ #
 
     def _load_configuration(self) -> Dict[str, str]:
+        provider = (self.config.get_ai_assistant_provider() or "").strip()
         config = {
-            "provider": (self.config.get_ai_assistant_provider() or "").strip(),
+            "provider": provider,
             "model": (self.config.get_ai_assistant_model() or "").strip(),
-            "api_key": (self.config.get_ai_assistant_api_key() or "").strip(),
+            "api_key": (self.config.get_ai_api_key_for_provider(provider) or "").strip(),
             "openrouter_site_url": (self.config.get_openrouter_site_url() or "").strip(),
             "openrouter_site_name": (self.config.get_openrouter_site_name() or "").strip(),
         }
@@ -186,6 +189,8 @@ class WritingAiAssistant:
             config["model"] = self.DEFAULT_GEMINI_MODEL
         elif config["provider"] == "openrouter" and not config["model"]:
             config["model"] = self.DEFAULT_OPENROUTER_MODEL
+        elif config["provider"] == "maritaca" and not config["model"]:
+            config["model"] = self.DEFAULT_MARITACA_MODEL
         return config
 
     # ------------------------------------------------------------------ #
@@ -200,6 +205,8 @@ class WritingAiAssistant:
             return self._perform_gemini_request(config, messages)
         if provider == "openrouter":
             return self._perform_openrouter_request(config, messages)
+        if provider == "maritaca":
+            return self._perform_maritaca_request(config, messages)
         raise RuntimeError(
             _("Provider '{provider}' is not supported.").format(provider=provider)
         )
@@ -318,6 +325,79 @@ class WritingAiAssistant:
             raise RuntimeError(self._format_openrouter_error(response))
 
         return self._extract_content_from_choices(response)
+
+    def _perform_maritaca_request(
+        self, config: Dict[str, str], messages: List[Dict[str, str]]
+    ) -> str:
+        """Maritaca AI (modelos Sabiá) — endpoint compatível com a API da OpenAI."""
+        api_key = config.get("api_key", "").strip()
+        if not api_key:
+            raise RuntimeError(_("Configure a chave da API Maritaca em Preferências."))
+
+        model = config.get("model", "").strip() or self.DEFAULT_MARITACA_MODEL
+
+        payload_messages = [
+            {
+                "role": m.get("role") if m.get("role") in {"system", "user", "assistant"} else "user",
+                "content": m.get("content", ""),
+            }
+            for m in messages
+            if isinstance(m.get("content"), str) and m.get("content")
+        ]
+
+        payload: Dict[str, Any] = {
+            "model": model,
+            "messages": payload_messages,
+            # Temperatura baixa: revisão deve ser objetiva, não criativa.
+            "temperature": 0.3,
+        }
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}",
+        }
+
+        try:
+            # Textos longos (capítulos inteiros) podem levar mais de 60 s.
+            response = requests.post(
+                self.MARITACA_API_URL, headers=headers, json=payload, timeout=180
+            )
+        except requests.RequestException as exc:
+            raise RuntimeError(
+                _("Falha ao contatar Maritaca: {error}").format(error=exc)
+            ) from exc
+
+        if response.status_code >= 400:
+            raise RuntimeError(self._format_maritaca_error(response))
+
+        return self._extract_content_from_choices(response)
+
+    def _format_maritaca_error(self, response: requests.Response) -> str:
+        status = response.status_code
+        message = response.text.strip() or _("Erro desconhecido.")
+        try:
+            data = response.json()
+        except ValueError:
+            data = None
+        if isinstance(data, dict):
+            error_obj = data.get("error")
+            if isinstance(error_obj, dict) and error_obj.get("message"):
+                message = str(error_obj["message"])
+            elif isinstance(error_obj, str) and error_obj:
+                message = error_obj
+            elif data.get("detail"):
+                detail = data["detail"]
+                message = detail if isinstance(detail, str) else str(detail)
+
+        hints = {
+            401: _("Verifique se a chave de API está correta."),
+            402: _("Verifique o saldo de créditos da sua conta Maritaca."),
+            429: _("Limite de requisições atingido; aguarde alguns instantes."),
+        }
+        hint = hints.get(status)
+        text = _("Maritaca respondeu com HTTP {status}: {message}").format(
+            status=status, message=message
+        )
+        return f"{text} {hint}" if hint else text
 
     def _extract_content_from_choices(self, response: requests.Response) -> str:
         try:

@@ -119,6 +119,20 @@ class ConfigSecretsTests(_TempConfigDirMixin, unittest.TestCase):
         self.assertEqual(self.secrets_json.get('ai_assistant_api_key'), 'sk-teste')
         self.assertEqual(config.get_ai_assistant_api_key(), 'sk-teste')
 
+    def test_maritaca_key_has_own_secret_slot(self):
+        config = Config()
+        config.set_ai_assistant_api_key('sk-gemini')
+        config.set_ai_api_key_for_provider('maritaca', 'mk-maritaca')
+        config.save()
+
+        self.assertNotIn('ai_maritaca_api_key', self.config_json)
+        self.assertEqual(self.secrets_json.get('ai_maritaca_api_key'), 'mk-maritaca')
+        # A chave da Maritaca não sobrescreve a do Gemini/OpenRouter
+        self.assertEqual(self.secrets_json.get('ai_assistant_api_key'), 'sk-gemini')
+        self.assertEqual(config.get_ai_api_key_for_provider('maritaca'), 'mk-maritaca')
+        self.assertEqual(config.get_ai_api_key_for_provider('gemini'), 'sk-gemini')
+        self.assertEqual(config.get_ai_api_key_for_provider('openrouter'), 'sk-gemini')
+
     def test_dropbox_token_via_generic_set_get(self):
         # cloud_sync.py e dialogs.py usam config.get/set direto
         config = Config()
