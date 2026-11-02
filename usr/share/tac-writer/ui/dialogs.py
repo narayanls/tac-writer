@@ -1245,9 +1245,9 @@ class PreferencesDialog(Adw.PreferencesWindow):
             self.ai_api_key_row.set_subtitle(_("Chave de API do Google AI Studio."))
         
         elif provider == "openrouter":
-            self.ai_model_entry.set_placeholder_text("deepseek/deepseek-r1-0528:free")
+            self.ai_model_entry.set_placeholder_text("deepseek/deepseek-v4-flash-0731")
             self.ai_model_row.set_subtitle(
-                _("Identificador OpenRouter (ex: deepseek/deepseek-r1-0528:free).")
+                _("Identificador OpenRouter (ex: deepseek/deepseek-v4-flash-0731).")
             )
             self.ai_api_key_row.set_subtitle(_("Chave de API do OpenRouter."))
         
