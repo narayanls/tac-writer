@@ -6,15 +6,13 @@ para todas as dependências que exigem binários nativos.
 Uso: python3 gerar_yaml.py
 
 Nota: Assume Python 3.13 (GNOME SDK 49/50) e arquitetura x86_64.
-Para GNOME SDK 47 (Python 3.12), altere PYTHON_TAG para "cp312-cp312".
-Para aarch64, ajuste os valores de *_PLATFORM abaixo.
 """
 import json
 import urllib.request
 import sys
 
 # === Configuração de plataforma ===
-# GNOME SDK 49/50 = Python 3.13 | GNOME SDK 47 = Python 3.12
+# GNOME SDK 49/50 = Python 3.13
 PYTHON_TAG = "cp313-cp313"
 ARCH = "x86_64"
 
