@@ -9,6 +9,7 @@ gi.require_version('Adw', '1')
 from gi.repository import Gtk, Adw, GObject, Gio, Gdk, Pango, GLib
 
 import os
+import json
 import sqlite3
 import threading
 import subprocess
@@ -3537,7 +3538,23 @@ class GoalsDialog(Adw.Window):
       - config.get('usage_dates', [])          → lista de datas ISO usadas
       - config.get('pomodoro_completed', 0)    → total de sessões work concluídas
       - config.get(f'goals_{project.id}', [])  → metas do projeto
+      - config.get(f'deleted_goals_{project.id}', []) → ids de metas removidas
+            (evita que uma importação "ressuscite" metas apagadas)
+      - config.get(f'stats_history_{project.id}', {}) → snapshots diários
+
+    Sincronização (Exportar/Importar):
+      O arquivo exportado contém os dados de todos os projetos. A importação
+      é uma MESCLA, nunca uma substituição cega — vale sempre o mais atual:
+        · usage_dates          → união das datas
+        · pomodoro_completed   → maior valor
+        · metas                → por id; meta encerrada vence meta ativa,
+                                 senão vence o 'updated_at' mais recente;
+                                 ids removidos em qualquer máquina somem
+        · stats_history        → por data; vence o 'updated_at' mais recente
     """
+
+    SYNC_FORMAT  = 'tac-writer-goals'
+    SYNC_VERSION = 1
 
     __gtype_name__ = 'TacGoalsDialog'
 
@@ -3567,20 +3584,43 @@ class GoalsDialog(Adw.Window):
         content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.toast_overlay.set_child(content_box)
 
-        # Header bar com botão fechar
+        # Header bar: o "X" da própria janela já fecha o dialog, então o
+        # espaço do antigo botão "Fechar" vira Exportar/Importar, para
+        # sincronizar metas e estatísticas entre computadores.
         header_bar = Adw.HeaderBar()
-        close_btn = Gtk.Button(label=_("Fechar"))
-        close_btn.connect('clicked', lambda b: self.destroy())
-        header_bar.pack_start(close_btn)
+
+        sync_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        sync_box.add_css_class('linked')
+
+        export_btn = Gtk.Button(label=_("Exportar"))
+        export_btn.set_tooltip_text(
+            _("Salvar metas e estatísticas em um arquivo para levar a outro computador")
+        )
+        export_btn.connect('clicked', self._on_export_clicked)
+        sync_box.append(export_btn)
+
+        import_btn = Gtk.Button(label=_("Importar"))
+        import_btn.set_tooltip_text(
+            _("Mesclar metas e estatísticas de um arquivo exportado, mantendo sempre o mais atual")
+        )
+        import_btn.connect('clicked', self._on_import_clicked)
+        sync_box.append(import_btn)
+
+        header_bar.pack_start(sync_box)
         content_box.append(header_bar)
 
         # ViewStack com duas abas
         self.view_stack = Adw.ViewStack()
         self.view_stack.set_vexpand(True)
 
-        stats_page = self._build_stats_page()
+        # A aba de estatísticas fica dentro de um container fixo para poder
+        # ser reconstruída após uma importação sem mudar a ordem das abas.
+        self.stats_container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.stats_page = self._build_stats_page()
+        self.stats_page.set_vexpand(True)
+        self.stats_container.append(self.stats_page)
         self.view_stack.add_titled_with_icon(
-            stats_page, 'stats', _("Estatísticas"), 'tac-office-chart-bar-symbolic'
+            self.stats_container, 'stats', _("Estatísticas"), 'tac-office-chart-bar-symbolic'
         )
 
         goals_page = self._build_goals_page()
@@ -3965,6 +4005,7 @@ class GoalsDialog(Adw.Window):
             if g.get('id') == goal_id and g.get('status') != status:
                 g['status']         = status
                 g['final_progress'] = final_progress
+                g['updated_at']     = self._now_stamp()
                 changed = True
                 break
 
@@ -4109,6 +4150,7 @@ class GoalsDialog(Adw.Window):
             'baseline_words':       stats.get('total_words', 0),
             'status':               'active',   # 'active' | 'achieved' | 'failed'
             'final_progress':       0,
+            'updated_at':           self._now_stamp(),
         }
 
         goals = self.config.get(f'goals_{self.project.id}', [])
@@ -4130,9 +4172,327 @@ class GoalsDialog(Adw.Window):
         goals = self.config.get(f'goals_{self.project.id}', [])
         goals = [g for g in goals if g['id'] != goal_id]
         self.config.set(f'goals_{self.project.id}', goals)
+
+        # Marca o id como removido para que uma importação vinda de outro
+        # computador (onde a meta ainda existe) não a traga de volta.
+        deleted_key = f'deleted_goals_{self.project.id}'
+        deleted = list(self.config.get(deleted_key, []) or [])
+        if goal_id not in deleted:
+            deleted.append(goal_id)
+        self.config.set(deleted_key, deleted[-500:])
+
         self.config.save()
         self._refresh_goals_ui()
         self._show_toast(_("Meta removida."))
+
+    # =========================================================================
+    # Sincronização — Exportar / Importar
+    # =========================================================================
+
+    def _json_file_filters(self):
+        json_filter = Gtk.FileFilter()
+        json_filter.set_name(_("Metas do Tac Writer (*.json)"))
+        json_filter.add_pattern("*.json")
+        json_filter.add_mime_type("application/json")
+        filters = Gio.ListStore.new(Gtk.FileFilter)
+        filters.append(json_filter)
+        return filters, json_filter
+
+    # ── Exportar ──────────────────────────────────────────────────
+
+    def _on_export_clicked(self, btn):
+        filters, default_filter = self._json_file_filters()
+        dialog = Gtk.FileDialog()
+        dialog.set_title(_("Exportar Metas e Estatísticas"))
+        dialog.set_filters(filters)
+        dialog.set_default_filter(default_filter)
+        dialog.set_initial_name(
+            "tac-writer-metas-{}.json".format(datetime.now().strftime('%Y%m%d-%H%M'))
+        )
+        dialog.save(self, None, self._on_export_finish)
+
+    def _on_export_finish(self, dialog, result):
+        try:
+            file = dialog.save_finish(result)
+        except GLib.Error:
+            return  # usuário cancelou
+        if not file or not file.get_path():
+            return
+
+        path = file.get_path()
+        if not path.lower().endswith('.json'):
+            path += '.json'
+
+        try:
+            payload = self._collect_sync_payload()
+            tmp_path = path + '.tmp'
+            with open(tmp_path, 'w', encoding='utf-8') as f:
+                json.dump(payload, f, indent=2, ensure_ascii=False)
+            os.replace(tmp_path, path)
+        except Exception as e:
+            print(f"Erro ao exportar metas: {e}")
+            self._show_toast(_("Não foi possível exportar: {}").format(e))
+            return
+
+        n_goals = sum(len(p.get('goals', [])) for p in payload['projects'].values())
+        self._show_toast(
+            _("Exportado: {} meta(s) de {} projeto(s).").format(n_goals, len(payload['projects']))
+        )
+
+    def _collect_sync_payload(self):
+        """Monta o dicionário exportado com os dados de TODOS os projetos."""
+        raw = getattr(self.config, '_config', {}) or {}
+
+        project_ids = set()
+        for key in raw.keys():
+            for prefix in ('deleted_goals_', 'stats_history_', 'goals_'):
+                if key.startswith(prefix):
+                    project_ids.add(key[len(prefix):])
+                    break
+        project_ids.add(self.project.id)
+
+        projects = {}
+        for pid in sorted(project_ids):
+            goals   = self.config.get(f'goals_{pid}', []) or []
+            deleted = self.config.get(f'deleted_goals_{pid}', []) or []
+            history = self.config.get(f'stats_history_{pid}', {}) or {}
+            if not (goals or deleted or history):
+                continue
+            entry = {
+                'goals':         goals,
+                'deleted_goals': deleted,
+                'stats_history': history,
+            }
+            if pid == self.project.id:
+                entry['name'] = self.project.name
+            projects[pid] = entry
+
+        return {
+            'format':             self.SYNC_FORMAT,
+            'version':            self.SYNC_VERSION,
+            'exported_at':        self._now_stamp(),
+            'usage_dates':        self.config.get('usage_dates', []) or [],
+            'pomodoro_completed': int(self.config.get('pomodoro_completed', 0) or 0),
+            'projects':           projects,
+        }
+
+    # ── Importar ──────────────────────────────────────────────────
+
+    def _on_import_clicked(self, btn):
+        filters, default_filter = self._json_file_filters()
+        dialog = Gtk.FileDialog()
+        dialog.set_title(_("Importar Metas e Estatísticas"))
+        dialog.set_filters(filters)
+        dialog.set_default_filter(default_filter)
+        dialog.open(self, None, self._on_import_finish)
+
+    def _on_import_finish(self, dialog, result):
+        try:
+            file = dialog.open_finish(result)
+        except GLib.Error:
+            return  # usuário cancelou
+        if not file or not file.get_path():
+            return
+
+        try:
+            with open(file.get_path(), 'r', encoding='utf-8') as f:
+                payload = json.load(f)
+        except Exception as e:
+            print(f"Erro ao ler arquivo de metas: {e}")
+            self._show_toast(_("Arquivo inválido ou corrompido."))
+            return
+
+        if (not isinstance(payload, dict)
+                or payload.get('format') != self.SYNC_FORMAT
+                or not isinstance(payload.get('projects', {}), dict)):
+            self._show_toast(_("Este arquivo não é uma exportação de metas do Tac Writer."))
+            return
+
+        if int(payload.get('version', 0) or 0) > self.SYNC_VERSION:
+            self._show_toast(_("Arquivo gerado por uma versão mais nova do Tac Writer. Atualize o app."))
+            return
+
+        try:
+            summary = self._merge_sync_payload(payload)
+        except Exception as e:
+            print(f"Erro ao mesclar metas: {e}")
+            self._show_toast(_("Não foi possível importar: {}").format(e))
+            return
+
+        self._refresh_goals_ui()
+        self._refresh_stats_ui()
+
+        added, updated, removed = summary
+        if added or updated or removed:
+            self._show_toast(
+                _("Importado: {} nova(s), {} atualizada(s), {} removida(s).").format(
+                    added, updated, removed)
+            )
+        else:
+            self._show_toast(_("Tudo já estava atualizado."))
+
+    def _merge_sync_payload(self, payload):
+        """
+        Mescla o conteúdo importado com o config local, ficando sempre com o
+        dado mais atual. Retorna (metas_novas, metas_atualizadas, metas_removidas).
+        """
+        # Dias de uso: união (os dois computadores contam para a sequência)
+        local_dates    = self.config.get('usage_dates', []) or []
+        incoming_dates = payload.get('usage_dates', []) or []
+        merged_dates = set()
+        for d in list(local_dates) + list(incoming_dates):
+            if isinstance(d, str) and self._is_iso_date(d):
+                merged_dates.add(d)
+        self.config.set('usage_dates', sorted(merged_dates)[-365:])
+
+        # Pomodoro: o maior contador é o mais atual
+        try:
+            incoming_pom = int(payload.get('pomodoro_completed', 0) or 0)
+        except (TypeError, ValueError):
+            incoming_pom = 0
+        local_pom = int(self.config.get('pomodoro_completed', 0) or 0)
+        self.config.set('pomodoro_completed', max(local_pom, incoming_pom))
+
+        projects = payload.get('projects', {}) or {}
+
+        # Se o projeto atual não aparece pelo id, mas há um único projeto
+        # exportado com o mesmo nome, trata-o como o mesmo projeto.
+        if self.project.id not in projects:
+            same_name = [pid for pid, p in projects.items()
+                         if isinstance(p, dict) and p.get('name') == self.project.name]
+            if len(same_name) == 1:
+                projects = dict(projects)
+                projects[self.project.id] = projects.pop(same_name[0])
+
+        added = updated = removed = 0
+        for pid, pdata in projects.items():
+            if not isinstance(pid, str) or not isinstance(pdata, dict):
+                continue
+            a, u, r = self._merge_project(pid, pdata)
+            added += a
+            updated += u
+            removed += r
+
+        self.config.save()
+        return added, updated, removed
+
+    def _merge_project(self, pid, pdata):
+        """Mescla metas, remoções e histórico de um projeto."""
+        # ── Remoções (união) ──
+        local_deleted    = self.config.get(f'deleted_goals_{pid}', []) or []
+        incoming_deleted = pdata.get('deleted_goals', []) or []
+        deleted = list(dict.fromkeys(
+            [d for d in list(local_deleted) + list(incoming_deleted) if isinstance(d, str)]
+        ))[-500:]
+        deleted_set = set(deleted)
+
+        # ── Metas ──
+        local_goals    = [g for g in (self.config.get(f'goals_{pid}', []) or [])
+                          if self._is_valid_goal(g)]
+        incoming_goals = [g for g in (pdata.get('goals', []) or [])
+                          if self._is_valid_goal(g)]
+
+        removed = sum(1 for g in local_goals if g['id'] in deleted_set)
+
+        merged = {}
+        order  = []
+        for g in local_goals:
+            if g['id'] in deleted_set or g['id'] in merged:
+                continue
+            merged[g['id']] = g
+            order.append(g['id'])
+
+        added = updated = 0
+        for g in incoming_goals:
+            gid = g['id']
+            if gid in deleted_set:
+                continue
+            current = merged.get(gid)
+            if current is None:
+                merged[gid] = dict(g)
+                order.append(gid)
+                added += 1
+            elif self._goal_is_newer(g, current):
+                merged[gid] = dict(g)
+                updated += 1
+
+        # Ordem cronológica de criação (a lista exibe a mais recente no topo)
+        goals = [merged[gid] for gid in order]
+        goals.sort(key=lambda g: g.get('created_at', ''))
+
+        if goals or self.config.get(f'goals_{pid}') is not None:
+            self.config.set(f'goals_{pid}', goals)
+        if deleted:
+            self.config.set(f'deleted_goals_{pid}', deleted)
+
+        # ── Histórico de estatísticas (por data) ──
+        local_hist    = dict(self.config.get(f'stats_history_{pid}', {}) or {})
+        incoming_hist = pdata.get('stats_history', {}) or {}
+        if isinstance(incoming_hist, dict) and incoming_hist:
+            for day, snap in incoming_hist.items():
+                if not (isinstance(day, str) and self._is_iso_date(day)
+                        and isinstance(snap, dict)):
+                    continue
+                cur = local_hist.get(day)
+                if (not isinstance(cur, dict)
+                        or str(snap.get('updated_at', '')) > str(cur.get('updated_at', ''))):
+                    local_hist[day] = snap
+            if len(local_hist) > 365:
+                for old in sorted(local_hist.keys())[:-365]:
+                    del local_hist[old]
+            self.config.set(f'stats_history_{pid}', local_hist)
+
+        return added, updated, removed
+
+    @staticmethod
+    def _goal_is_newer(candidate, current):
+        """
+        Decide se 'candidate' deve substituir 'current' (mesmo id).
+        Uma meta encerrada (alcançada/vencida) sempre vence a versão ainda
+        ativa; entre versões do mesmo tipo, vence o 'updated_at' mais recente.
+        """
+        def closed(g):
+            return 1 if g.get('status') in ('achieved', 'failed') else 0
+
+        if closed(candidate) != closed(current):
+            return closed(candidate) > closed(current)
+        return str(candidate.get('updated_at', '')) > str(current.get('updated_at', ''))
+
+    @classmethod
+    def _is_valid_goal(cls, g):
+        if not isinstance(g, dict):
+            return False
+        try:
+            return (isinstance(g.get('id'), str) and g['id']
+                    and g.get('metric') in ('paragraphs', 'words')
+                    and int(g.get('target', 0)) > 0
+                    and cls._is_iso_date(g.get('deadline', ''))
+                    and isinstance(g.get('baseline_paragraphs', 0), int)
+                    and isinstance(g.get('baseline_words', 0), int))
+        except (TypeError, ValueError):
+            return False
+
+    @staticmethod
+    def _is_iso_date(value):
+        from datetime import date
+        try:
+            date.fromisoformat(value)
+            return True
+        except (TypeError, ValueError):
+            return False
+
+    @staticmethod
+    def _now_stamp():
+        """Carimbo UTC comparável como texto entre computadores."""
+        from datetime import timezone
+        return datetime.now(timezone.utc).isoformat(timespec='seconds')
+
+    def _refresh_stats_ui(self):
+        """Reconstrói a aba de estatísticas (após importar)."""
+        self.stats_container.remove(self.stats_page)
+        self.stats_page = self._build_stats_page()
+        self.stats_page.set_vexpand(True)
+        self.stats_container.append(self.stats_page)
 
     # =========================================================================
     # Helpers

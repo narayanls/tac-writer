@@ -1,7 +1,7 @@
 {
   "_meta": {
     "nome": "Dicionário Tac Writer — Sinônimos e Antônimos",
-    "versao": "1.5",
+    "versao": "1.6",
     "contexto": "Escrita formal e acadêmica em português do Brasil",
     "categorias": [
       "conectivos_conclusao",
@@ -5698,7 +5698,7 @@
       "medonho",
       "banal"
     ]
-   },
+  },
   "alarmante": {
     "categoria": "adjetivos_sensacao",
     "sinonimos": [
@@ -5713,7 +5713,7 @@
       "ínfimo",
       "relaxante"
     ]
-   },
+  },
   "elidir": {
     "categoria": "verbos_analise",
     "sinonimos": [
@@ -5967,7 +5967,6 @@
       "persistência",
       "afã",
       "dedicação"
-
     ],
     "antonimos": [
       "indiferença",
@@ -6007,106 +6006,102 @@
     ]
   },
   "documentar": {
-  "categoria": "verbos_metodologia",
-  "sinonimos": [
-    "registrar",
-    "catalogar",
-    "arquivar",
-    "consignar",
-    "reportar",
-    "atestar",
-    "comprovar",
-    "evidenciar"
-  ],
-  "antonimos": [
-    "omitir",
-    "suprimir",
-    "ocultar",
-    "apagar"
-  ]
-},
-
-"privilegiar": {
-  "categoria": "verbos_argumentacao",
-  "sinonimos": [
-    "priorizar",
-    "destacar",
-    "valorizar",
-    "enfatizar",
-    "favorecer",
-    "preferir",
-    "eleger"
-  ],
-  "antonimos": [
-    "negligenciar",
-    "subestimar",
-    "secundarizar",
-    "ignorar",
-    "preterir",
-    "marginalizar"
-  ]
-},
-
-"sequência": {
-  "categoria": "substantivos_metodologia",
-  "sinonimos": [
-    "sucessão",
-    "série",
-    "encadeamento",
-    "progressão",
-    "continuidade",
-    "cadeia",
-    "ordem"
-  ],
-  "antonimos": [
-    "desordem",
-    "descontinuidade",
-    "interrupção",
-    "ruptura",
-    "fragmentação"
-  ]
-},
-
-"acrescentar": {
-  "categoria": "verbos_relacao",
-  "sinonimos": [
-    "adicionar",
-    "incluir",
-    "inserir",
-    "agregar",
-    "anexar",
-    "incorporar",
-    "somar"
-  ],
-  "antonimos": [
-    "suprimir",
-    "retirar",
-    "remover",
-    "excluir",
-    "eliminar",
-    "subtrair"
-  ]
-},
-
-"valia": {
-  "categoria": "substantivos_avaliacao",
-  "sinonimos": [
-    "valor",
-    "mérito",
-    "importância",
-    "relevância",
-    "peso",
-    "significado",
-    "utilidade",
-    "préstimo"
-  ],
-  "antonimos": [
-    "inutilidade",
-    "insignificância",
-    "desvalor",
-    "futilidade"
-  ]
-},
+    "categoria": "verbos_metodologia",
+    "sinonimos": [
+      "registrar",
+      "catalogar",
+      "arquivar",
+      "consignar",
+      "reportar",
+      "atestar",
+      "comprovar",
+      "evidenciar"
+    ],
+    "antonimos": [
+      "omitir",
+      "suprimir",
+      "ocultar",
+      "apagar"
+    ]
+  },
+  "privilegiar": {
+    "categoria": "verbos_argumentacao",
+    "sinonimos": [
+      "priorizar",
+      "destacar",
+      "valorizar",
+      "enfatizar",
+      "favorecer",
+      "preferir",
+      "eleger"
+    ],
+    "antonimos": [
+      "negligenciar",
+      "subestimar",
+      "secundarizar",
+      "ignorar",
+      "preterir",
+      "marginalizar"
+    ]
+  },
+  "sequência": {
+    "categoria": "substantivos_metodologia",
+    "sinonimos": [
+      "sucessão",
+      "série",
+      "encadeamento",
+      "progressão",
+      "continuidade",
+      "cadeia",
+      "ordem"
+    ],
+    "antonimos": [
+      "desordem",
+      "descontinuidade",
+      "interrupção",
+      "ruptura",
+      "fragmentação"
+    ]
+  },
+  "acrescentar": {
+    "categoria": "verbos_relacao",
+    "sinonimos": [
+      "adicionar",
+      "incluir",
+      "inserir",
+      "agregar",
+      "anexar",
+      "incorporar",
+      "somar"
+    ],
+    "antonimos": [
+      "suprimir",
+      "retirar",
+      "remover",
+      "excluir",
+      "eliminar",
+      "subtrair"
+    ]
+  },
+  "valia": {
+    "categoria": "substantivos_avaliacao",
+    "sinonimos": [
+      "valor",
+      "mérito",
+      "importância",
+      "relevância",
+      "peso",
+      "significado",
+      "utilidade",
+      "préstimo"
+    ],
+    "antonimos": [
+      "inutilidade",
+      "insignificância",
+      "desvalor",
+      "futilidade"
+    ]
+  },
   "adentrar": {
     "categoria": "verbos_analise",
     "sinonimos": [
@@ -6124,7 +6119,7 @@
       "recuar",
       "excluir"
     ]
-},
+  },
   "perpassar": {
     "categoria": "verbos_analise",
     "sinonimos": [
@@ -6305,6 +6300,100 @@
       "separação",
       "afastamento",
       "disjunção"
+    ]
+  },
+  "transmitir": {
+    "categoria": "verbos_argumentacao",
+    "sinonimos": [
+      "comunicar",
+      "veicular",
+      "difundir",
+      "propagar",
+      "repassar",
+      "expressar",
+      "exprimir"
+    ],
+    "antonimos": [
+      "reter",
+      "omitir",
+      "ocultar",
+      "calar",
+      "suprimir"
+    ]
+  },
+  "concomitante": {
+    "categoria": "adjetivos_estruturais",
+    "sinonimos": [
+      "simultâneo",
+      "coincidente",
+      "paralelo",
+      "sincrônico",
+      "contemporâneo",
+      "coexistente",
+      "conjunto"
+    ],
+    "antonimos": [
+      "sucessivo",
+      "consecutivo",
+      "posterior",
+      "anterior",
+      "alternado",
+      "diacrônico"
+    ]
+  },
+  "conduzir": {
+    "categoria": "verbos_metodologia",
+    "sinonimos": [
+      "realizar",
+      "empreender",
+      "dirigir",
+      "orientar",
+      "guiar",
+      "encaminhar",
+      "levar a cabo"
+    ],
+    "antonimos": [
+      "abandonar",
+      "interromper",
+      "desviar",
+      "desorientar",
+      "negligenciar"
+    ]
+  },
+  "destinação": {
+    "categoria": "substantivos_acao_estado",
+    "sinonimos": [
+      "destino",
+      "finalidade",
+      "aplicação",
+      "alocação",
+      "emprego",
+      "encaminhamento",
+      "direcionamento"
+    ],
+    "antonimos": [
+      "desvio",
+      "retenção",
+      "desvinculação"
+    ]
+  },
+  "lato": {
+    "categoria": "adjetivos_quantidade",
+    "sinonimos": [
+      "amplo",
+      "extenso",
+      "abrangente",
+      "vasto",
+      "largo",
+      "genérico",
+      "geral"
+    ],
+    "antonimos": [
+      "estrito",
+      "restrito",
+      "limitado",
+      "específico",
+      "circunscrito"
     ]
   }
 }

@@ -1645,8 +1645,15 @@ class MainWindow(Adw.ApplicationWindow):
         }
 
         # Nada mudou desde a última gravação de hoje: evita I/O desnecessário
-        if history.get(today) == entry:
+        previous = history.get(today) or {}
+        if (previous.get('paragraphs') == entry['paragraphs']
+                and previous.get('words') == entry['words']):
             return
+
+        # Carimbo UTC: na importação de metas (GoalsDialog), quando os dois
+        # computadores têm snapshot do mesmo dia, vence o mais recente.
+        from datetime import datetime, timezone
+        entry['updated_at'] = datetime.now(timezone.utc).isoformat(timespec='seconds')
 
         history[today] = entry
 
