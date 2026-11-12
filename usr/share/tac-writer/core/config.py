@@ -19,6 +19,7 @@ class Config:
     """Application configuration manager"""
 
     # Application version and metadata
+
     APP_VERSION = "1.44.4"
     DROPBOX_APP_KEY = "x3h06acjg6fhbmq"
     APP_NAME = "TAC"
