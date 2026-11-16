@@ -1,7 +1,7 @@
 {
   "_meta": {
     "nome": "Dicionário Tac Writer — Sinônimos e Antônimos",
-    "versao": "1.6",
+    "versao": "1.7",
     "contexto": "Escrita formal e acadêmica em português do Brasil",
     "categorias": [
       "conectivos_conclusao",
@@ -1529,8 +1529,7 @@
       "fragmentário",
       "limitado",
       "relativo",
-      "restrito",
-      "incipiente"
+      "restrito"
     ],
     "antonimos": [
       "total",
@@ -6394,6 +6393,96 @@
       "limitado",
       "específico",
       "circunscrito"
+    ]
+  },
+  "em contrapartida": {
+    "categoria": "conectivos_contraste",
+    "sinonimos": [
+      "por outro lado",
+      "em compensação",
+      "em oposição",
+      "ao contrário",
+      "inversamente",
+      "em sentido oposto"
+    ],
+    "antonimos": [
+      "da mesma forma",
+      "igualmente",
+      "do mesmo modo",
+      "similarmente"
+    ]
+  },
+  "premissa": {
+    "categoria": "substantivos_textuais",
+    "sinonimos": [
+      "pressuposto",
+      "postulado",
+      "princípio",
+      "ponto de partida",
+      "proposição",
+      "axioma",
+      "hipótese"
+    ],
+    "antonimos": [
+      "conclusão",
+      "consequência",
+      "corolário",
+      "inferência",
+      "resultado"
+    ]
+  },
+  "ensejar": {
+    "categoria": "verbos_relacao",
+    "sinonimos": [
+      "ocasionar",
+      "propiciar",
+      "possibilitar",
+      "suscitar",
+      "motivar",
+      "dar ensejo a",
+      "oportunizar"
+    ],
+    "antonimos": [
+      "impedir",
+      "obstar",
+      "inviabilizar",
+      "coibir",
+      "evitar"
+    ]
+  },
+  "cotejar": {
+    "categoria": "verbos_metodologia",
+    "sinonimos": [
+      "comparar",
+      "confrontar",
+      "contrastar",
+      "contrapor",
+      "colacionar",
+      "conferir"
+    ],
+    "antonimos": [
+      "isolar",
+      "dissociar",
+      "separar",
+      "desconsiderar"
+    ]
+  },
+  "incipiente": {
+    "categoria": "adjetivos_avaliacao",
+    "sinonimos": [
+      "inicial",
+      "embrionário",
+      "nascente",
+      "emergente",
+      "rudimentar",
+      "principiante"
+    ],
+    "antonimos": [
+      "consolidado",
+      "maduro",
+      "avançado",
+      "estabelecido",
+      "desenvolvido"
     ]
   }
 }
